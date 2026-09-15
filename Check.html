@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<base target="_top">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/api.js"></script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -54,7 +57,7 @@ input:disabled{opacity:.5}
 <script>
 var $=function(id){return document.getElementById(id);};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
-function call(name){var args=[].slice.call(arguments,1);return new Promise(function(res,rej){var r=google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(e);});r[name].apply(r,args);});}
+function call(name){var args=[].slice.call(arguments,1);if(!window.api||!window.api[name])return Promise.reject(new Error("API not found: "+name));return window.api[name].apply(window.api,args);}
 
 /* ===== i18n (5 ภาษา · แชร์ localStorage กับหน้า Welcome/Signup) ===== */
 var I18N={
@@ -75,7 +78,7 @@ function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.th[k]||k;}
 function tt(k,params){var s=t(k);for(var p in (params||{}))s=s.split('{'+p+'}').join(params[p]);return s;}
 function applyStatic(){document.documentElement.lang=LANG;$('pageTitle').textContent=t('title');}
 
-var token=(function(){var t='<?= qToken ?>';return t&&t.indexOf('?')<0?t:(new URLSearchParams(window.location.search).get('t')||'');})();
+var token = new URLSearchParams(window.location.search).get('t') || '';
 
 /* ===== ติดตามจอปัจจุบัน เพื่อ re-render เมื่อเปลี่ยนภาษา ===== */
 var VIEW='loading', DATA=null;
