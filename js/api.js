@@ -132,17 +132,6 @@
     // -------------------------------------------------------------
     async getSignupBootstrap() {
       let { data: prods } = await sb().from('products').select('*').eq('is_active', true);
-      if (!prods || prods.length === 0) {
-        const defaults = [
-          { model: 'iPhone 17 Pro Max', capacities: '256GB, 512GB, 1TB', colors: 'Natural Titanium, Black Titanium, White Titanium, Blue Titanium', is_active: true, prices: '256GB=48900, 512GB=56900, 1TB=64900' },
-          { model: 'iPhone 17 Pro', capacities: '256GB, 512GB, 1TB', colors: 'Natural Titanium, Black Titanium, White Titanium, Blue Titanium', is_active: true, prices: '256GB=42900, 512GB=50900, 1TB=58900' },
-          { model: 'iPhone 17', capacities: '128GB, 256GB, 512GB', colors: 'Black, White, Blue, Pink, Green', is_active: true, prices: '128GB=32900, 256GB=36900, 512GB=44900' },
-          { model: 'iPhone 17 Air', capacities: '256GB, 512GB', colors: 'Space Gray, Silver, Gold', is_active: true, prices: '256GB=39900, 512GB=47900' }
-        ];
-        const { data: inserted } = await sb().from('products').insert(defaults).select('*');
-        prods = inserted || defaults;
-      }
-
       const products = (prods || []).map(p => ({
         model: p.model,
         capacities: (p.capacities || '').split(',').map(s => s.trim()).filter(Boolean),
@@ -151,16 +140,6 @@
       }));
 
       let { data: promos } = await sb().from('discount_campaigns').select('*').eq('is_active', true);
-      if (!promos || promos.length === 0) {
-        const defaultPromos = [
-          { name: 'HotDeal', description: 'เปิดเบอร์ใหม่ ย้ายค่าย เปลี่ยนเติมเงินเป็นรายเดือน', is_active: true },
-          { name: 'BestBuy', description: 'ลูกค้า AIS ปัจจุบัน', is_active: true },
-          { name: 'นิติบุคคล', description: 'ทุนจดทะเบียนไม่เกิน 200 ล้าน', is_active: true }
-        ];
-        const { data: inserted } = await sb().from('discount_campaigns').insert(defaultPromos).select('*');
-        promos = inserted || defaultPromos;
-      }
-
       const n1 = Math.floor(Math.random() * 9) + 1;
       const n2 = Math.floor(Math.random() * 9) + 1;
       return {
@@ -202,7 +181,7 @@
         contact_channel: data.contactChannel || 'LINE',
         contact_id: data.contactId || '',
         language: data.language || 'th',
-        customer_group: 'ลูกค้า Walk-in'
+        customer_group: 'Walk-in'
       }, { onConflict: 'phone' });
 
       const batchGroupId = 'B_' + Date.now();
@@ -219,7 +198,7 @@
           token: token,
           phone: cleanPhone,
           customer_name: name,
-          customer_group: 'ลูกค้า Walk-in',
+          customer_group: 'Walk-in',
           model: d.model,
           capacity: d.capacity,
           color: d.color,
@@ -411,19 +390,42 @@
 
     async listReservations(tokenOrFilter, filter) {
       const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
+      const appliedFilter = {
+        q: String(f.q || ''),
+        group: String(f.group || ''),
+        status: String(f.status || ''),
+        focus: String(f.focus || ''),
+        includeClosed: !!f.includeClosed
+      };
+
       let query = sb().from('reservations').select('*');
 
-      if (f.status) {
-        query = query.eq('status', f.status);
-      } else if (!f.includeClosed) {
+      if (appliedFilter.status) {
+        query = query.eq('status', appliedFilter.status);
+      } else if (!appliedFilter.includeClosed) {
         query = query.neq('status', 'รับของแล้ว').neq('status', 'ยกเลิก');
       }
 
-      if (f.group) query = query.eq('customer_group', f.group);
+      if (appliedFilter.group) {
+        query = query.eq('customer_group', appliedFilter.group);
+      }
 
-      if (f.q) {
-        const q = String(f.q).trim();
-        query = query.or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%,id.ilike.%${q}%,model.ilike.%${q}%`);
+      const today = new Date().toISOString().slice(0, 10);
+      if (appliedFilter.focus === 'overdue') {
+        query = query.eq('status', 'ของมาแล้ว').lt('due_date', today);
+      } else if (appliedFilter.focus === 'today') {
+        query = query.eq('due_date', today);
+      } else if (appliedFilter.focus === 'noCall') {
+        query = query.eq('status', 'ของมาแล้ว').eq('call_count', 0);
+      } else if (appliedFilter.focus === 'failed') {
+        query = query.gte('call_count', 3);
+      } else if (appliedFilter.focus === 'pending') {
+        query = query.eq('status', 'รอตรวจสอบ');
+      }
+
+      if (appliedFilter.q) {
+        const q = appliedFilter.q.trim();
+        query = query.or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%,id.ilike.%${q}%,model.ilike.%${q}%,bill_no.ilike.%${q}%`);
       }
 
       query = query.order('booked_at', { ascending: true }).limit(500);
@@ -432,7 +434,11 @@
       if (error) throw new Error(error.message);
 
       const items = (data || []).map(mapReservation);
-      return { items: items, total: items.length };
+      return {
+        items: items,
+        total: items.length,
+        appliedFilter: appliedFilter
+      };
     },
 
     async lookupPhone(tokenOrPhone, phone) {
@@ -459,7 +465,7 @@
         name: params.customerName,
         contact_channel: params.contactChannel || 'LINE',
         contact_id: params.contactId || '',
-        customer_group: params.customerGroup || 'ลูกค้า Walk-in'
+        customer_group: params.customerGroup || 'Walk-in'
       }, { onConflict: 'phone' });
 
       const batchGroupId = 'B_' + Date.now();
@@ -785,7 +791,7 @@
 
       await sb().from('reservations').update({
         status: 'รอสินค้า',
-        customer_group: group || 'ลูกค้า Walk-in',
+        customer_group: group || 'Walk-in',
         deposit: Number(deposit) || 0,
         bill_no: billNo || '',
         pre_order_no: pre || '',
@@ -1085,16 +1091,35 @@
     // REPORTS
     // -------------------------------------------------------------
     async reportGetDashboard(tokenOrFilter, filter) {
-      const { data: allRes } = await sb().from('reservations').select('*');
-      const rows = allRes || [];
+      const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
+      const [allRes, groupsRes, prodsRes] = await Promise.all([
+        sb().from('reservations').select('*'),
+        sb().from('customer_groups').select('name'),
+        sb().from('products').select('model')
+      ]);
+      const rows = allRes.data || [];
 
       const counts = { 'รอตรวจสอบ': 0, 'รอสินค้า': 0, 'ของมาแล้ว': 0, 'นัดรับแล้ว': 0, 'รับของแล้ว': 0, 'ยกเลิก': 0 };
       rows.forEach(r => {
         if (counts[r.status] !== undefined) counts[r.status]++;
       });
 
+      const start = f.start || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+      const end = f.end || new Date().toISOString().slice(0, 10);
+
       return {
         generatedAt: fmtDate(new Date()),
+        appliedFilter: {
+          start: start,
+          end: end,
+          group: f.group || '',
+          model: f.model || '',
+          quick: f.quick || '30d'
+        },
+        options: {
+          groups: (groupsRes.data || []).map(g => g.name),
+          models: (prodsRes.data || []).map(p => p.model)
+        },
         current: { total: rows.length, statuses: counts },
         actions: { overdue: [], today: [], noCall: [], waitLong: [], manyFails: [], quality: [] },
         products: [],
