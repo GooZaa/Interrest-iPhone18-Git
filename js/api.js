@@ -471,28 +471,41 @@
     async lookupPhone(tokenOrPhone, phone) {
       const p = optFirst(tokenOrPhone, phone);
       const clean = normPhone(p);
-      if (clean.length < 9) return { exists: false };
+      if (clean.length < 9) return { exists: false, reservations: [] };
 
       const { data: cust } = await sb().from('customers').select('*').eq('phone', clean).single();
-      if (!cust) return { exists: false };
-
       const { data: activeRes } = await sb().from('reservations').select('*').eq('phone', clean).in('status', ['รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว']);
-      return { exists: true, customer: cust, activeReservations: activeRes || [] };
+      const mappedActive = (activeRes || []).map(mapReservation);
+
+      if (!cust && mappedActive.length === 0) return { exists: false, reservations: [] };
+
+      return {
+        exists: true,
+        customer: cust ? {
+          name: cust.name || '',
+          phone: cust.phone || clean,
+          channel: cust.contact_channel || 'LINE',
+          contactId: cust.contact_id || ''
+        } : null,
+        reservations: mappedActive,
+        activeReservations: mappedActive
+      };
     },
 
     async saveReservation(tokenOrP, p) {
       const params = (typeof tokenOrP === 'object' && tokenOrP !== null) ? tokenOrP : p;
-      if (!params || !params.phone || !params.customerName || !params.devices || !params.devices.length) {
-        throw new Error('ข้อมูลไม่ครบถ้วน');
+      const custName = String(params && (params.name || params.customerName) || '').trim();
+      if (!params || !params.phone || !custName || !params.devices || !params.devices.length) {
+        throw new Error('ข้อมูลไม่ครบถ้วน: กรุณากรอกชื่อ เบอร์โทร และระบุเครื่องที่ต้องการจอง');
       }
       const cleanPhone = normPhone(params.phone);
 
       await sb().from('customers').upsert({
         phone: cleanPhone,
-        name: params.customerName,
-        contact_channel: params.contactChannel || 'LINE',
+        name: custName,
+        contact_channel: params.contactChannel || params.channel || 'LINE',
         contact_id: params.contactId || '',
-        customer_group: params.customerGroup || 'Walk-in'
+        customer_group: params.customerGroup || params.group || 'Walk-in'
       }, { onConflict: 'phone' });
 
       const batchGroupId = 'B_' + Date.now();
@@ -507,23 +520,23 @@
           id: id,
           token: token,
           phone: cleanPhone,
-          customer_name: params.customerName,
-          customer_group: params.customerGroup,
+          customer_name: custName,
+          customer_group: params.customerGroup || params.group || 'Walk-in',
           model: d.model,
           capacity: d.capacity,
           color: d.color,
           alternate_colors: Array.isArray(d.altColors) ? d.altColors.join(', ') : '',
           alternate_capacities: Array.isArray(d.altCaps) ? d.altCaps.join(', ') : '',
-          lock_supplier: !!params.lockSupplier,
-          specified_supplier: params.specifiedSupplier || null,
-          campaign: params.campaign || null,
+          lock_supplier: !!(d.supplierLock || params.lockSupplier),
+          specified_supplier: d.supplier || params.specifiedSupplier || null,
+          campaign: d.promo || params.campaign || null,
           deposit: Number(d.deposit) || 0,
           bill_no: d.billNo || params.billNo || '',
           deposit_date: d.deposit ? new Date().toISOString().slice(0, 10) : null,
           status: 'รอสินค้า',
           source: 'staff',
           staff_name: params.staffName || 'Staff',
-          extra_notes: params.extraNotes || '',
+          extra_notes: params.extraNotes || params.note || '',
           price_at_booking: Number(d.price) || 0,
           batch_group_id: batchGroupId,
           booked_at: new Date().toISOString(),
@@ -542,7 +555,12 @@
 
       await sb().from('reservations').insert(reservations);
       await sb().from('notes').insert(notes);
-      return { ok: true, ids: reservations.map(r => r.id) };
+      return {
+        ok: true,
+        count: reservations.length,
+        devices: reservations.map(r => ({ id: r.id, token: r.token })),
+        ids: reservations.map(r => r.id)
+      };
     },
 
     async getReservation(tokenOrId, id) {
@@ -550,7 +568,23 @@
       const { data, error } = await sb().from('reservations').select('*').eq('id', resId).single();
       if (error || !data) throw new Error('ไม่พบข้อมูลรายการจอง');
 
-      const { data: notes } = await sb().from('notes').select('*').eq('reservation_id', resId).order('created_at', { ascending: false });
+      const [{ data: notes }, { data: siblingRows }] = await Promise.all([
+        sb().from('notes').select('*').eq('reservation_id', resId).order('created_at', { ascending: false }),
+        sb().from('reservations').select('*').eq('phone', data.phone).neq('id', data.id).not('status', 'in', '("ยกเลิก")')
+      ]);
+
+      let depositBatchCount = 1;
+      let depositBatchTotal = Number(data.deposit) || 0;
+      if (data.bill_no || data.batch_group_id) {
+        let bQuery = sb().from('reservations').select('deposit');
+        if (data.bill_no) bQuery = bQuery.eq('bill_no', data.bill_no);
+        else bQuery = bQuery.eq('batch_group_id', data.batch_group_id);
+        const { data: bData } = await bQuery;
+        if (bData && bData.length > 1) {
+          depositBatchCount = bData.length;
+          depositBatchTotal = bData.reduce((acc, row) => acc + (Number(row.deposit) || 0), 0);
+        }
+      }
 
       return {
         id: data.id,
@@ -564,7 +598,8 @@
         color: data.color,
         altColors: (data.alternate_colors || '').split(',').map(s => s.trim()).filter(Boolean),
         altCaps: (data.alternate_capacities || '').split(',').map(s => s.trim()).filter(Boolean),
-        lockSupplier: data.lock_supplier,
+        lockSupplier: !!data.lock_supplier,
+        supplierLock: !!data.lock_supplier,
         supplier: data.specified_supplier,
         promo: data.campaign,
         deposit: data.deposit,
@@ -580,9 +615,13 @@
         callCount: data.call_count || 0,
         updatedAt: fmtDate(data.updated_at),
         updatedBy: data.updated_by,
-        preOrder: data.pre_order_no,
-        preBooking: data.pre_booking_no,
-        extraNotes: data.extra_notes,
+        preOrder: data.pre_order_no || '',
+        preBooking: data.pre_booking_no || '',
+        extraNotes: data.extra_notes || '',
+        additionalNote: data.extra_notes || '',
+        siblings: (siblingRows || []).map(mapReservation),
+        depositBatchCount: depositBatchCount,
+        depositBatchTotal: depositBatchTotal,
         lastCalledAt: data.last_called_at ? fmtDate(data.last_called_at) : '',
         urgent: !!data.is_urgent,
         isUrgent: !!data.is_urgent,
@@ -613,7 +652,7 @@
 
     async editReservation(tokenOrId, idOrPatch, patch) {
       let id, dataPatch;
-      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in')) {
+      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in' || isFinite(Number(tokenOrId.split('.')[0])))) {
         id = idOrPatch;
         dataPatch = patch;
       } else {
@@ -621,8 +660,35 @@
         dataPatch = idOrPatch;
       }
 
-      dataPatch.updated_at = new Date().toISOString();
-      const { error } = await sb().from('reservations').update(dataPatch).eq('id', id);
+      const updateData = {
+        updated_at: new Date().toISOString()
+      };
+      if (dataPatch.model !== undefined) updateData.model = dataPatch.model;
+      if (dataPatch.capacity !== undefined) updateData.capacity = dataPatch.capacity;
+      if (dataPatch.color !== undefined) updateData.color = dataPatch.color;
+      if (dataPatch.group !== undefined || dataPatch.customer_group !== undefined) {
+        updateData.customer_group = dataPatch.group || dataPatch.customer_group;
+      }
+      if (dataPatch.preOrder !== undefined || dataPatch.pre_order_no !== undefined) {
+        updateData.pre_order_no = dataPatch.preOrder || dataPatch.pre_order_no;
+      }
+      if (dataPatch.preBooking !== undefined || dataPatch.pre_booking_no !== undefined) {
+        updateData.pre_booking_no = dataPatch.preBooking || dataPatch.pre_booking_no;
+      }
+      if (dataPatch.supplierLock !== undefined || dataPatch.lock_supplier !== undefined) {
+        updateData.lock_supplier = !!(dataPatch.supplierLock || dataPatch.lock_supplier);
+      }
+      if (dataPatch.promo !== undefined || dataPatch.campaign !== undefined) {
+        updateData.campaign = dataPatch.promo || dataPatch.campaign || null;
+      }
+      if (dataPatch.billNo !== undefined || dataPatch.bill_no !== undefined) {
+        updateData.bill_no = dataPatch.billNo || dataPatch.bill_no || '';
+      }
+      if (dataPatch.deposit !== undefined) {
+        updateData.deposit = Number(dataPatch.deposit) || 0;
+      }
+
+      const { error } = await sb().from('reservations').update(updateData).eq('id', id);
       if (error) throw new Error(error.message);
 
       await sb().from('notes').insert({
@@ -637,7 +703,13 @@
 
     async markArrived(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      const dueDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      let initDays = 3;
+      try {
+        const { data: cfg } = await sb().from('system_configs').select('value').eq('key', 'วันครบกำหนดเริ่มต้น').single();
+        if (cfg && cfg.value) initDays = Number(cfg.value) || 3;
+      } catch(e){}
+
+      const dueDate = new Date(Date.now() + initDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const { error } = await sb().from('reservations').update({
         status: 'ของมาแล้ว',
         due_date: dueDate,
@@ -648,7 +720,39 @@
       await sb().from('notes').insert({
         reservation_id: resId,
         author: 'Staff',
-        message: 'เปลี่ยนสถานะเป็น: ของมาแล้ว (กำหนดรับภายใน 5 วัน)',
+        message: 'เปลี่ยนสถานะเป็น: ของมาแล้ว (กำหนดรับภายใน ' + initDays + ' วัน)',
+        source: 'auto',
+        created_at: new Date().toISOString()
+      });
+      return true;
+    },
+    async cancelByCustomer(tokenOrId, idOrReason, reasonOrOther, other) {
+      let id, rsn, oth;
+      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in' || isFinite(Number(tokenOrId.split('.')[0])))) {
+        id = idOrReason; rsn = reasonOrOther; oth = other;
+      } else {
+        id = tokenOrId; rsn = idOrReason; oth = reasonOrOther;
+      }
+
+      await sb().from('reservations').update({
+        status: 'ยกเลิก',
+        updated_at: new Date().toISOString()
+      }).eq('id', id);
+
+      const msg = 'ลูกค้ายกเลิก: ' + (rsn || 'ไม่ระบุ') + (oth ? ' (' + oth + ')' : '');
+      await sb().from('notes').insert({
+        reservation_id: id,
+        author: 'Staff',
+        message: msg,
+        source: 'manual',
+        created_at: new Date().toISOString()
+      });
+      return true;
+    },
+    async markLabeled(tokenOrId, id) {
+      const resId = optFirst(tokenOrId, id);
+      await sb().from('reservations').update({ is_labeled: true }).eq('id', resId);
+      return { ok: true };
         source: 'auto',
         created_at: new Date().toISOString()
       });
@@ -657,7 +761,7 @@
 
     async logCallResult(tokenOrId, idOrResult, resultOrNote, note) {
       let id, res, ntext;
-      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in')) {
+      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in' || isFinite(Number(tokenOrId.split('.')[0])))) {
         id = idOrResult; res = resultOrNote; ntext = note;
       } else {
         id = tokenOrId; res = idOrResult; ntext = resultOrNote;
@@ -672,7 +776,8 @@
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
-      const msg = 'โทรติดตามครั้งที่ ' + calls + ': ' + (res || 'ติดต่อสำเร็จ') + (ntext ? ' (' + ntext + ')' : '');
+      const label = (res === 'busy' ? 'ติดต่อไม่ได้' : (res === 'ok' ? 'ยืนยันนัดรับตามเดิม' : (res || 'ติดต่อสำเร็จ')));
+      const msg = 'บันทึกผลการโทร (ครั้งที่ ' + calls + '): ' + label + (ntext ? ' — ' + ntext : '');
       await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
@@ -721,30 +826,41 @@
 
     async setAppointment(tokenOrId, idOrDt, dtOrForce, force) {
       let id, dt;
-      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in')) {
+      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in' || isFinite(Number(tokenOrId.split('.')[0])))) {
         id = idOrDt; dt = dtOrForce;
       } else {
         id = tokenOrId; dt = idOrDt;
       }
 
       const apptDate = new Date(dt);
-      const dueDate = new Date(apptDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      let postDueDays = 3;
+      try {
+        const { data: cfg } = await sb().from('system_configs').select('value').eq('key', 'วันครบกำหนดหลังนัด').single();
+        if (cfg && cfg.value) postDueDays = Number(cfg.value) || 3;
+      } catch(e){}
+
+      const dueDate = new Date(apptDate.getTime() + postDueDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+      const { data: cur } = await sb().from('reservations').select('status, appointment_at, reschedule_count').eq('id', id).single();
+      const isReschedule = cur && cur.status === 'นัดรับแล้ว' && cur.appointment_at;
+      const rescheduleCount = ((cur && cur.reschedule_count) || 0) + (isReschedule ? 1 : 0);
 
       await sb().from('reservations').update({
         status: 'นัดรับแล้ว',
         appointment_at: apptDate.toISOString(),
         due_date: dueDate,
+        reschedule_count: rescheduleCount,
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
       await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
-        message: 'บันทึกวันนัดรับสินค้า: ' + fmtDate(apptDate),
+        message: 'บันทึกวันนัดรับสินค้า: ' + fmtDate(apptDate) + ' · ครบกำหนดรับ ' + fmtDay(dueDate) + (isReschedule ? ' (เลื่อนนัดครั้งที่ ' + rescheduleCount + ')' : ''),
         source: 'manual',
         created_at: new Date().toISOString()
       });
-      return true;
+      return { ok: true, dueDate: fmtDay(dueDate) };
     },
 
     async releaseReservation(tokenOrId, idOrReason, reasonOrOther, other) {
@@ -842,6 +958,16 @@
 
     async getFollowUpList() {
       const today = new Date().toISOString().slice(0, 10);
+      let waitLongDays = 14;
+      let callAlertThreshold = 3;
+      try {
+        const { data: cfgs } = await sb().from('system_configs').select('key, value');
+        (cfgs || []).forEach(c => {
+          if (c.key === 'วันรอนาน') waitLongDays = Number(c.value) || 14;
+          if (c.key === 'ครั้งโทรไม่ติดแล้วเตือน') callAlertThreshold = Number(c.value) || 3;
+        });
+      } catch(e){}
+
       const [overdueRes, urgentRes, pendingRes, allActiveRes] = await Promise.all([
         sb().from('reservations').select('*').eq('status', 'ของมาแล้ว').lt('due_date', today),
         sb().from('reservations').select('*').eq('is_urgent', true).neq('status', 'รับของแล้ว').neq('status', 'ยกเลิก'),
@@ -855,9 +981,13 @@
 
       const allRows = allActiveRes.data || [];
       const noCallItems = allRows.filter(r => r.status === 'ของมาแล้ว' && !r.call_count).map(mapReservation);
-      const manyFailsItems = allRows.filter(r => (r.call_count || 0) >= 3).map(mapReservation);
+      const manyFailsItems = allRows.filter(r => (r.call_count || 0) >= callAlertThreshold).map(mapReservation);
       const dueTodayItems = allRows.filter(r => r.due_date === today).map(mapReservation);
-      const waitLongItems = allRows.filter(r => r.status === 'รอสินค้า' && daysBetween(new Date(r.booked_at), new Date()) > 7).map(mapReservation);
+      const waitLongItems = allRows.filter(r => {
+        if (r.status !== 'รอสินค้า') return false;
+        const bd = parseBookingDate(r);
+        return bd && !isNaN(bd.getTime()) && daysBetween(bd, new Date()) >= waitLongDays;
+      }).map(mapReservation);
 
       return {
         overdueCount: overdueItems.length,
@@ -883,6 +1013,16 @@
       }).eq('status', 'รอตรวจสอบ').select('id');
 
       if (error) throw new Error(error.message);
+      if (data && data.length > 0) {
+        const notes = data.map(r => ({
+          reservation_id: r.id,
+          author: 'Staff',
+          message: 'อนุมัติการลงทะเบียนและนำเข้าคิวรอสินค้า (อนุมัติทั้งหมด)',
+          source: 'auto',
+          created_at: new Date().toISOString()
+        }));
+        await sb().from('notes').insert(notes);
+      }
       return { ok: true, count: (data || []).length };
     },
 
@@ -983,6 +1123,8 @@
         billNo: r.bill_no,
         dueDate: r.due_date ? fmtDay(r.due_date) : '',
         appt: r.appointment_at ? fmtDate(r.appointment_at) : '',
+        preOrder: r.pre_order_no || '',
+        preBooking: r.pre_booking_no || '',
         status: r.status,
         price: r.price_at_booking,
         supplier: r.specified_supplier,
@@ -1010,6 +1152,8 @@
         billNo: r.bill_no,
         dueDate: r.due_date ? fmtDay(r.due_date) : '',
         appt: r.appointment_at ? fmtDate(r.appointment_at) : '',
+        preOrder: r.pre_order_no || '',
+        preBooking: r.pre_booking_no || '',
         status: r.status,
         price: r.price_at_booking,
         supplier: r.specified_supplier,
@@ -1121,6 +1265,8 @@
           model: r.model,
           capacity: r.capacity,
           color: r.color,
+          urgent: !!r.is_urgent,
+          isUrgent: !!r.is_urgent,
           bookedAt: fmtDate(r.booked_at),
           matchType: 'ตรงตามที่ต้องการ'
         })),
@@ -1132,6 +1278,8 @@
           model: r.model,
           capacity: r.capacity,
           color: r.color,
+          urgent: !!r.is_urgent,
+          isUrgent: !!r.is_urgent,
           bookedAt: fmtDate(r.booked_at),
           matchType: 'รับสีสำรองได้'
         }))
@@ -1162,7 +1310,9 @@
       return true;
     },
 
-    async resetStockLot() { return { ok: true }; },
+    async resetStockLot(supplier, model, cap, col, q) {
+      return { ok: true, declared: Number(q) || 0, remaining: Number(q) || 0 };
+    },
 
     // -------------------------------------------------------------
     // SETTINGS (ตั้งค่า)
