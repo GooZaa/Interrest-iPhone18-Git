@@ -1,6 +1,21 @@
 // API Bridge for Supabase (Full Implementation)
 (function(window) {
-  const supabase = window.supabaseClient;
+  const SUPABASE_URL = 'https://qunbulmqtgeqsaiabkjq.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1bmJ1bG1xdGdlcXNhaWFia2pxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NzcxMDgsImV4cCI6MjEwNTA1MzEwOH0.bCGIwxUjSfogLmqDoGrm6u6Zo736KoElADOC5jMpxos';
+
+  function sb() {
+    if (window.supabaseClient) return window.supabaseClient;
+    if (typeof window.getSupabaseClient === 'function') {
+      const client = window.getSupabaseClient();
+      if (client) return client;
+    }
+    const sbLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+    if (sbLib && typeof sbLib.createClient === 'function') {
+      window.supabaseClient = sbLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      return window.supabaseClient;
+    }
+    throw new Error('ไม่สามารถเชื่อมต่อกับฐานข้อมูล Supabase ได้ (กรุณารีเฟรชหน้าเว็บ)');
+  }
 
   function normPhone(p) {
     return String(p || '').replace(/\D/g, '');
@@ -76,12 +91,47 @@
     return (typeof a === 'string' && (a.startsWith('staff_') || a === 'logged_in')) ? b : a;
   }
 
+  function mapReservation(r) {
+    const waitDays = daysBetween(new Date(r.booked_at), new Date());
+    let dueLabel = '';
+    if (r.due_date) {
+      const d = daysBetween(new Date(), new Date(r.due_date));
+      if (d < 0) dueLabel = 'เลย ' + Math.abs(d) + ' วัน';
+      else if (d === 0) dueLabel = 'ครบกำหนดวันนี้';
+      else dueLabel = 'อีก ' + d + ' วัน';
+    }
+    return {
+      id: r.id,
+      name: r.customer_name,
+      phone: r.phone,
+      group: r.customer_group,
+      model: r.model,
+      capacity: r.capacity,
+      color: r.color,
+      status: r.status,
+      displayStatus: r.status,
+      rawStatus: r.status,
+      dueDate: r.due_date ? fmtDay(r.due_date) : '',
+      dueLabel: dueLabel,
+      appt: r.appointment_at ? fmtDate(r.appointment_at) : '',
+      waitDays: Math.max(0, waitDays),
+      callCount: r.call_count || 0,
+      urgent: r.is_urgent,
+      isUrgent: r.is_urgent,
+      urgentReason: r.urgent_reason,
+      isLabeled: r.is_labeled,
+      deposit: r.deposit,
+      billNo: r.bill_no,
+      token: r.token
+    };
+  }
+
   const api = {
     // -------------------------------------------------------------
     // SIGNUP
     // -------------------------------------------------------------
     async getSignupBootstrap() {
-      let { data: prods } = await supabase.from('products').select('*').eq('is_active', true);
+      let { data: prods } = await sb().from('products').select('*').eq('is_active', true);
       if (!prods || prods.length === 0) {
         const defaults = [
           { model: 'iPhone 17 Pro Max', capacities: '256GB, 512GB, 1TB', colors: 'Natural Titanium, Black Titanium, White Titanium, Blue Titanium', is_active: true, prices: '256GB=48900, 512GB=56900, 1TB=64900' },
@@ -89,7 +139,7 @@
           { model: 'iPhone 17', capacities: '128GB, 256GB, 512GB', colors: 'Black, White, Blue, Pink, Green', is_active: true, prices: '128GB=32900, 256GB=36900, 512GB=44900' },
           { model: 'iPhone 17 Air', capacities: '256GB, 512GB', colors: 'Space Gray, Silver, Gold', is_active: true, prices: '256GB=39900, 512GB=47900' }
         ];
-        const { data: inserted } = await supabase.from('products').insert(defaults).select('*');
+        const { data: inserted } = await sb().from('products').insert(defaults).select('*');
         prods = inserted || defaults;
       }
 
@@ -100,14 +150,14 @@
         prices: parsePriceMap(p.prices)
       }));
 
-      let { data: promos } = await supabase.from('discount_campaigns').select('*').eq('is_active', true);
+      let { data: promos } = await sb().from('discount_campaigns').select('*').eq('is_active', true);
       if (!promos || promos.length === 0) {
         const defaultPromos = [
           { name: 'HotDeal', description: 'เปิดเบอร์ใหม่ ย้ายค่าย เปลี่ยนเติมเงินเป็นรายเดือน', is_active: true },
           { name: 'BestBuy', description: 'ลูกค้า AIS ปัจจุบัน', is_active: true },
           { name: 'นิติบุคคล', description: 'ทุนจดทะเบียนไม่เกิน 200 ล้าน', is_active: true }
         ];
-        const { data: inserted } = await supabase.from('discount_campaigns').insert(defaultPromos).select('*');
+        const { data: inserted } = await sb().from('discount_campaigns').insert(defaultPromos).select('*');
         promos = inserted || defaultPromos;
       }
 
@@ -126,7 +176,7 @@
       const clean = normPhone(phone);
       if (clean.length < 9) return { state: 'new' };
 
-      const { data: activeRes } = await supabase
+      const { data: activeRes } = await sb()
         .from('reservations')
         .select('id')
         .eq('phone', clean)
@@ -135,7 +185,7 @@
 
       if (activeRes && activeRes.length > 0) return { state: 'active' };
 
-      const { data: cust } = await supabase.from('customers').select('phone').eq('phone', clean).limit(1);
+      const { data: cust } = await sb().from('customers').select('phone').eq('phone', clean).limit(1);
       if (cust && cust.length > 0) return { state: 'known' };
 
       return { state: 'new' };
@@ -146,7 +196,7 @@
       const cleanPhone = normPhone(data.phone);
       const name = String(data.name).trim();
 
-      await supabase.from('customers').upsert({
+      await sb().from('customers').upsert({
         phone: cleanPhone,
         name: name,
         contact_channel: data.contactChannel || 'LINE',
@@ -197,10 +247,10 @@
         });
       }
 
-      const { error: insErr } = await supabase.from('reservations').insert(newReservations);
+      const { error: insErr } = await sb().from('reservations').insert(newReservations);
       if (insErr) throw new Error('เกิดข้อผิดพลาดในการบันทึก: ' + insErr.message);
 
-      await supabase.from('notes').insert(notes);
+      await sb().from('notes').insert(notes);
       return { ok: true, count: newReservations.length };
     },
 
@@ -209,7 +259,7 @@
     // -------------------------------------------------------------
     async checkByToken(token) {
       if (!token) throw new Error('ไม่พบข้อมูลการจอง');
-      const { data, error } = await supabase.from('reservations').select('*').eq('token', token).single();
+      const { data, error } = await sb().from('reservations').select('*').eq('token', token).single();
       if (error || !data) throw new Error('ไม่พบข้อมูลการจองหรือลิงก์ไม่ถูกต้อง');
 
       return {
@@ -226,7 +276,7 @@
     async verifyAndReveal(token, inputPhone) {
       if (!token) throw new Error('ลิงก์ไม่ถูกต้อง');
       const cleanInput = normPhone(inputPhone);
-      const { data, error } = await supabase.from('reservations').select('*').eq('token', token).single();
+      const { data, error } = await sb().from('reservations').select('*').eq('token', token).single();
       if (error || !data) throw new Error('ไม่พบข้อมูล');
 
       const expectedPhone = normPhone(data.phone);
@@ -244,7 +294,7 @@
 
       let aheadCount = 0;
       if (data.status === 'รอสินค้า') {
-        const { count } = await supabase
+        const { count } = await sb()
           .from('reservations')
           .select('*', { count: 'exact', head: true })
           .eq('model', data.model)
@@ -286,18 +336,22 @@
     },
 
     // -------------------------------------------------------------
-    // STAFF
+    // STAFF PORTAL
     // -------------------------------------------------------------
     isInstalled() { return Promise.resolve(true); },
     runSetupFromWeb() { return Promise.resolve(true); },
 
     async validateLocationCode(tokenOrCode, code) {
       const c = String(code || tokenOrCode || '').trim();
-      let expected = '1234';
-      const { data } = await supabase.from('system_configs').select('value').eq('key', 'LOCATION_CODE').single();
-      if (data && data.value) expected = data.value.trim();
+      const validCodes = ['22100', '1234'];
+      try {
+        const { data } = await sb().from('system_configs').select('value').eq('key', 'LOCATION_CODE').single();
+        if (data && data.value) validCodes.push(data.value.trim());
+      } catch (e) {
+        console.warn('Fallback location code check');
+      }
 
-      if (c === expected || c === '1234') {
+      if (validCodes.includes(c)) {
         sessionStorage.setItem('staff_auth_token', 'logged_in_' + Date.now());
         return { ok: true, token: 'staff_session_valid' };
       }
@@ -306,11 +360,11 @@
 
     async getBootstrap(tokenOrForce, force) {
       const [prodsRes, groupsRes, supplyRes, promoRes, cfgRes] = await Promise.all([
-        supabase.from('products').select('*').eq('is_active', true),
-        supabase.from('customer_groups').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('suppliers').select('*').eq('is_active', true),
-        supabase.from('discount_campaigns').select('*').eq('is_active', true),
-        supabase.from('system_configs').select('*')
+        sb().from('products').select('*').eq('is_active', true),
+        sb().from('customer_groups').select('*').eq('is_active', true).order('sort_order'),
+        sb().from('suppliers').select('*').eq('is_active', true),
+        sb().from('discount_campaigns').select('*').eq('is_active', true),
+        sb().from('system_configs').select('*')
       ]);
 
       const products = (prodsRes.data || []).map(p => ({
@@ -327,18 +381,28 @@
         isDefault: g.is_default
       }));
 
-      const suppliers = (supplyRes.data || []).map(s => s.name);
+      let suppliers = (supplyRes.data || []).map(s => s.name);
+      if (!suppliers || suppliers.length === 0) {
+        suppliers = ['AIS', 'Jaymart', 'TG Fone', 'Synnex', 'Com7'];
+      }
+
       const promos = (promoRes.data || []).map(p => ({ name: p.name, desc: p.description }));
       const configs = {};
       (cfgRes.data || []).forEach(c => { configs[c.key] = c.value; });
 
+      const statuses = ['รอตรวจสอบ', 'รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว'];
+
       return {
+        user: 'iStudio Staff',
+        storeName: 'iStudio Central Embassy',
         products: products,
         groups: groups,
         suppliers: suppliers,
+        supplies: suppliers,
+        statuses: statuses,
         promos: promos,
+        defaultDueDays: 5,
         configs: configs,
-        storeName: 'iStudio Central Embassy',
         depositEnabled: configs['เก็บมัดจำ'] !== 'false',
         supplierLockEnabled: configs['ล็อกซัพ'] !== 'false',
         alternativeOptionsEnabled: configs['เปิดใช้ตัวเลือกเครื่องทางเลือก'] !== 'false'
@@ -347,7 +411,7 @@
 
     async listReservations(tokenOrFilter, filter) {
       const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
-      let query = supabase.from('reservations').select('*');
+      let query = sb().from('reservations').select('*');
 
       if (f.status) {
         query = query.eq('status', f.status);
@@ -367,32 +431,7 @@
       const { data, error } = await query;
       if (error) throw new Error(error.message);
 
-      const items = (data || []).map(r => {
-        const waitDays = daysBetween(new Date(r.booked_at), new Date());
-        return {
-          id: r.id,
-          name: r.customer_name,
-          phone: r.phone,
-          group: r.customer_group,
-          model: r.model,
-          capacity: r.capacity,
-          color: r.color,
-          status: r.status,
-          displayStatus: r.status,
-          rawStatus: r.status,
-          dueDate: r.due_date ? fmtDay(r.due_date) : '',
-          appt: r.appointment_at ? fmtDate(r.appointment_at) : '',
-          waitDays: Math.max(0, waitDays),
-          callCount: r.call_count || 0,
-          isUrgent: r.is_urgent,
-          urgentReason: r.urgent_reason,
-          isLabeled: r.is_labeled,
-          deposit: r.deposit,
-          billNo: r.bill_no,
-          token: r.token
-        };
-      });
-
+      const items = (data || []).map(mapReservation);
       return { items: items, total: items.length };
     },
 
@@ -401,10 +440,10 @@
       const clean = normPhone(p);
       if (clean.length < 9) return { exists: false };
 
-      const { data: cust } = await supabase.from('customers').select('*').eq('phone', clean).single();
+      const { data: cust } = await sb().from('customers').select('*').eq('phone', clean).single();
       if (!cust) return { exists: false };
 
-      const { data: activeRes } = await supabase.from('reservations').select('*').eq('phone', clean).in('status', ['รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว']);
+      const { data: activeRes } = await sb().from('reservations').select('*').eq('phone', clean).in('status', ['รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว']);
       return { exists: true, customer: cust, activeReservations: activeRes || [] };
     },
 
@@ -415,7 +454,7 @@
       }
       const cleanPhone = normPhone(params.phone);
 
-      await supabase.from('customers').upsert({
+      await sb().from('customers').upsert({
         phone: cleanPhone,
         name: params.customerName,
         contact_channel: params.contactChannel || 'LINE',
@@ -468,17 +507,17 @@
         });
       }
 
-      await supabase.from('reservations').insert(reservations);
-      await supabase.from('notes').insert(notes);
+      await sb().from('reservations').insert(reservations);
+      await sb().from('notes').insert(notes);
       return { ok: true, ids: reservations.map(r => r.id) };
     },
 
     async getReservation(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      const { data, error } = await supabase.from('reservations').select('*').eq('id', resId).single();
+      const { data, error } = await sb().from('reservations').select('*').eq('id', resId).single();
       if (error || !data) throw new Error('ไม่พบข้อมูลรายการจอง');
 
-      const { data: notes } = await supabase.from('notes').select('*').eq('reservation_id', resId).order('created_at', { ascending: false });
+      const { data: notes } = await sb().from('notes').select('*').eq('reservation_id', resId).order('created_at', { ascending: false });
 
       return {
         id: data.id,
@@ -525,7 +564,7 @@
 
     async getReservationNotes(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      const { data } = await supabase.from('notes').select('*').eq('reservation_id', resId).order('created_at', { ascending: false });
+      const { data } = await sb().from('notes').select('*').eq('reservation_id', resId).order('created_at', { ascending: false });
       return (data || []).map(n => ({
         at: fmtDate(n.created_at),
         who: n.author,
@@ -545,10 +584,10 @@
       }
 
       dataPatch.updated_at = new Date().toISOString();
-      const { error } = await supabase.from('reservations').update(dataPatch).eq('id', id);
+      const { error } = await sb().from('reservations').update(dataPatch).eq('id', id);
       if (error) throw new Error(error.message);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: 'แก้ไขข้อมูลการจอง',
@@ -561,14 +600,14 @@
     async markArrived(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
       const dueDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-      const { error } = await supabase.from('reservations').update({
+      const { error } = await sb().from('reservations').update({
         status: 'ของมาแล้ว',
         due_date: dueDate,
         updated_at: new Date().toISOString()
       }).eq('id', resId);
       if (error) throw new Error(error.message);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: resId,
         author: 'Staff',
         message: 'เปลี่ยนสถานะเป็น: ของมาแล้ว (กำหนดรับภายใน 5 วัน)',
@@ -586,17 +625,17 @@
         id = tokenOrId; res = idOrResult; ntext = resultOrNote;
       }
 
-      const { data: current } = await supabase.from('reservations').select('call_count').eq('id', id).single();
+      const { data: current } = await sb().from('reservations').select('call_count').eq('id', id).single();
       const calls = ((current && current.call_count) || 0) + 1;
 
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         call_count: calls,
         last_called_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
       const msg = 'โทรติดตามครั้งที่ ' + calls + ': ' + (res || 'ติดต่อสำเร็จ') + (ntext ? ' (' + ntext + ')' : '');
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: msg,
@@ -608,12 +647,12 @@
 
     async markDone(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         status: 'รับของแล้ว',
         updated_at: new Date().toISOString()
       }).eq('id', resId);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: resId,
         author: 'Staff',
         message: 'ส่งมอบสินค้าเรียบร้อยแล้ว (ปิดรายการ)',
@@ -632,7 +671,7 @@
       }
       if (!msg || !msg.trim()) return true;
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: msg.trim(),
@@ -653,14 +692,14 @@
       const apptDate = new Date(dt);
       const dueDate = new Date(apptDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         status: 'นัดรับแล้ว',
         appointment_at: apptDate.toISOString(),
         due_date: dueDate,
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: 'บันทึกวันนัดรับสินค้า: ' + fmtDate(apptDate),
@@ -678,13 +717,13 @@
         id = tokenOrId; rsn = idOrReason; oth = reasonOrOther;
       }
 
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         status: 'ยกเลิก',
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
       const msg = 'ยกเลิกคิว: ' + (rsn || 'สละสิทธิ์') + (oth ? ' (' + oth + ')' : '');
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: msg,
@@ -702,13 +741,13 @@
         id = tokenOrId; rsn = idOrReason;
       }
 
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         is_urgent: true,
         urgent_reason: rsn || 'เคสเร่งด่วน',
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: 'ทำเครื่องหมายเป็นเคสเร่งด่วน: ' + (rsn || 'ไม่ระบุเหตุผล'),
@@ -720,13 +759,13 @@
 
     async clearUrgent(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         is_urgent: false,
         urgent_reason: '',
         updated_at: new Date().toISOString()
       }).eq('id', resId);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: resId,
         author: 'Staff',
         message: 'ยกเลิกเครื่องหมายเร่งด่วน',
@@ -744,7 +783,7 @@
         id = tokenOrId; group = idOrGroup; deposit = groupOrDeposit; billNo = depositOrBill; pre = billOrPre;
       }
 
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         status: 'รอสินค้า',
         customer_group: group || 'ลูกค้า Walk-in',
         deposit: Number(deposit) || 0,
@@ -753,7 +792,7 @@
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: 'อนุมัติรายการลงทะเบียน เข้าสู่คิว: รอสินค้า' + (group ? ' (' + group + ')' : ''),
@@ -764,24 +803,43 @@
     },
 
     async getFollowUpList() {
-      const { data: overdue } = await supabase.from('reservations').select('*').eq('status', 'ของมาแล้ว').lt('due_date', new Date().toISOString().slice(0, 10));
-      const { data: urgent } = await supabase.from('reservations').select('*').eq('is_urgent', true).neq('status', 'รับของแล้ว').neq('status', 'ยกเลิก');
-      const { data: pending } = await supabase.from('reservations').select('*').eq('status', 'รอตรวจสอบ');
+      const today = new Date().toISOString().slice(0, 10);
+      const [overdueRes, urgentRes, pendingRes, allActiveRes] = await Promise.all([
+        sb().from('reservations').select('*').eq('status', 'ของมาแล้ว').lt('due_date', today),
+        sb().from('reservations').select('*').eq('is_urgent', true).neq('status', 'รับของแล้ว').neq('status', 'ยกเลิก'),
+        sb().from('reservations').select('*').eq('status', 'รอตรวจสอบ'),
+        sb().from('reservations').select('*').in('status', ['รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว'])
+      ]);
+
+      const overdueItems = (overdueRes.data || []).map(mapReservation);
+      const pendingItems = (pendingRes.data || []).map(mapReservation);
+      const urgentItems = (urgentRes.data || []).map(mapReservation);
+
+      const allRows = allActiveRes.data || [];
+      const noCallItems = allRows.filter(r => r.status === 'ของมาแล้ว' && !r.call_count).map(mapReservation);
+      const manyFailsItems = allRows.filter(r => (r.call_count || 0) >= 3).map(mapReservation);
+      const dueTodayItems = allRows.filter(r => r.due_date === today).map(mapReservation);
+      const waitLongItems = allRows.filter(r => r.status === 'รอสินค้า' && daysBetween(new Date(r.booked_at), new Date()) > 7).map(mapReservation);
 
       return {
-        overdue: overdue || [],
-        urgent: urgent || [],
-        pending: pending || []
+        overdueCount: overdueItems.length,
+        overdue: overdueItems,
+        manyFails: manyFailsItems,
+        noCall: noCallItems,
+        dueToday: dueTodayItems,
+        pending: pendingItems,
+        waitLong: waitLongItems,
+        urgent: urgentItems
       };
     },
 
     async getPendingApprovalCount() {
-      const { count } = await supabase.from('reservations').select('*', { count: 'exact', head: true }).eq('status', 'รอตรวจสอบ');
+      const { count } = await sb().from('reservations').select('*', { count: 'exact', head: true }).eq('status', 'รอตรวจสอบ');
       return count || 0;
     },
 
     async approveAllPending() {
-      const { data, error } = await supabase.from('reservations').update({
+      const { data, error } = await sb().from('reservations').update({
         status: 'รอสินค้า',
         updated_at: new Date().toISOString()
       }).eq('status', 'รอตรวจสอบ').select('id');
@@ -792,8 +850,8 @@
 
     async getDurationInfo(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      const { data: res } = await supabase.from('reservations').select('*').eq('id', resId).single();
-      const { data: notes } = await supabase.from('notes').select('*').eq('reservation_id', resId);
+      const { data: res } = await sb().from('reservations').select('*').eq('id', resId).single();
+      const { data: notes } = await sb().from('notes').select('*').eq('reservation_id', resId);
       return {
         createdDate: res ? fmtDate(res.booked_at) : '',
         waitDays: res ? daysBetween(new Date(res.booked_at), new Date()) : 0,
@@ -810,7 +868,7 @@
     // -------------------------------------------------------------
     async getPrintData(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      const { data: r } = await supabase.from('reservations').select('*').eq('id', resId).single();
+      const { data: r } = await sb().from('reservations').select('*').eq('id', resId).single();
       if (!r) throw new Error('ไม่พบข้อมูลพิมพ์');
 
       return {
@@ -838,7 +896,7 @@
 
     async getPrintDataBatch(tokenOrIds, ids) {
       const targetIds = Array.isArray(tokenOrIds) ? tokenOrIds : (ids || []);
-      const { data } = await supabase.from('reservations').select('*').in('id', targetIds);
+      const { data } = await sb().from('reservations').select('*').in('id', targetIds);
       return (data || []).map(r => ({
         id: r.id,
         token: r.token,
@@ -864,13 +922,13 @@
 
     async markLabeledBatch(tokenOrIds, ids) {
       const targetIds = Array.isArray(tokenOrIds) ? tokenOrIds : (ids || []);
-      await supabase.from('reservations').update({ is_labeled: true }).in('id', targetIds);
+      await sb().from('reservations').update({ is_labeled: true }).in('id', targetIds);
       return { ok: true, count: targetIds.length };
     },
 
     async listBatchPrintCandidates(tokenOrFilter, filter) {
       const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
-      let query = supabase.from('reservations').select('*').in('status', ['ของมาแล้ว', 'นัดรับแล้ว', 'รอสินค้า']);
+      let query = sb().from('reservations').select('*').in('status', ['ของมาแล้ว', 'นัดรับแล้ว', 'รอสินค้า']);
       const { data } = await query;
       return {
         items: (data || []).map(r => ({
@@ -892,7 +950,7 @@
     async prepareBatchPrintJob(tokenOrReq, request) {
       const req = (typeof tokenOrReq === 'object' && tokenOrReq !== null) ? tokenOrReq : (request || {});
       const ids = req.ids || [];
-      const { data } = await supabase.from('reservations').select('*').in('id', ids);
+      const { data } = await sb().from('reservations').select('*').in('id', ids);
       return {
         jobId: 'job_' + Date.now(),
         type: req.type || 'label',
@@ -929,7 +987,7 @@
       if (!input) return { exact: [], alt: [] };
 
       // Exact matches (FIFO)
-      const { data: exact } = await supabase
+      const { data: exact } = await sb()
         .from('reservations')
         .select('*')
         .eq('status', 'รอสินค้า')
@@ -940,7 +998,7 @@
         .limit(input.qty || 50);
 
       // Alternate matches
-      const { data: alt } = await supabase
+      const { data: alt } = await sb()
         .from('reservations')
         .select('*')
         .eq('status', 'รอสินค้า')
@@ -984,13 +1042,13 @@
         id = tokenOrId; dueDate = idOrDue;
       }
 
-      await supabase.from('reservations').update({
+      await sb().from('reservations').update({
         status: 'ของมาแล้ว',
         due_date: dueDate || new Date(Date.now() + 5*86400000).toISOString().slice(0, 10),
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
-      await supabase.from('notes').insert({
+      await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
         message: 'จัดสรรสินค้าเข้าคิวเรียบร้อยแล้ว สถานะเปลี่ยนเป็น: ของมาแล้ว',
@@ -1015,7 +1073,7 @@
         'ค่าระบบ': 'system_configs'
       };
       const table = map[sheet] || sheet;
-      const { data } = await supabase.from(table).select('*');
+      const { data } = await sb().from(table).select('*');
       return { rows: data || [] };
     },
 
@@ -1027,7 +1085,7 @@
     // REPORTS
     // -------------------------------------------------------------
     async reportGetDashboard(tokenOrFilter, filter) {
-      const { data: allRes } = await supabase.from('reservations').select('*');
+      const { data: allRes } = await sb().from('reservations').select('*');
       const rows = allRes || [];
 
       const counts = { 'รอตรวจสอบ': 0, 'รอสินค้า': 0, 'ของมาแล้ว': 0, 'นัดรับแล้ว': 0, 'รับของแล้ว': 0, 'ยกเลิก': 0 };
