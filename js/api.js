@@ -99,8 +99,21 @@
     }
   }
 
+  function parseBookingDate(r) {
+    if (r.booked_at) return new Date(r.booked_at);
+    if (r.created_at) return new Date(r.created_at);
+    if (r.id && /^R\d{6}/.test(r.id)) {
+      const y = 2000 + parseInt(r.id.slice(1, 3), 10);
+      const m = parseInt(r.id.slice(3, 5), 10) - 1;
+      const d = parseInt(r.id.slice(5, 7), 10);
+      return new Date(y, m, d);
+    }
+    return null;
+  }
+
   function mapReservation(r) {
-    const waitDays = daysBetween(new Date(r.booked_at), new Date());
+    const bookedDate = parseBookingDate(r);
+    const waitDays = (bookedDate && !isNaN(bookedDate.getTime())) ? Math.max(0, daysBetween(bookedDate, new Date())) : 0;
     let dueLabel = '';
     if (r.due_date) {
       const d = daysBetween(new Date(), new Date(r.due_date));
@@ -122,10 +135,10 @@
       dueDate: r.due_date ? fmtDay(r.due_date) : '',
       dueLabel: dueLabel,
       appt: r.appointment_at ? fmtDate(r.appointment_at) : '',
-      waitDays: Math.max(0, waitDays),
+      waitDays: waitDays,
       callCount: r.call_count || 0,
-      urgent: r.is_urgent,
-      isUrgent: r.is_urgent,
+      urgent: !!r.is_urgent,
+      isUrgent: !!r.is_urgent,
       urgentReason: r.urgent_reason,
       isLabeled: r.is_labeled,
       deposit: r.deposit,
@@ -571,8 +584,12 @@
         preBooking: data.pre_booking_no,
         extraNotes: data.extra_notes,
         lastCalledAt: data.last_called_at ? fmtDate(data.last_called_at) : '',
-        isUrgent: data.is_urgent,
-        urgentReason: data.urgent_reason,
+        urgent: !!data.is_urgent,
+        isUrgent: !!data.is_urgent,
+        urgentReason: data.urgent_reason || '',
+        dueRemainingDays: data.due_date ? daysBetween(new Date(), new Date(data.due_date)) : null,
+        createdAt: (function(){ const bd = parseBookingDate(data); return (bd && !isNaN(bd.getTime())) ? fmtDate(bd) : ''; })(),
+        bookedAt: (function(){ const bd = parseBookingDate(data); return (bd && !isNaN(bd.getTime())) ? fmtDate(bd) : ''; })(),
         price: data.price_at_booking,
         notes: (notes || []).map(n => ({
           at: fmtDate(n.created_at),
@@ -872,11 +889,68 @@
     async getDurationInfo(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
       const { data: res } = await sb().from('reservations').select('*').eq('id', resId).single();
-      const { data: notes } = await sb().from('notes').select('*').eq('reservation_id', resId);
+      if (!res) throw new Error('ไม่พบข้อมูลรายการจอง');
+
+      const { data: notes } = await sb().from('notes').select('*').eq('reservation_id', resId).order('created_at', { ascending: true });
+
+      const createdDateObj = parseBookingDate(res);
+      const createdAt = (createdDateObj && !isNaN(createdDateObj.getTime())) ? fmtDate(createdDateObj) : '—';
+
+      let arrivedDateObj = null;
+      const arrNotes = (notes || []).filter(n => n.message && (n.message.includes('เปลี่ยนเป็น ของมาแล้ว') || n.message.includes('สินค้ามาแล้ว') || n.message.includes('สินค้าเข้า')));
+      if (arrNotes.length > 0) {
+        arrivedDateObj = new Date(arrNotes[0].created_at);
+      } else if (res.status === 'ของมาแล้ว' || res.status === 'นัดรับแล้ว' || res.status === 'รับของแล้ว') {
+        arrivedDateObj = res.updated_at ? new Date(res.updated_at) : (res.due_date ? new Date(res.due_date) : null);
+      }
+      const arrivedAt = (arrivedDateObj && !isNaN(arrivedDateObj.getTime())) ? fmtDate(arrivedDateObj) : '';
+
+      const status = res.status;
+      const hasArrived = status === 'ของมาแล้ว' || status === 'นัดรับแล้ว' || status === 'รับของแล้ว';
+
+      let totalWaitDays = null;
+      if (hasArrived && createdDateObj && arrivedDateObj) {
+        totalWaitDays = Math.max(0, daysBetween(createdDateObj, arrivedDateObj));
+      } else if (hasArrived && createdDateObj) {
+        totalWaitDays = Math.max(0, daysBetween(createdDateObj, new Date()));
+      }
+
+      let currentWaitDays = null;
+      if (createdDateObj) {
+        currentWaitDays = Math.max(0, daysBetween(createdDateObj, new Date()));
+      }
+
+      let aheadCount = 0;
+      if (!hasArrived && status !== 'ยกเลิก') {
+        const bookedTime = res.booked_at || (createdDateObj ? createdDateObj.toISOString() : null);
+        let aheadQuery = sb().from('reservations')
+          .select('id, booked_at', { count: 'exact' })
+          .eq('model', res.model)
+          .eq('capacity', res.capacity)
+          .eq('color', res.color)
+          .in('status', ['รอสินค้า', 'รอตรวจสอบ'])
+          .neq('id', res.id);
+
+        if (bookedTime) {
+          aheadQuery = aheadQuery.lt('booked_at', bookedTime);
+        }
+        const { count, error } = await aheadQuery;
+        if (!error && count != null) {
+          aheadCount = count;
+        }
+      }
+
       return {
-        createdDate: res ? fmtDate(res.booked_at) : '',
-        waitDays: res ? daysBetween(new Date(res.booked_at), new Date()) : 0,
-        notesCount: (notes || []).length
+        createdAt: createdAt,
+        createdDate: createdAt,
+        arrivedAt: arrivedAt,
+        appt: res.appointment_at ? fmtDate(res.appointment_at) : '',
+        dueDate: res.due_date ? fmtDay(res.due_date) : '',
+        hasArrived: hasArrived,
+        totalWaitDays: totalWaitDays,
+        currentWaitDays: currentWaitDays,
+        waitDays: currentWaitDays,
+        aheadCount: aheadCount
       };
     },
 

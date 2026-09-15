@@ -1171,11 +1171,14 @@ function fillDurationBox(id){
     var box=$('durationBox'); if(!box)return;
     function row(k,v){return '<div class="kv"><span class="k">'+esc(k)+'</span><span>'+esc(v||'—')+'</span></div>';}
     var inner;
+    var regDate = d.createdAt || d.createdDate || '—';
     if(d.hasArrived){
-      inner=row('ลงชื่อสนใจสินค้า',d.createdAt)+row('สินค้ามาแล้ว',d.arrivedAt)+row('นัดรับสินค้า',d.appt)+row('ครบกำหนด',d.dueDate)+
+      inner=row('ลงชื่อสนใจสินค้า',regDate)+row('สินค้ามาแล้ว',d.arrivedAt)+row('นัดรับสินค้า',d.appt)+row('ครบกำหนด',d.dueDate)+
         '<div style="border-top:.5px solid var(--bd2);margin-top:7px;padding-top:9px"><div class="kv"><span class="k" style="font-weight:600;color:var(--tx)">รวมรอสินค้าทั้งหมด</span><span style="font-weight:700;color:var(--selT)">'+(d.totalWaitDays!=null?(d.totalWaitDays+' วัน'):'—')+'</span></div></div>';
     }else{
-      inner=row('ลงชื่อสนใจสินค้า',d.createdAt)+
+      var waitText = (d.currentWaitDays!=null && d.currentWaitDays>=0) ? (d.currentWaitDays+' วัน') : (d.waitDays!=null ? (d.waitDays+' วัน') : '—');
+      inner=row('ลงชื่อสนใจสินค้า',regDate)+
+        row('ระยะเวลารอจนถึงวันนี้',waitText)+
         '<div style="border-top:.5px solid var(--bd2);margin-top:7px;padding-top:9px;font-size:12.5px;line-height:1.55">'+
         (d.aheadCount>0
           ? 'มีลูกค้าจองสเปคเดียวกันนี้อยู่ก่อนหน้าอีก <b style="color:var(--selT)">'+d.aheadCount+'</b> ราย<br><span style="color:var(--t3);font-size:11.5px">โดยประมาณต้องรอสินค้าเข้าอีก '+d.aheadCount+' เครื่อง จึงจะถึงคิวของลูกค้าท่านนี้</span>'
@@ -1198,7 +1201,7 @@ function openDetail(id, editMode){
     var closed=r.status==='รับของแล้ว'||r.status==='ยกเลิก';
     var canEdit=!closed;
     var h='';
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+pill(r.displayStatus||r.status)+(r.urgent?' <span class="badge" style="background:var(--urgent);color:#fff"><svg class="ic"><use href="#i-warn"></use></svg> เร่งด่วน</span>':'')+
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+pill(r.displayStatus||r.status)+((r.urgent||r.isUrgent)?' <span class="badge" style="background:var(--urgent);color:#fff"><svg class="ic"><use href="#i-warn"></use></svg> เร่งด่วน</span>':'')+
        '<span style="display:flex;gap:12px;align-items:center">'+
        (canEdit&&!editMode?'<span class="iconbtn" id="btnEdit" title="แก้ไขข้อมูล" style="cursor:pointer"><svg class="ic"><use href="#i-pencil"></use></svg></span>':'')+
        '<span class="iconbtn" onclick="closePanel()" style="cursor:pointer"><span class="ic">×</span></span></span></div>';
@@ -1250,8 +1253,8 @@ function openDetail(id, editMode){
 
     if(!closed){
       // ---- เคสเร่งด่วน (ใช้เฉพาะกรณีจำเป็น) ----
-      if(r.urgent){
-        h+='<div class="card" style="border:1.5px solid var(--urgent);background:var(--urgentBg);margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b style="color:var(--urgent)"><svg class="ic"><use href="#i-warn"></use></svg> เคสเร่งด่วน</b><p style="margin:4px 0 0;font-size:12px;color:var(--t2);white-space:pre-wrap">'+esc(r.urgentReason||'')+'</p></div><button class="btn2" id="btnClearUrgent" style="width:auto;padding:6px 12px;flex:none">ยกเลิก</button></div></div>';
+      if(r.urgent || r.isUrgent){
+        h+='<div class="card" style="border:1.5px solid var(--urgent);background:var(--urgentBg);margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b style="color:var(--urgent)"><svg class="ic"><use href="#i-warn"></use></svg> เคสเร่งด่วน</b><p style="margin:4px 0 0;font-size:12px;color:var(--t2);white-space:pre-wrap">'+esc(r.urgentReason||'ไม่ระบุเหตุผล')+'</p></div><button class="btn2" id="btnClearUrgent" style="width:auto;padding:6px 12px;flex:none">ยกเลิกเคสเร่งด่วน</button></div></div>';
       }else{
         h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button class="btn2 btn-danger" id="btnUrgent" style="flex:1"><svg class="ic"><use href="#i-warn"></use></svg> ทำเป็นเคสเร่งด่วน</button><button class="guide-info" id="urgentInfo" type="button" title="ใช้กรณีไหน" aria-label="อธิบายเคสเร่งด่วน">i</button></div>';if((r.dueRemainingDays!=null&&r.dueRemainingDays<0)){h+='<div class="card" style="border:1.5px solid var(--danger);background:var(--dangerBg);border-radius:12px;padding:13px;margin:2px 0 12px"><div style="display:flex;gap:9px;align-items:flex-start"><svg class="ic" style="color:var(--danger);width:20px;height:20px;flex:none;margin-top:1px"><use href="#i-warn"></use></svg><div><b style="color:var(--danger);font-size:14px">ลูกค้าถูกยกเลิกคิวจากระบบ</b><p style="margin:3px 0 0;font-size:12.5px;color:var(--t2);line-height:1.5">เนื่องจาก <b style="color:var(--danger)">เกินกำหนดรับ</b> — เลยวันครบกำหนดรับสินค้าและยังไม่มารับภายในระยะเวลาที่กำหนด</p></div></div><button class="btn ui-modal-danger" id="btnAutoCancel" style="width:100%;margin-top:12px">ยกเลิกสิทธิ์ลูกค้านี้ และนำเครื่องออกจากระบบคิว</button></div>';}
       }
