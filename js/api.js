@@ -91,6 +91,14 @@
     return (typeof a === 'string' && (a.startsWith('staff_') || a === 'logged_in')) ? b : a;
   }
 
+  function getCheckUrl(token) {
+    try {
+      return new URL('check?t=' + encodeURIComponent(token), window.location.href).href;
+    } catch (e) {
+      return window.location.origin + '/check?t=' + encodeURIComponent(token);
+    }
+  }
+
   function mapReservation(r) {
     const waitDays = daysBetween(new Date(r.booked_at), new Date());
     let dueLabel = '';
@@ -122,7 +130,8 @@
       isLabeled: r.is_labeled,
       deposit: r.deposit,
       billNo: r.bill_no,
-      token: r.token
+      token: r.token,
+      checkUrl: getCheckUrl(r.token)
     };
   }
 
@@ -528,6 +537,7 @@
       return {
         id: data.id,
         token: data.token,
+        checkUrl: getCheckUrl(data.token),
         name: data.customer_name,
         phone: data.phone,
         group: data.customer_group,
@@ -877,9 +887,11 @@
       const { data: r } = await sb().from('reservations').select('*').eq('id', resId).single();
       if (!r) throw new Error('ไม่พบข้อมูลพิมพ์');
 
+      const checkUrl = getCheckUrl(r.token);
       return {
         id: r.id,
         token: r.token,
+        checkUrl: checkUrl,
         customerName: r.customer_name,
         name: r.customer_name,
         phone: r.phone,
@@ -906,6 +918,7 @@
       return (data || []).map(r => ({
         id: r.id,
         token: r.token,
+        checkUrl: getCheckUrl(r.token),
         customerName: r.customer_name,
         name: r.customer_name,
         phone: r.phone,
@@ -946,6 +959,7 @@
           color: r.color,
           status: r.status,
           token: r.token,
+          checkUrl: getCheckUrl(r.token),
           isLabeled: r.is_labeled
         })),
         total: (data || []).length,
@@ -965,6 +979,7 @@
         items: (data || []).map(r => ({
           id: r.id,
           token: r.token,
+          checkUrl: getCheckUrl(r.token),
           customerName: r.customer_name,
           name: r.customer_name,
           phone: r.phone,
@@ -1067,35 +1082,204 @@
     async resetStockLot() { return { ok: true }; },
 
     // -------------------------------------------------------------
-    // SETTINGS
+    // SETTINGS (ตั้งค่า)
     // -------------------------------------------------------------
     async adminList(tokenOrSheet, sheetName) {
       const sheet = optFirst(tokenOrSheet, sheetName);
-      const map = {
-        'รุ่นสินค้า': 'products',
-        'กลุ่มลูกค้า': 'customer_groups',
-        'ซัพพลายเออร์': 'suppliers',
-        'โครงการส่วนลด': 'discount_campaigns',
-        'ค่าระบบ': 'system_configs'
-      };
-      const table = map[sheet] || sheet;
-      const { data } = await sb().from(table).select('*');
-      return { rows: data || [] };
+      if (sheet === 'รุ่นสินค้า') {
+        const { data } = await sb().from('products').select('*').order('id');
+        const rows = (data || []).map((p, idx) => ({
+          _row: p.id || (idx + 2),
+          'รุ่น': p.model,
+          'ความจุ': p.capacities,
+          'สี': p.colors,
+          'เปิดรับจอง': p.is_active,
+          'ราคา': p.prices
+        }));
+        return { head: ['รุ่น', 'ความจุ', 'สี', 'เปิดรับจอง', 'ราคา'], rows: rows };
+      }
+      if (sheet === 'กลุ่มลูกค้า') {
+        const { data } = await sb().from('customer_groups').select('*').order('sort_order');
+        const rows = (data || []).map((g, idx) => ({
+          _row: g.id || (idx + 2),
+          'ชื่อกลุ่ม': g.name,
+          'เปิดใช้': g.is_active,
+          'สีป้าย': g.badge_color,
+          'ต้องกรอกเลขอ้างอิง': g.require_ref_no,
+          'ค่าเริ่มต้น': g.is_default,
+          'ลำดับแสดงผล': g.sort_order
+        }));
+        return { head: ['ชื่อกลุ่ม', 'เปิดใช้', 'สีป้าย', 'ต้องกรอกเลขอ้างอิง', 'ค่าเริ่มต้น', 'ลำดับแสดงผล'], rows: rows };
+      }
+      if (sheet === 'ซัพพลายเออร์') {
+        const { data } = await sb().from('suppliers').select('*').order('id');
+        const rows = (data || []).map((s, idx) => ({
+          _row: s.id || (idx + 2),
+          'ชื่อซัพพลายเออร์': s.name,
+          'เปิดใช้': s.is_active
+        }));
+        return { head: ['ชื่อซัพพลายเออร์', 'เปิดใช้'], rows: rows };
+      }
+      if (sheet === 'โครงการส่วนลด') {
+        const { data } = await sb().from('discount_campaigns').select('*').order('id');
+        const rows = (data || []).map((c, idx) => ({
+          _row: c.id || (idx + 2),
+          'ชื่อโครงการ': c.name,
+          'คำอธิบาย': c.description,
+          'เปิดใช้': c.is_active
+        }));
+        return { head: ['ชื่อโครงการ', 'คำอธิบาย', 'เปิดใช้'], rows: rows };
+      }
+      if (sheet === 'ค่าระบบ') {
+        const { data } = await sb().from('system_configs').select('*');
+        const rows = (data || []).map((cfg, idx) => ({
+          _row: idx + 2,
+          'คีย์': cfg.key,
+          'ค่า': cfg.value,
+          'คำอธิบาย': cfg.description || ''
+        }));
+        return { head: ['คีย์', 'ค่า', 'คำอธิบาย'], rows: rows };
+      }
+      return { head: [], rows: [] };
     },
 
     async adminSaveBatch(tokenOrBatch, batch) {
+      const b = (typeof tokenOrBatch === 'object' && tokenOrBatch !== null) ? tokenOrBatch : (batch || {});
+      for (const sheet of Object.keys(b)) {
+        const change = b[sheet];
+        if (sheet === 'รุ่นสินค้า') {
+          if (change.adds && change.adds.length) {
+            for (const v of change.adds) {
+              await sb().from('products').insert({
+                model: v[0],
+                capacities: v[1],
+                colors: v[2],
+                is_active: v[3] === true || String(v[3]) === 'true',
+                prices: v[4]
+              });
+            }
+          }
+          if (change.updates && change.updates.length) {
+            for (const u of change.updates) {
+              const v = u.values;
+              await sb().from('products').update({
+                model: v[0],
+                capacities: v[1],
+                colors: v[2],
+                is_active: v[3] === true || String(v[3]) === 'true',
+                prices: v[4]
+              }).eq('id', u.row);
+            }
+          }
+          if (change.deletes && change.deletes.length) {
+            for (const d of change.deletes) {
+              await sb().from('products').delete().eq('id', d.row);
+            }
+          }
+        } else if (sheet === 'กลุ่มลูกค้า') {
+          if (change.adds && change.adds.length) {
+            for (const v of change.adds) {
+              await sb().from('customer_groups').insert({
+                name: v[0],
+                is_active: v[1] === true || String(v[1]) === 'true',
+                badge_color: v[2] || '#444441',
+                require_ref_no: v[3] === true || String(v[3]) === 'true',
+                is_default: v[4] === true || String(v[4]) === 'true',
+                sort_order: Number(v[5]) || 99
+              });
+            }
+          }
+          if (change.updates && change.updates.length) {
+            for (const u of change.updates) {
+              const v = u.values;
+              await sb().from('customer_groups').update({
+                name: v[0],
+                is_active: v[1] === true || String(v[1]) === 'true',
+                badge_color: v[2] || '#444441',
+                require_ref_no: v[3] === true || String(v[3]) === 'true',
+                is_default: v[4] === true || String(v[4]) === 'true',
+                sort_order: Number(v[5]) || 99
+              }).eq('id', u.row);
+            }
+          }
+          if (change.deletes && change.deletes.length) {
+            for (const d of change.deletes) {
+              await sb().from('customer_groups').delete().eq('id', d.row);
+            }
+          }
+        } else if (sheet === 'ซัพพลายเออร์') {
+          if (change.adds && change.adds.length) {
+            for (const v of change.adds) {
+              await sb().from('suppliers').insert({
+                name: v[0],
+                is_active: v[1] === true || String(v[1]) === 'true'
+              });
+            }
+          }
+          if (change.updates && change.updates.length) {
+            for (const u of change.updates) {
+              const v = u.values;
+              await sb().from('suppliers').update({
+                name: v[0],
+                is_active: v[1] === true || String(v[1]) === 'true'
+              }).eq('id', u.row);
+            }
+          }
+          if (change.deletes && change.deletes.length) {
+            for (const d of change.deletes) {
+              await sb().from('suppliers').delete().eq('id', d.row);
+            }
+          }
+        } else if (sheet === 'โครงการส่วนลด') {
+          if (change.adds && change.adds.length) {
+            for (const v of change.adds) {
+              await sb().from('discount_campaigns').insert({
+                name: v[0],
+                description: v[1],
+                is_active: v[2] === true || String(v[2]) === 'true'
+              });
+            }
+          }
+          if (change.updates && change.updates.length) {
+            for (const u of change.updates) {
+              const v = u.values;
+              await sb().from('discount_campaigns').update({
+                name: v[0],
+                description: v[1],
+                is_active: v[2] === true || String(v[2]) === 'true'
+              }).eq('id', u.row);
+            }
+          }
+          if (change.deletes && change.deletes.length) {
+            for (const d of change.deletes) {
+              await sb().from('discount_campaigns').delete().eq('id', d.row);
+            }
+          }
+        } else if (sheet === 'ค่าระบบ') {
+          if (change.updates && change.updates.length) {
+            for (const u of change.updates) {
+              const v = u.values;
+              await sb().from('system_configs').upsert({
+                key: v[0],
+                value: String(v[1]),
+                description: v[2]
+              }, { onConflict: 'key' });
+            }
+          }
+        }
+      }
       return true;
     },
 
     // -------------------------------------------------------------
-    // REPORTS
+    // REPORTS (รายงาน & สเปกยอดนิยม)
     // -------------------------------------------------------------
     async reportGetDashboard(tokenOrFilter, filter) {
       const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
       const [allRes, groupsRes, prodsRes] = await Promise.all([
         sb().from('reservations').select('*'),
-        sb().from('customer_groups').select('name'),
-        sb().from('products').select('model')
+        sb().from('customer_groups').select('name').order('sort_order'),
+        sb().from('products').select('*').order('id')
       ]);
       const rows = allRes.data || [];
 
@@ -1103,6 +1287,150 @@
       rows.forEach(r => {
         if (counts[r.status] !== undefined) counts[r.status]++;
       });
+
+      // 1. Build Product Analytics
+      const specMap = {};
+      rows.forEach(r => {
+        const model = r.model || 'ไม่ระบุรุ่น';
+        const capacity = r.capacity || 'ไม่ระบุ';
+        const color = r.color || 'ไม่ระบุ';
+        const key = [model, capacity, color].join('|');
+        if (!specMap[key]) {
+          specMap[key] = {
+            model: model,
+            capacity: capacity,
+            color: color,
+            demand: 0,
+            sold: 0,
+            backlog: 0,
+            allocated: 0,
+            cancelled: 0,
+            closed: 0,
+            successRate: null
+          };
+        }
+        const item = specMap[key];
+        item.demand++;
+        if (r.status === 'รับของแล้ว') item.sold++;
+        if (r.status === 'ยกเลิก') item.cancelled++;
+        if (r.status === 'รอตรวจสอบ' || r.status === 'รอสินค้า') item.backlog++;
+        if (r.status === 'ของมาแล้ว' || r.status === 'นัดรับแล้ว') item.allocated++;
+      });
+
+      const specs = Object.keys(specMap).map(k => {
+        const item = specMap[k];
+        item.closed = item.sold + item.cancelled;
+        item.successRate = item.closed ? Math.round((item.sold * 1000) / item.closed) / 10 : null;
+        item.label = item.model + ' · ' + item.capacity + ' · ' + item.color;
+        return item;
+      });
+
+      function rollupDimension(field) {
+        const rmap = {};
+        specs.forEach(s => {
+          const val = s[field] || 'ไม่ระบุ';
+          if (!rmap[val]) {
+            rmap[val] = {
+              model: '',
+              capacity: '',
+              color: '',
+              demand: 0,
+              sold: 0,
+              backlog: 0,
+              allocated: 0,
+              cancelled: 0,
+              closed: 0,
+              successRate: null,
+              value: val
+            };
+          }
+          ['demand', 'sold', 'backlog', 'allocated', 'cancelled'].forEach(m => {
+            rmap[val][m] += s[m];
+          });
+        });
+        return Object.keys(rmap).map(val => {
+          const item = rmap[val];
+          item.closed = item.sold + item.cancelled;
+          item.successRate = item.closed ? Math.round((item.sold * 1000) / item.closed) / 10 : null;
+          return item;
+        });
+      }
+
+      const dimensions = {
+        model: rollupDimension('model'),
+        capacity: rollupDimension('capacity'),
+        color: rollupDimension('color'),
+        spec: specs.map(item => Object.assign({}, item, { value: item.label }))
+      };
+
+      function topMetric(items, metric) {
+        let usable = (items || []).filter(item => metric === 'successRate' ? item.closed >= 1 : item[metric] > 0);
+        if (!usable.length) usable = items || [];
+        if (!usable.length) return null;
+        const sorted = usable.slice().sort((a, b) => {
+          if (metric === 'successRate') {
+            const sa = a.successRate == null ? -1 : a.successRate;
+            const sb = b.successRate == null ? -1 : b.successRate;
+            return sb - sa;
+          }
+          return (b[metric] || 0) - (a[metric] || 0);
+        });
+        return sorted[0] || null;
+      }
+
+      const rankings = {};
+      ['demand', 'sold', 'backlog', 'successRate'].forEach(metric => {
+        rankings[metric] = {
+          model: topMetric(dimensions.model, metric),
+          capacity: topMetric(dimensions.capacity, metric),
+          color: topMetric(dimensions.color, metric),
+          spec: topMetric(dimensions.spec, metric)
+        };
+      });
+
+      // 2. Build Product Summary
+      const productSummaryMap = {};
+      rows.forEach(r => {
+        const model = r.model || 'ไม่ระบุรุ่น';
+        const capacity = r.capacity || 'ไม่ระบุ';
+        const color = r.color || 'ไม่ระบุ';
+        const key = [model, capacity, color].join('|');
+        if (!productSummaryMap[key]) {
+          productSummaryMap[key] = {
+            model: model,
+            capacity: capacity,
+            color: color,
+            pending: 0,
+            waiting: 0,
+            arrived: 0,
+            appointment: 0,
+            done: 0,
+            cancelled: 0,
+            longestWait: 0
+          };
+        }
+        const item = productSummaryMap[key];
+        if (r.status === 'รอตรวจสอบ') item.pending++;
+        else if (r.status === 'รอสินค้า') item.waiting++;
+        else if (r.status === 'ของมาแล้ว') item.arrived++;
+        else if (r.status === 'นัดรับแล้ว') item.appointment++;
+        else if (r.status === 'รับของแล้ว') item.done++;
+        else if (r.status === 'ยกเลิก') item.cancelled++;
+
+        if (r.status === 'รอสินค้า' && r.booked_at) {
+          const w = daysBetween(new Date(r.booked_at), new Date());
+          if (w > item.longestWait) item.longestWait = w;
+        }
+      });
+      const productSummary = Object.keys(productSummaryMap).map(k => productSummaryMap[k]);
+
+      // 3. Actions list
+      const today = new Date().toISOString().slice(0, 10);
+      const overdueActions = rows.filter(r => r.status === 'ของมาแล้ว' && r.due_date && r.due_date < today).map(mapReservation);
+      const todayActions = rows.filter(r => r.due_date === today).map(mapReservation);
+      const noCallActions = rows.filter(r => r.status === 'ของมาแล้ว' && !r.call_count).map(mapReservation);
+      const waitLongActions = rows.filter(r => r.status === 'รอสินค้า' && r.booked_at && daysBetween(new Date(r.booked_at), new Date()) > 7).map(mapReservation);
+      const manyFailsActions = rows.filter(r => (r.call_count || 0) >= 3).map(mapReservation);
 
       const start = f.start || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
       const end = f.end || new Date().toISOString().slice(0, 10);
@@ -1121,15 +1449,47 @@
           models: (prodsRes.data || []).map(p => p.model)
         },
         current: { total: rows.length, statuses: counts },
-        actions: { overdue: [], today: [], noCall: [], waitLong: [], manyFails: [], quality: [] },
-        products: [],
-        productAnalytics: { specs: [], dimensions: { model: [], capacity: [], color: [] }, rankings: {} },
-        period: { newCount: rows.length, doneCount: counts['รับของแล้ว'], cancelCount: counts['ยกเลิก'], trend: [] }
+        actions: {
+          overdue: overdueActions,
+          today: todayActions,
+          noCall: noCallActions,
+          waitLong: waitLongActions,
+          manyFails: manyFailsActions,
+          quality: []
+        },
+        products: productSummary,
+        productAnalytics: {
+          specs: specs,
+          dimensions: dimensions,
+          rankings: rankings
+        },
+        period: {
+          newCount: rows.length,
+          doneCount: counts['รับของแล้ว'],
+          cancelCount: counts['ยกเลิก'],
+          trend: []
+        }
       };
     },
 
     async reportGetDetails(tokenOrReq, request) {
-      return { title: 'รายละเอียด', total: 0, items: [] };
+      const req = (typeof tokenOrReq === 'object' && tokenOrReq !== null) ? tokenOrReq : (request || {});
+      const { data: allRes } = await sb().from('reservations').select('*');
+      let items = allRes || [];
+
+      if (req.kind === 'status' && req.value) {
+        items = items.filter(r => r.status === req.value);
+      } else if (req.kind === 'model' && req.value) {
+        items = items.filter(r => r.model === req.value);
+      } else if (req.kind === 'spec' && req.value) {
+        items = items.filter(r => (r.model + ' · ' + r.capacity + ' · ' + r.color) === req.value);
+      }
+
+      return {
+        title: req.value || 'รายละเอียด',
+        total: items.length,
+        items: items.map(mapReservation)
+      };
     }
   };
 
