@@ -379,6 +379,9 @@
       const promos = (promoRes.data || []).map(p => ({ name: p.name, desc: p.description }));
       const configs = {};
       (cfgRes.data || []).forEach(c => { configs[c.key] = c.value; });
+      if (configs['หน่วงเวลา Popup บันทึกข้อมูล'] === undefined && configs['หน่วงเวลา Popup'] === undefined) {
+        configs['หน่วงเวลา Popup บันทึกข้อมูล'] = 'TRUE';
+      }
 
       const statuses = ['รอตรวจสอบ', 'รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว'];
 
@@ -1138,7 +1141,16 @@
       }
       if (sheet === 'ค่าระบบ') {
         const { data } = await sb().from('system_configs').select('*');
-        const rows = (data || []).map((cfg, idx) => ({
+        const list = data || [];
+        const hasDelay = list.some(c => c.key === 'หน่วงเวลา Popup บันทึกข้อมูล' || c.key === 'หน่วงเวลา Popup');
+        if (!hasDelay) {
+          list.push({
+            key: 'หน่วงเวลา Popup บันทึกข้อมูล',
+            value: 'TRUE',
+            description: 'เปิดดีเลย์ 2-3 วินาทีสำหรับ Popup กำลังบันทึกข้อมูลและยืนยัน เพื่อให้อ่านทัน'
+          });
+        }
+        const rows = list.map((cfg, idx) => ({
           _row: idx + 2,
           'คีย์': cfg.key,
           'ค่า': cfg.value,

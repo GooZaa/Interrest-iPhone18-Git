@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
 <div id="panel"></div>
 <div class="toast" id="toast"></div>
 <div class="busy-overlay" id="busyOverlay" role="status" aria-live="polite">
-  <div class="busy-card"><div class="loader"></div><div class="busy-title" id="busyTitle">กำลังบันทึกข้อมูล…</div><div class="busy-sub">กรุณารอสักครู่</div></div>
+  <div class="busy-card"><div class="loader" id="busyLoader"></div><div class="busy-check" id="busyCheck" style="display:none;width:44px;height:44px;margin:0 auto 12px;border-radius:50%;background:#E1F5EE;color:#0F6E56;font-size:24px;font-weight:700;align-items:center;justify-content:center">✓</div><div class="busy-title" id="busyTitle">กำลังบันทึกข้อมูล…</div><div class="busy-sub" id="busySub">กรุณารอสักครู่</div></div>
 </div>
 <div class="ui-modal-backdrop" id="settingsConfirmModal" role="dialog" aria-modal="true" aria-labelledby="settingsConfirmTitle">
   <div class="ui-modal">
@@ -603,7 +603,26 @@ function qrSvgMarkup(text,size){
 
 var $=function(id){return document.getElementById(id);};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
-function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){t.classList.remove('on');},2600);}
+var busyCount=0, busyStartTime=0, busyTimer=null;
+function isPopupDelayEnabled(){
+  try {
+    if(window.STATE && window.STATE.boot && window.STATE.boot.configs){
+      var v = window.STATE.boot.configs['หน่วงเวลา Popup บันทึกข้อมูล'];
+      if(v === undefined) v = window.STATE.boot.configs['หน่วงเวลา Popup'];
+      if(v !== undefined) return settingOn(v);
+    }
+  } catch(e){}
+  return true;
+}
+function toast(m){
+  var t=$('toast');
+  if(!t)return;
+  t.textContent=m;
+  t.classList.add('on');
+  clearTimeout(window._tt);
+  var duration = isPopupDelayEnabled() ? 3200 : 2200;
+  window._tt=setTimeout(function(){t.classList.remove('on');}, duration);
+}
 var ACTION_BUSY={
   runSetupFromWeb:'กำลังติดตั้งระบบ…',saveReservation:'กำลังบันทึกการจอง…',editReservation:'กำลังบันทึกการแก้ไข…',
   approveCustomerSignup:'กำลังยืนยันเข้าคิว…',approveAllPending:'กำลังนำรายชื่อทั้งหมดเข้าคิว…',markArrived:'กำลังบันทึกสถานะสินค้าเข้า…',setAppointment:'กำลังบันทึกวันนัดรับ…',
@@ -611,27 +630,69 @@ var ACTION_BUSY={
   releaseReservation:'กำลังยกเลิกสิทธิ์…',addManualNote:'กำลังบันทึกโน้ต…',allocateToCustomer:'กำลังจัดสรรสินค้า…',resetStockLot:'กำลังตั้งจำนวนเครื่องใหม่…',markUrgent:'กำลังบันทึกเคสเร่งด่วน…',clearUrgent:'กำลังยกเลิกเคสเร่งด่วน…',
   markLabeled:'กำลังบันทึกการพิมพ์ใบแปะ…',markLabeledBatch:'กำลังบันทึกการพิมพ์ใบแปะ…',prepareBatchPrintJob:'กำลังตรวจสอบและจัดเอกสาร…',confirmBatchPrintJob:'กำลังบันทึกประวัติงานพิมพ์…'
 };
-var busyCount=0;
 function loadingHtml(label){return '<div class="loading"><span class="loader"></span><span>'+esc(label||'กำลังโหลดข้อมูล…')+'</span></div>';}
 function skelLine_(w,sm){return '<div class="skel skel-line'+(sm?' sm':'')+'" style="width:'+w+'%"></div>';}
 function skelRow_(){return '<div class="skel-row"><div>'+skelLine_(76)+'</div><div>'+skelLine_(68)+skelLine_(50,1)+'</div><div>'+skelLine_(82)+skelLine_(58,1)+'</div><div>'+skelLine_(60)+'</div><div>'+skelLine_(66)+'</div><div>'+skelLine_(72)+'</div><div></div></div>';}
 function skelList(n){var o='';for(var i=0;i<(n||8);i++)o+=skelRow_();return listHeadHtml()+o;}
 function skelBlock(n){var o='';for(var i=0;i<(n||3);i++)o+='<div class="skel skel-block" style="width:'+(70+((i*13)%28))+'%"></div>';return o;}
 function emptyHtml(icon,title,sub){return '<div class="empty-rich"><div class="em-ic"><svg class="ic"><use href="#i-'+icon+'"></use></svg></div><b>'+esc(title)+'</b>'+(sub?'<span>'+esc(sub)+'</span>':'')+'</div>';}
-function showBusy(label){busyCount++;$('busyTitle').textContent=label||'กำลังบันทึกข้อมูล…';$('busyOverlay').classList.add('on');}
-function hideBusy(){busyCount=Math.max(0,busyCount-1);if(!busyCount)$('busyOverlay').classList.remove('on');}
+function showBusy(label){
+  busyCount++;
+  busyStartTime=Date.now();
+  if(busyTimer){clearTimeout(busyTimer);busyTimer=null;}
+  var overlay=$('busyOverlay'),title=$('busyTitle'),sub=$('busySub'),loader=$('busyLoader'),check=$('busyCheck');
+  if(loader)loader.style.display='inline-block';
+  if(check)check.style.display='none';
+  if(title)title.textContent=label||'กำลังบันทึกข้อมูล…';
+  if(sub)sub.textContent='กรุณารอสักครู่ ระบบกำลังสื่อสารกับเซิร์ฟเวอร์';
+  if(overlay)overlay.classList.add('on');
+}
+function hideBusy(isError,successTitle,successSub){
+  busyCount=Math.max(0,busyCount-1);
+  if(busyCount>0)return Promise.resolve();
+  var overlay=$('busyOverlay');
+  if(!overlay||!overlay.classList.contains('on'))return Promise.resolve();
+  if(isError||!isPopupDelayEnabled()){
+    if(busyTimer){clearTimeout(busyTimer);busyTimer=null;}
+    overlay.classList.remove('on');
+    var loader=$('busyLoader'),check=$('busyCheck');
+    if(loader)loader.style.display='inline-block';
+    if(check)check.style.display='none';
+    return Promise.resolve();
+  }
+  var elapsed=Date.now()-busyStartTime;
+  var minSpinTime=750;
+  var waitBeforeSuccess=Math.max(0,minSpinTime-elapsed);
+  return new Promise(function(resolve){
+    busyTimer=setTimeout(function(){
+      var loader=$('busyLoader'),check=$('busyCheck'),title=$('busyTitle'),sub=$('busySub');
+      if(loader)loader.style.display='none';
+      if(check)check.style.display='flex';
+      if(title)title.textContent=successTitle||'บันทึกข้อมูลเรียบร้อยแล้ว';
+      if(sub)sub.textContent=successSub||'ข้อมูลได้รับการอัปเดตเรียบร้อย';
+      busyTimer=setTimeout(function(){
+        overlay.classList.remove('on');
+        setTimeout(function(){
+          if(loader)loader.style.display='inline-block';
+          if(check)check.style.display='none';
+        },200);
+        resolve();
+      },1500);
+    },waitBeforeSuccess);
+  });
+}
 function callApi(name){
   var args=[].slice.call(arguments,1),busy=ACTION_BUSY[name];
   if(busy)showBusy(busy);
   if(!window.api||!window.api[name]){
-    if(busy)hideBusy();
+    if(busy)hideBusy(true);
     return Promise.reject(new Error('API not implemented: '+name));
   }
   return window.api[name].apply(window.api, args).then(function(v){
-    if(busy)hideBusy();
+    if(busy) return hideBusy().then(function(){ return v; });
     return v;
   }).catch(function(e){
-    if(busy)hideBusy();
+    if(busy) hideBusy(true);
     throw e;
   });
 }
@@ -1378,7 +1439,16 @@ function loadSettings(){
 var SETTINGS_DRAFT=null,SETTINGS_EDIT={},SETTINGS_OPEN={};
 function settingValue(row,c){return c.t==='cfgvalue'&&typeof row[c.k]==='boolean'?(row[c.k]?'true':'false'):row[c.k];}
 function settingVisibleCols(def){return def.cols.filter(function(c){return c.t!=='hidden';});}
-function settingOn(v){return v===true||String(v)==='true';}
+function isBoolSetting(v){
+  if(typeof v==='boolean') return true;
+  var s=String(v==null?'':v).trim().toLowerCase();
+  return s==='true'||s==='false';
+}
+function settingOn(v){
+  if(v===true) return true;
+  var s=String(v==null?'':v).trim().toLowerCase();
+  return s==='true'||s==='1'||s==='yes';
+}
 function pencilSvg(){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"></path><path d="m13.8 7.2 3 3"></path></svg>';}
 function eraserSvg(){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7.5 19-3-3a2 2 0 0 1 0-2.8l8.2-8.2a2 2 0 0 1 2.8 0l4 4a2 2 0 0 1 0 2.8L12.3 19H7.5Z"></path><path d="m9 8.7 6.3 6.3M12.3 19H21"></path></svg>';}
 function sectionSvg(icon){
@@ -1414,12 +1484,35 @@ function renderProductRows(def,di,rows,editing){
 function renderStandardRows(def,di,rows,editing){
   var hint=def.sheet==='กลุ่มลูกค้า'?'กดรูปดาวเพื่อเลือกกลุ่มเริ่มต้น และใช้ลูกศรเพื่อจัดลำดับการแสดงผล':'โหมดแก้ไขเปิดอยู่ — การเปลี่ยนแปลงจะยังไม่บันทึกจนกดปุ่มยืนยันด้านล่าง';
   var cols=settingVisibleCols(def),h=editing?'<div class="edit-hint">'+hint+'</div>':'';h+='<div class="setSection"><div class="setHead" style="grid-template-columns:'+def.grid+'">';cols.forEach(function(c){h+='<span>'+esc(c.k)+'</span>';});h+='<span></span></div>';
-  rows.forEach(function(row){var ri=SETTINGS_DRAFT[def.sheet].rows.indexOf(row);h+='<div class="setRow" style="grid-template-columns:'+def.grid+'">';cols.forEach(function(c){var bool=c.t==='sw'||(c.t==='cfgvalue'&&(String(row[c.k])==='true'||String(row[c.k])==='false'));if(bool)h+='<span class="sw'+(settingOn(row[c.k])?' on':'')+'" '+(editing?'data-dtoggle="'+di+'|'+ri+'|'+c.k+'"':'')+'><span class="th"></span></span>';else if(c.t==='exclusive')h+='<button class="default-choice'+(settingOn(row[c.k])?' on':'')+'" '+(editing?'data-ddefault="'+di+'|'+ri+'"':'aria-disabled="true"')+' title="'+(settingOn(row[c.k])?'กลุ่มเริ่มต้นปัจจุบัน':'กำหนดเป็นกลุ่มเริ่มต้น')+'"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"></path></svg>'+(settingOn(row[c.k])?'เริ่มต้น':'เลือก')+'</button>';else if(c.t==='order')h+=editing?'<div class="order-control"><button data-dmove="'+di+'|'+ri+'|-1" title="เลื่อนขึ้น"><svg class="ic"><use href="#i-up"></use></svg></button><span>'+esc(row[c.k]||'—')+'</span><button data-dmove="'+di+'|'+ri+'|1" title="เลื่อนลง"><svg class="ic"><use href="#i-down"></use></svg></button></div>':'<div class="setting-view mono">'+esc(row[c.k]||'—')+'</div>';else if(editing)h+='<input data-dedit="'+di+'|'+ri+'|'+c.k+'" value="'+esc(settingValue(row,c))+'">';else h+='<div class="setting-view'+(!row[c.k]?' muted':'')+'">'+esc(settingValue(row,c)||'—')+'</div>';});h+=editing?'<button class="settings-erase" data-ddel="'+di+'|'+ri+'" title="นำรายการออกจากแบบร่าง">'+eraserSvg()+'</button>':'<span></span>';h+='</div>';});
+  rows.forEach(function(row){
+    var ri=SETTINGS_DRAFT[def.sheet].rows.indexOf(row);
+    h+='<div class="setRow" style="grid-template-columns:'+def.grid+'">';
+    cols.forEach(function(c){
+      var isBool=c.t==='sw'||(c.t==='cfgvalue'&&isBoolSetting(row[c.k]));
+      if(isBool){
+        var on=settingOn(row[c.k]);
+        h+='<div style="display:flex;align-items:center;gap:8px">'+
+           '<span class="sw'+(on?' on':'')+'" data-dtoggle="'+di+'|'+ri+'|'+c.k+'" title="คลิกเพื่อสลับ เปิด-ปิด"><span class="th"></span></span>'+
+           '<span style="font-size:12px;font-weight:600;min-width:28px;color:'+(on?'var(--ok)':'var(--t3)')+'">'+(on?'เปิด':'ปิด')+'</span>'+
+           '</div>';
+      } else if(c.t==='exclusive') {
+        h+='<button class="default-choice'+(settingOn(row[c.k])?' on':'')+'" '+(editing?'data-ddefault="'+di+'|'+ri+'"':'aria-disabled="true"')+' title="'+(settingOn(row[c.k])?'กลุ่มเริ่มต้นปัจจุบัน':'กำหนดเป็นกลุ่มเริ่มต้น')+'"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"></path></svg>'+(settingOn(row[c.k])?'เริ่มต้น':'เลือก')+'</button>';
+      } else if(c.t==='order') {
+        h+=editing?'<div class="order-control"><button data-dmove="'+di+'|'+ri+'|-1" title="เลื่อนขึ้น"><svg class="ic"><use href="#i-up"></use></svg></button><span>'+esc(row[c.k]||'—')+'</span><button data-dmove="'+di+'|'+ri+'|1" title="เลื่อนลง"><svg class="ic"><use href="#i-down"></use></svg></button></div>':'<div class="setting-view mono">'+esc(row[c.k]||'—')+'</div>';
+      } else if(editing) {
+        h+='<input data-dedit="'+di+'|'+ri+'|'+c.k+'" value="'+esc(settingValue(row,c))+'">';
+      } else {
+        h+='<div class="setting-view'+(!row[c.k]?' muted':'')+'">'+esc(settingValue(row,c)||'—')+'</div>';
+      }
+    });
+    h+=editing?'<button class="settings-erase" data-ddel="'+di+'|'+ri+'" title="นำรายการออกจากแบบร่าง">'+eraserSvg()+'</button>':'<span></span>';
+    h+='</div>';
+  });
   if(editing)h+='<button class="btn2" data-dadd="'+di+'" style="margin:10px 14px 0;width:auto">+ เพิ่มรายการ</button>';return h+'</div>';
 }
 function settingSectionStats(def,rows){
   if(def.sheet==='ค่าระบบ'){
-    var featureRows=rows.filter(function(r){var v=String(r['ค่า']).toLowerCase();return v==='true'||v==='false';});
+    var featureRows=rows.filter(function(r){return isBoolSetting(r['ค่า']);});
     var enabled=featureRows.filter(function(r){return settingOn(r['ค่า']);}).length;
     return rows.length+' รายการ'+(featureRows.length?' · ฟีเจอร์เปิด '+enabled:'');
   }
@@ -1442,7 +1535,24 @@ function bindSettingsDraft(){
   document.querySelectorAll('[data-settings-open]').forEach(function(el){el.ontoggle=function(){var sheet=el.dataset.settingsOpen;if(el.open){Object.keys(SETTINGS_OPEN).forEach(function(k){SETTINGS_OPEN[k]=false;});SETTINGS_OPEN[sheet]=true;document.querySelectorAll('[data-settings-open]').forEach(function(other){if(other!==el&&other.open)other.open=false;});}else if(SETTINGS_OPEN[sheet])SETTINGS_OPEN[sheet]=false;};});
   document.querySelectorAll('[data-section-edit]').forEach(function(el){el.onclick=function(e){e.preventDefault();e.stopPropagation();var def=SETTINGS_DEFS[+el.dataset.sectionEdit];SETTINGS_EDIT[def.sheet]=!SETTINGS_EDIT[def.sheet];Object.keys(SETTINGS_OPEN).forEach(function(k){SETTINGS_OPEN[k]=false;});SETTINGS_OPEN[def.sheet]=true;renderSettingsDraft();};el.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}};});
   document.querySelectorAll('[data-dedit]').forEach(function(el){el.oninput=function(){var p=el.dataset.dedit.split('|'),def=SETTINGS_DEFS[+p[0]];SETTINGS_DRAFT[def.sheet].rows[+p[1]][p[2]]=el.value;updateSettingsSaveButton();};});
-  document.querySelectorAll('[data-dtoggle]').forEach(function(el){el.onclick=function(){var p=el.dataset.dtoggle.split('|'),def=SETTINGS_DEFS[+p[0]],row=SETTINGS_DRAFT[def.sheet].rows[+p[1]],c=def.cols.filter(function(x){return x.k===p[2];})[0];if(def.sheet==='กลุ่มลูกค้า'&&p[2]==='เปิดใช้'&&settingOn(row[p[2]])&&SETTINGS_DRAFT[def.sheet].rows.filter(function(r){return !r._deleted&&settingOn(r['เปิดใช้']);}).length<=1){toast('ต้องเปิดใช้งานอย่างน้อยหนึ่งกลุ่ม');return;}row[p[2]]=c.t==='cfgvalue'?(String(row[p[2]])==='true'?'false':'true'):!settingOn(row[p[2]]);if(def.sheet==='กลุ่มลูกค้า'){ensureDraftDefaultGroup();renderSettingsDraft();return;}el.classList.toggle('on',settingOn(row[p[2]]));updateSettingsSaveButton();};});
+  document.querySelectorAll('[data-dtoggle]').forEach(function(el){
+    el.onclick=function(){
+      var p=el.dataset.dtoggle.split('|'),def=SETTINGS_DEFS[+p[0]],row=SETTINGS_DRAFT[def.sheet].rows[+p[1]],c=def.cols.filter(function(x){return x.k===p[2];})[0];
+      if(def.sheet==='กลุ่มลูกค้า'&&p[2]==='เปิดใช้'&&settingOn(row[p[2]])&&SETTINGS_DRAFT[def.sheet].rows.filter(function(r){return !r._deleted&&settingOn(r['เปิดใช้']);}).length<=1){
+        toast('ต้องเปิดใช้งานอย่างน้อยหนึ่งกลุ่ม');
+        return;
+      }
+      var isCfg = c && c.t==='cfgvalue';
+      var wasOn = settingOn(row[p[2]]);
+      var nextVal = isCfg ? (wasOn ? 'FALSE' : 'TRUE') : !wasOn;
+      row[p[2]] = nextVal;
+      if(def.sheet==='กลุ่มลูกค้า'){
+        ensureDraftDefaultGroup();
+      }
+      renderSettingsDraft();
+      updateSettingsSaveButton();
+    };
+  });
   document.querySelectorAll('[data-ddefault]').forEach(function(el){el.onclick=function(){var p=el.dataset.ddefault.split('|'),def=SETTINGS_DEFS[+p[0]],row=SETTINGS_DRAFT[def.sheet].rows[+p[1]];SETTINGS_DRAFT[def.sheet].rows.forEach(function(r){r['ค่าเริ่มต้น']=false;});row['เปิดใช้']=true;row['ค่าเริ่มต้น']=true;renderSettingsDraft();};});
   document.querySelectorAll('[data-dmove]').forEach(function(el){el.onclick=function(){var p=el.dataset.dmove.split('|'),def=SETTINGS_DEFS[+p[0]],row=SETTINGS_DRAFT[def.sheet].rows[+p[1]],dir=Number(p[2]),rows=SETTINGS_DRAFT[def.sheet].rows.filter(function(r){return !r._deleted;}).sort(function(a,b){return (Number(a['ลำดับแสดงผล'])||999999)-(Number(b['ลำดับแสดงผล'])||999999);}),pos=rows.indexOf(row),next=pos+dir;if(next<0||next>=rows.length)return;rows.forEach(function(r,i){r['ลำดับแสดงผล']=i+1;});var current=row['ลำดับแสดงผล'];row['ลำดับแสดงผล']=rows[next]['ลำดับแสดงผล'];rows[next]['ลำดับแสดงผล']=current;renderSettingsDraft();};});
   document.querySelectorAll('[data-ddel]').forEach(function(el){el.onclick=function(){var p=el.dataset.ddel.split('|'),def=SETTINGS_DEFS[+p[0]],row=SETTINGS_DRAFT[def.sheet].rows[+p[1]],label=row[def.cols[0].k];confirmDraftRemoval(label).then(function(ok){if(ok){row._deleted=true;if(def.sheet==='กลุ่มลูกค้า')ensureDraftDefaultGroup();renderSettingsDraft();}});};});
