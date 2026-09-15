@@ -1,0 +1,358 @@
+<script>
+function openPrintDialog(id, onlyType){
+  if(onlyType){previewDoc(id,onlyType);return;}
+  openPanel(
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="margin:0;font-size:17px;font-weight:600">เลือกเอกสารที่จะพิมพ์</p><span class="iconbtn" onclick="closePanel()" style="cursor:pointer"><span class="ic">×</span></span></div>'+
+    '<div style="margin:0 0 8px"><b style="font-size:14px">เอกสารแบบเดิม</b><span style="display:block;margin-top:2px;font-size:12px;color:var(--t2)">สำหรับกระดาษทั่วไป (ใบแปะเครื่อง / ใบ A6)</span></div>'+
+    '<button class="btn2" id="pd-label" style="margin-bottom:10px;padding:16px;text-align:left"><b>ใบแปะเครื่อง</b><br><span style="font-size:12px;color:var(--t2)">ขนาดเล็ก 6.5×7 ซม. ติดหน้ากล่อง สำหรับพนักงาน</span></button>'+
+    '<button class="btn2" id="pd-slip" style="padding:16px;text-align:left"><b>ใบลงชื่อสนใจสินค้า</b><br><span style="font-size:12px;color:var(--t2)">ขนาด A6 มอบให้ลูกค้าเก็บไว้ มี QR เช็กสถานะ</span></button>'+
+    '<div style="margin:18px 0 8px"><b style="font-size:14px">Thermal 80mm</b><span style="display:block;margin-top:2px;font-size:12px;color:var(--t2)">สำหรับเครื่องพิมพ์ใบเสร็จ หน้ากระดาษกว้าง 80 มม.</span></div>'+
+    '<button class="btn2" id="pd-label80" style="margin-bottom:10px;padding:16px;text-align:left"><b>ใบแปะเครื่อง 80mm</b><br><span style="font-size:12px;color:var(--t2)">ใบแปะเครื่องแบบขาวดำ พร้อม QR และบาร์โค้ด</span></button>'+
+    '<button class="btn2" id="pd-slip80" style="padding:16px;text-align:left"><b>ใบจองสินค้า 80mm</b><br><span style="font-size:12px;color:var(--t2)">ใบสำหรับลูกค้า พร้อม QR เช็กสถานะและบาร์โค้ด</span></button>'
+  );
+  $('pd-label').onclick=function(){previewDoc(id,'label');};
+  $('pd-slip').onclick=function(){previewDoc(id,'slip');};
+  $('pd-label80').onclick=function(){previewDoc(id,'label80');};
+  $('pd-slip80').onclick=function(){previewDoc(id,'slip80');};
+}
+
+function previewDoc(id,type,onBack){
+  $('panel').innerHTML=loadingHtml('กำลังเตรียมเอกสาร…');
+  callApi('getPrintData',id).then(function(d){
+    var html=type==='label'?buildLabelHTML(d):type==='label80'?buildLabelThermalHTML(d):type==='slip80'?buildSlipThermalHTML(d):buildSlipHTML(d);
+    var thermal80=(type==='label80'||type==='slip80');
+    var previewHtml=thermal80
+      ? '<div style="display:flex;justify-content:center"><div style="box-shadow:0 0 0 1px #eee">'+html+'</div></div>'
+      : type==='label'
+      ? '<div style="width:330px;height:420px;display:flex;justify-content:center;align-items:flex-start;padding-top:2px"><div style="transform:scale(1.15);transform-origin:top center">'+html+'</div></div>'
+      : '<div style="width:330px;min-height:420px;display:flex;justify-content:center;align-items:flex-start">'+html+'</div>';
+    openPanel(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><p style="margin:0;font-size:16px;font-weight:600">ตัวอย่าง'+(type==='label'?'ใบแปะเครื่อง':type==='label80'?'ใบแปะเครื่อง 80mm':type==='slip80'?'ใบจองสินค้า 80mm':'ใบลงชื่อสนใจสินค้า')+'</p><span class="iconbtn" onclick="closePanel()" style="cursor:pointer"><span class="ic">×</span></span></div>'+
+      '<div style="background:#fff;border:0.5px solid var(--bd);border-radius:8px;padding:14px;min-height:450px;display:flex;justify-content:center;align-items:flex-start;overflow:auto">'+previewHtml+'</div>'+
+      '<div class="row" style="margin-top:12px"><button class="btn2" id="pd-back">เลือกใหม่</button><button class="btn" id="pd-print">พิมพ์</button></div>'
+    );
+    $('pd-back').onclick=typeof onBack==='function'?onBack:function(){openPrintDialog(id);};
+    $('pd-print').onclick=function(){
+      if(type==='label'||type==='label80'){
+        if(doPrint(html,type))setTimeout(function(){askLabelPrintResult([id]);},400);
+      }else if(doPrint(html,type)){closePanel();}
+    };
+  }).catch(function(e){toast(e.message);});
+}
+
+// popup กรอกจำนวนเครื่องที่เข้าใหม่ (ในธีมแอป แทน prompt เบราว์เซอร์)
+function promptQty(sub,defaultVal,onOk){
+  openPanel('<div style="padding:4px 2px">'+
+    '<h2 style="margin:0 0 4px">ตั้งจำนวนเครื่องที่เข้าใหม่</h2>'+
+    '<p style="margin:0 0 14px;color:var(--t2);font-size:13px">'+esc(sub)+'<br>ใส่ให้ตรงกับจำนวนเครื่องที่เข้ามาจริง</p>'+
+    '<input id="qtyInput" type="number" min="1" max="1000" inputmode="numeric" value="'+esc(String(defaultVal))+'" style="width:100%;font-size:22px;font-weight:700;text-align:center;padding:14px;border:1px solid var(--bd);border-radius:12px;box-sizing:border-box;margin-bottom:16px">'+
+    '<div style="display:flex;gap:10px"><button class="btn2" id="qtyCancel" style="flex:1">ยกเลิก</button><button class="btn" id="qtyOk" style="flex:1">ตกลง</button></div></div>');
+  var inp=$('qtyInput');if(inp){inp.focus();inp.select();}
+  $('qtyCancel').onclick=closePanel;
+  function submit(){var q=Number(inp.value);if(!Number.isInteger(q)||q<1||q>1000){toast('กรุณาใส่จำนวนเต็ม 1–1,000 เครื่อง');return;}closePanel();onOk(q);}
+  $('qtyOk').onclick=submit;
+  if(inp)inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();submit();}};
+}
+
+// popup แจ้งเตือนเมื่อทำรายการเสร็จ (ใช้แผงด้านข้างแบบเดียวกับที่อื่นในแอป)
+function showDonePopup(title,sub){
+  openPanel('<div style="text-align:center;padding:12px 6px">'+
+    '<div style="width:54px;height:54px;margin:0 auto 12px;border-radius:50%;background:#E7F6EC;display:flex;align-items:center;justify-content:center;font-size:28px;color:#166534">✓</div>'+
+    '<h2 style="margin:0 0 4px">'+esc(title)+'</h2>'+
+    (sub?'<p style="margin:0;color:var(--t2);font-size:13px">'+esc(sub)+'</p>':'')+
+    '<button class="btn2" id="done-ok" style="margin-top:18px">ตกลง</button></div>');
+  var ok=$('done-ok');if(ok)ok.onclick=closePanel;
+}
+
+function askLabelPrintResult(ids){
+  openPanel('<div style="text-align:center;padding:8px"><div style="font-size:38px;margin-bottom:8px">🖨️</div><h2 style="margin:0 0 6px">ใบแปะเครื่องพิมพ์สำเร็จหรือไม่?</h2><p style="margin:0 0 15px;color:var(--t2);font-size:13px">กดยืนยันเมื่อเอกสารออกครบและตรวจ QR/Barcode แล้วเท่านั้น</p><div class="row"><button class="btn2" id="label-print-failed">ยังไม่สำเร็จ</button><button class="btn" id="label-print-ok">สำเร็จ · บันทึกประวัติ</button></div></div>');
+  $('label-print-failed').onclick=function(){closePanel();toast('ยังไม่บันทึกสถานะการพิมพ์');};
+  $('label-print-ok').onclick=function(){
+    var button=$('label-print-ok');button.disabled=true;
+    callApi('markLabeledBatch',ids).then(function(result){markQueueViewsStale();showDonePopup('บันทึกใบแปะแล้ว','ยืนยันการพิมพ์ '+ids.length+' ใบเรียบร้อย'+(result.count<ids.length?' · บางรายการเคยบันทึกแล้ว':'') );}).catch(function(e){button.disabled=false;toast(e.message);});
+  };
+}
+
+// จัดลำดับ: ดันลูกค้ากลุ่มที่เลือกให้สิทธิ์ (VIP) ขึ้นก่อน โดยคงลำดับคิว (FIFO) ภายในกลุ่มเดียวกัน
+function applyPriority(arr){
+  if(!arr)return [];
+  var useUrgent=STATE.priorityUrgent,pg=STATE.priorityGroups||[];
+  if(!useUrgent&&!pg.length)return arr;
+  var pset={};pg.forEach(function(g){pset[g]=1;});
+  return arr.slice().sort(function(a,b){
+    var ua=(useUrgent&&a.urgent)?0:1,ub=(useUrgent&&b.urgent)?0:1;
+    if(ua!==ub)return ua-ub;                      // เคสเร่งด่วนขึ้นก่อนสุด
+    var pa=pset[a.group]?0:1,pb=pset[b.group]?0:1;
+    if(pa!==pb)return pa-pb;                       // แล้วตามด้วย VIP ที่เลือก
+    return (a.createdRaw||0)-(b.createdRaw||0);    // FIFO ภายในชั้นเดียวกัน
+  });
+}
+
+// popup ยืนยันก่อนจัดสรรเครื่องให้ลูกค้า
+function confirmAllocate(device,customer,onYes){
+  openPanel('<div style="padding:4px 2px">'+
+    '<h2 style="margin:0 0 12px">ยืนยันการจัดสรร</h2>'+
+    '<div style="background:var(--soft,#f4f4f5);border-radius:12px;padding:16px;margin-bottom:18px">'+
+      '<p style="margin:0 0 4px;font-size:12px;color:var(--t2)">จัดสรรเครื่อง</p>'+
+      '<p style="margin:0 0 12px;font-size:15px;font-weight:700">'+esc(device)+'</p>'+
+      '<p style="margin:0 0 4px;font-size:12px;color:var(--t2)">ให้ลูกค้า</p>'+
+      '<p style="margin:0;font-size:16px;font-weight:700">'+esc(customer)+'</p>'+
+    '</div>'+
+    '<div style="display:flex;gap:10px"><button class="btn2" id="alloc-no" style="flex:1">ยกเลิก</button><button class="btn" id="alloc-yes" style="flex:1">ยืนยันจัดสรร</button></div></div>');
+  var no=$('alloc-no'),yes=$('alloc-yes');
+  if(no)no.onclick=closePanel;
+  if(yes)yes.onclick=function(){closePanel();onYes();};
+}
+
+// สร้าง SVG QR code (ใช้ไลบรารีเล็กฝังในหน้า — ดู qrLib ด้านล่าง)
+function qrSVG(text,size){
+  try{
+    var qr=qrLib(0,'M');qr.addData(text);qr.make();
+    var n=qr.getModuleCount(),cell=size/n,svg='<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" xmlns="http://www.w3.org/2000/svg"><rect width="'+size+'" height="'+size+'" fill="#fff"/>';
+    for(var r=0;r<n;r++)for(var c=0;c<n;c++)if(qr.isDark(r,c))svg+='<rect x="'+(c*cell)+'" y="'+(r*cell)+'" width="'+cell+'" height="'+cell+'" fill="#000"/>';
+    return svg+'</svg>';
+  }catch(e){return '<div style="width:'+size+'px;height:'+size+'px;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:10px">QR</div>';}
+}
+// บาร์โค้ด Code39 — เข้ารหัสจริง สแกนอ่านได้ (รองรับ A-Z 0-9 - . และ *)
+function barcodeSVG(text,w,h){
+  var C39={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw',
+    '5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn',
+    'A':'wnnnnwnnw','B':'nnwnnwnnw','C':'wnwnnwnnn','D':'nnnnwwnnw','E':'wnnnwwnnn',
+    'F':'nnwnwwnnn','G':'nnnnnwwnw','H':'wnnnnwwnn','I':'nnwnnwwnn','J':'nnnnwwwnn',
+    'K':'wnnnnnnww','L':'nnwnnnnww','M':'wnwnnnnwn','N':'nnnnwnnww','O':'wnnnwnnwn',
+    'P':'nnwnwnnwn','Q':'nnnnnnwww','R':'wnnnnnwwn','S':'nnwnnnwwn','T':'nnnnwnwwn',
+    'U':'wwnnnnnnw','V':'nwwnnnnnw','W':'wwwnnnnnn','X':'nwnnwnnnw','Y':'wwnnwnnnn',
+    'Z':'nwwnwnnnn','-':'nwnnnnwnw','.':'wwnnnnwnn',' ':'nwwnnnwnn','*':'nwnnwnwnn'};
+  var s=('*'+String(text).toUpperCase().replace(/[^0-9A-Z\-. ]/g,'-')+'*');
+  var narrow=1, wide=3, gap=1, x=0, bars='';
+  for(var i=0;i<s.length;i++){
+    var pat=C39[s[i]]||C39['-'];
+    for(var j=0;j<9;j++){
+      var bw=(pat[j]==='w')?wide:narrow;
+      if(j%2===0){bars+='<rect x="'+x+'" y="0" width="'+bw+'" height="'+h+'" fill="#000"/>';}
+      x+=bw;
+    }
+    x+=gap; // ช่องว่างระหว่างตัวอักษร
+  }
+  // สเกลให้พอดีความกว้างที่ต้องการ
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+x+' '+h+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect width="'+x+'" height="'+h+'" fill="#fff"/>'+bars+'</svg>';
+}
+
+function docFooter(store){
+  return 'เอกสารการลงชื่อแสดงความสนใจสินค้าฉบับนี้ ใช้เป็นหลักฐานการติดต่อกับ '+esc(store)+' เท่านั้น '+
+         'ไม่ใช่ใบเสร็จรับเงินหรือหลักประกันการได้รับสินค้า และไม่สามารถใช้ข้ามสาขาได้';
+}
+
+function safePrintColor(value){var color=String(value||'').trim();return /^#[0-9a-fA-F]{6}$/.test(color)?color:'#444441';}
+
+function buildLabelHTML(d){
+  var groupColor=safePrintColor((STATE.boot.groups.filter(function(g){return g.name===d.group;})[0]||{}).color);
+  var orderInfo=(d.preBooking?'<div><b>AIS Pre-Booking:</b> '+esc(d.preBooking)+'</div>':'')+(d.preOrder?'<div'+(d.preBooking?' style="margin-top:2px"':'')+'><b>Pre-Order:</b> '+esc(d.preOrder)+'</div>':'');
+  return '<div style="width:246px;font-family:\'IBM Plex Sans Thai\',sans-serif;color:#111;border:1px solid #000;border-radius:6px;padding:12px;box-sizing:border-box">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+      '<div><span style="font-size:10px;color:#fff;background:'+groupColor+';padding:2px 7px;border-radius:4px">'+esc(d.group)+'</span><p style="margin:6px 0 0;font-size:10px;font-weight:700;letter-spacing:.8px;color:#222">'+esc(d.id)+'</p></div>'+
+      '<div style="width:52px;height:52px">'+qrSVG(d.checkUrl,52)+'</div>'+
+    '</div>'+
+    '<p style="margin:4px 0 0;font-size:16px;font-weight:700;line-height:1.2">'+esc(d.name)+'</p>'+
+    '<p style="margin:1px 0 0;font-size:11px;color:#555">'+esc(d.phone)+'</p>'+
+    '<p style="margin:8px 0 0;font-size:13px;font-weight:600">'+esc(d.model)+'</p>'+
+    '<p style="margin:1px 0 0;font-size:11px;color:#555">'+esc(d.capacity)+' · '+esc(d.color)+'</p>'+
+    (d.price!=null?'<p style="margin:2px 0 0;font-size:11px;font-weight:700">'+Number(d.price).toLocaleString('th-TH')+' บาท</p>':'')+
+    (d.supplierLock?'<span style="display:inline-block;margin-top:6px;font-size:9px;color:#0C447C;background:#E6F1FB;padding:2px 6px;border-radius:4px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</span>':'')+
+    (orderInfo?'<div style="margin-top:6px;font-size:9.5px;font-weight:600;line-height:1.4;color:#333">'+orderInfo+'</div>':'')+
+    '<div style="border-top:1px dashed #999;margin-top:8px;padding-top:6px">'+
+      (d.appt?'<p style="margin:0;font-size:10px;color:#333">นัดรับ '+esc(d.appt)+'</p>':'<p style="margin:0;font-size:10px;color:#333">นัดรับ: ______________</p>')+
+      (d.deposit?'<p style="margin:2px 0 0;font-size:10px;color:#333">มัดจำรายการนี้ '+d.deposit.toLocaleString()+' · #'+esc(d.billNo)+'</p>':'')+
+      (d.supplierLock?'<p style="margin:2px 0 0;font-size:9px;color:#900">* ใช้โครงการ AIS ต้องเป็นเครื่อง AIS เท่านั้น</p>':'')+
+    '</div>'+
+    '<div style="margin-top:8px">'+barcodeSVG(d.id,222,26)+'</div>'+
+    '<p style="margin:2px 0 0;font-size:8px;color:#666;text-align:center;letter-spacing:1px">'+esc(d.id)+'</p>'+
+  '</div>';
+}
+
+function buildSlipHTML(d){
+  var groupColor=safePrintColor((STATE.boot.groups.filter(function(g){return g.name===d.group;})[0]||{}).color);
+  return '<div style="width:330px;font-family:\'IBM Plex Sans Thai\',sans-serif;color:#111;box-sizing:border-box;padding:6px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1.5px solid #111;padding-bottom:9px">'+
+      '<div><p style="margin:0;font-size:15px;font-weight:700">ใบลงชื่อสนใจสินค้า</p><p style="margin:2px 0 0;font-size:10.5px;color:#555">iStudio Central Embassy</p><p style="margin:4px 0 0;font-size:14px;font-weight:700;letter-spacing:2px;color:#111">'+esc(d.id)+'</p></div>'+
+      '<div style="width:64px;height:64px">'+qrSVG(d.checkUrl,64)+'</div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
+      '<div><p style="margin:0;font-size:15px;font-weight:700">'+esc(d.maskedName)+'</p><p style="margin:2px 0 0;font-size:11px;color:#555">'+esc(d.maskedPhone)+'</p></div>'+
+      (d.showCustomerGroup?'<span style="font-size:10px;color:#fff;background:'+groupColor+';padding:3px 8px;border-radius:5px">'+esc(d.group)+'</span>':'')+ 
+    '</div>'+
+    '<table style="width:100%;margin-top:10px;font-size:11.5px;border-collapse:collapse">'+
+      row2('สินค้า',esc(d.model))+row2('ความจุ · สี',esc(d.capacity)+' · '+esc(d.color))+
+      (d.price!=null?row2('ราคา',Number(d.price).toLocaleString('th-TH')+' บาท'):'')+
+      (d.supplierLock?row2('เงื่อนไข','เครื่อง AIS เท่านั้น'+(d.promo?' ('+esc(d.promo)+')':'')):'')+
+      (d.preOrder?row2('เลข Pre-Order',esc(d.preOrder)):'')+
+      (d.preBooking?row2('Pre-Booking AIS',esc(d.preBooking)):'')+
+      (d.deposit?row2('มัดจำรายการนี้','บิล '+esc(d.billNo)+' · '+d.deposit.toLocaleString()+' บาท'):'')+
+      (d.appt?row2('นัดรับ',esc(d.appt)):'')+
+    '</table>'+
+    (d.additionalNote?'<div style="margin-top:10px;padding:9px 11px;border:1px solid #ddd;border-radius:5px;font-size:10.5px;color:#444;line-height:1.55"><b>ข้อมูลเพิ่มเติม</b><br>'+esc(d.additionalNote)+'</div>':'')+
+    '<div style="margin-top:10px;padding:9px 11px;background:#F4F3F0;border-radius:5px;font-size:10.5px;color:#444;line-height:1.6">'+
+      '<b>เช็กสถานะด้วยตนเอง</b><br>สแกน QR มุมบนขวา แล้วกรอกเบอร์โทรเพื่อยืนยันตัวตน'+
+    '</div>'+
+    '<div style="margin-top:10px;text-align:center">'+barcodeSVG(d.id,300,30)+
+      '<p style="margin:2px 0 0;font-size:8.5px;color:#666;letter-spacing:1.5px">'+esc(d.id)+'</p></div>'+
+    '<p style="margin:10px 0 0;font-size:8.5px;color:#777;line-height:1.55;border-top:1px solid #ddd;padding-top:8px">'+docFooter(d.storeName)+'</p>'+
+  '</div>';
+}
+function row2(k,v){return '<tr><td style="padding:4px 0;color:#777;width:38%">'+k+'</td><td style="padding:4px 0;text-align:right;font-weight:500">'+v+'</td></tr>';}
+// ===== ฟังก์ชัน thermal 80mm (production-ready) =====
+// ใบแปะเครื่อง 80mm — ขาวดำล้วน, QR คู่ (รหัสจอง + เบอร์โทร)
+function buildLabelThermalHTML(d){
+  var orderInfo=(d.preBooking?'<div><b>AIS Pre-Booking:</b> '+esc(d.preBooking)+'</div>':'')+(d.preOrder?'<div'+(d.preBooking?' style="margin-top:2px"':'')+'><b>Pre-Order:</b> '+esc(d.preOrder)+'</div>':'');
+  return '<div style="width:288px;font-family:\'IBM Plex Sans Thai\',-apple-system,sans-serif;color:#000;padding:11px;box-sizing:border-box">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+      '<p style="margin:0;font-size:16px;font-weight:700;letter-spacing:1px;font-family:\'IBM Plex Mono\',monospace">'+esc(d.id)+'</p>'+
+      '<span style="font-size:14px;font-weight:800;color:#000;border:2px solid #000;padding:2px 10px;border-radius:3px;white-space:nowrap">'+esc(d.group)+'</span>'+
+    '</div>'+
+    '<p style="margin:6px 0 0;font-size:21px;font-weight:700;line-height:1.15">'+esc(d.name)+'</p>'+
+    '<p style="margin:2px 0 0;font-size:14px">'+esc(d.phone)+'</p>'+
+    '<p style="margin:9px 0 0;font-size:17px;font-weight:700">'+esc(d.model)+'</p>'+
+    '<p style="margin:1px 0 0;font-size:14px">'+esc(d.capacity)+' · '+esc(d.color)+'</p>'+
+    (d.price!=null?'<p style="margin:2px 0 0;font-size:15px;font-weight:700">'+Number(d.price).toLocaleString('th-TH')+' บาท</p>':'')+
+    (d.supplierLock?'<p style="margin:6px 0 0;font-size:12px;font-weight:700;border:1.5px solid #000;display:inline-block;padding:1px 7px;border-radius:3px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</p>':'')+
+    (orderInfo?'<div style="margin-top:6px;font-size:12px;font-weight:600;line-height:1.4">'+orderInfo+'</div>':'')+
+    '<div style="border-top:1.5px dashed #000;margin-top:9px;padding-top:7px">'+
+      (d.appt?'<p style="margin:0;font-size:13px;font-weight:600">นัดรับ '+esc(d.appt)+'</p>':'<p style="margin:0;font-size:13px">นัดรับ: ______________</p>')+
+      (d.deposit?'<p style="margin:2px 0 0;font-size:13px">มัดจำรายการนี้ '+d.deposit.toLocaleString()+' · #'+esc(d.billNo)+'</p>':'')+
+    '</div>'+
+    // QR เบอร์โทร (เดี่ยว กลาง) + บาร์โค้ดรหัสจอง (ล่างสุด กลาง)
+    // เบอร์โทรแสดงอยู่ด้านบนแล้ว ใต้ QR จึงไม่พิมพ์ข้อความ/เบอร์ซ้ำ เพื่อประหยัดพื้นที่
+    '<div style="text-align:center;margin-top:9px;border-top:1.5px solid #000;padding-top:9px">'+qrSVG(d.phone,108)+'</div>'+
+    '<div style="text-align:center;margin-top:9px">'+barcodeSVG(d.id,266,44)+
+      '<p style="margin:3px 0 0;font-size:12px;font-weight:700;font-family:\'IBM Plex Mono\',monospace;letter-spacing:2px">'+esc(d.id)+'</p>'+
+    '</div>'+
+    '<p style="margin:6px 0 0;padding-top:5px;border-top:1px dashed #000;text-align:center;font-size:10.5px;font-weight:700;line-height:1.4">เอกสารมีข้อมูลส่วนบุคคล กรุณาแม็กติดกับใบออเดอร์<br>เก็บรักษาให้ปลอดภัย และห้ามทิ้งโดยเด็ดขาด</p>'+
+  '</div>';
+}
+// ใบจองสินค้า 80mm — ใบเสร็จลูกค้า, QR เช็กสถานะ + QR รหัสจอง
+function buildSlipThermalHTML(d){
+  return '<div style="width:288px;font-family:\'IBM Plex Sans Thai\',-apple-system,sans-serif;color:#000;padding:11px;box-sizing:border-box">'+
+    '<div style="text-align:center;border-bottom:1.5px solid #000;padding-bottom:9px">'+
+      '<p style="margin:0;font-size:16px;font-weight:700">ใบลงชื่อสนใจสินค้า</p>'+
+      '<p style="margin:2px 0 0;font-size:12px">iStudio Central Embassy</p>'+
+      '<p style="margin:5px 0 0;font-size:16px;font-weight:700;letter-spacing:2px;font-family:\'IBM Plex Mono\',monospace">'+esc(d.id)+'</p>'+
+    '</div>'+
+    '<div style="text-align:center;margin-top:11px">'+qrSVG(d.checkUrl,132)+'<p style="margin:3px 0 0;font-size:12px;font-weight:600">สแกนเช็กสถานะด้วยตนเอง</p><p style="margin:0;font-size:11px">แล้วกรอกเบอร์โทรเพื่อยืนยันตัวตน</p></div>'+
+    '<div style="border-top:1.5px dashed #000;margin-top:11px;padding-top:9px">'+
+      '<p style="margin:0;font-size:16px;font-weight:700">'+esc(d.maskedName)+'</p>'+
+      '<p style="margin:1px 0 0;font-size:13px">'+esc(d.maskedPhone)+(d.showCustomerGroup?' · '+esc(d.group):'')+'</p>'+ 
+    '</div>'+
+    '<table style="width:100%;margin-top:9px;font-size:13px;border-collapse:collapse">'+
+      row2t('สินค้า',esc(d.model))+row2t('ความจุ · สี',esc(d.capacity)+' · '+esc(d.color))+
+      (d.price!=null?row2t('ราคา',Number(d.price).toLocaleString('th-TH')+' บาท'):'')+
+      (d.supplierLock?row2t('เงื่อนไข','AIS เท่านั้น'+(d.promo?' ('+esc(d.promo)+')':'')):'')+
+      (d.preOrder?row2t('Pre-Order',esc(d.preOrder)):'')+
+      (d.preBooking?row2t('Pre-Booking',esc(d.preBooking)):'')+
+      (d.deposit?row2t('มัดจำรายการนี้','#'+esc(d.billNo)+' · '+d.deposit.toLocaleString()+' บาท'):'')+
+      (d.appt?row2t('นัดรับ',esc(d.appt)):'')+
+    '</table>'+
+    (d.additionalNote?'<div style="margin-top:9px;padding:8px 10px;border:1.5px solid #000;border-radius:4px;font-size:12px;line-height:1.5"><b>ข้อมูลเพิ่มเติม</b><br>'+esc(d.additionalNote)+'</div>':'')+
+    '<p style="margin:11px 0 0;font-size:10.5px;line-height:1.5;border-top:1px dashed #000;padding-top:8px">'+docFooter(d.storeName)+'</p>'+
+  '</div>';
+}
+function row2t(k,v){return '<tr><td style="padding:3px 0;width:36%;vertical-align:top">'+k+'</td><td style="padding:3px 0;text-align:right;font-weight:600">'+v+'</td></tr>';}
+
+
+function doPrint(innerHTML,type){
+  var w=window.open('','_blank');
+  if(!w){toast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาต popup ของเว็บนี้แล้วลองใหม่');return false;}
+  var pageCss,bodyCss;
+  if(type==='labelsheet'){ // พิมพ์ใบแปะหลายใบ: เรียงลง A4 อัตโนมัติ ไม่ล้น/ไม่ตกหล่น
+    pageCss='@page{size:A4;margin:8mm}';
+    bodyCss='margin:0;display:flex;flex-wrap:wrap;gap:6mm;align-content:flex-start';
+  }else if(type==='label'){
+    pageCss='@page{size:65mm auto;margin:2mm}';
+    bodyCss='margin:0;padding:0;display:flex;justify-content:center';
+  }else if(type==='label80'||type==='slip80'){
+    pageCss='@page{size:80mm auto;margin:0}';
+    bodyCss='margin:0;padding:0;display:flex;justify-content:center';
+  }else{
+    pageCss='@page{size:A6;margin:6mm}';
+    bodyCss='margin:0;padding:0;display:flex;justify-content:center';
+  }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>พิมพ์เอกสาร</title>'+
+    '<style>'+pageCss+'body{font-family:\'IBM Plex Sans Thai\',-apple-system,\'Segoe UI\',sans-serif;'+bodyCss+'}</style></head><body>'+innerHTML+
+    '<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script></body></html>');
+  w.document.close();
+  return true;
+}
+
+$('btnMatch').onclick=function(){
+  if(!STATE.stockLines.length){toast('กรุณาเพิ่มสินค้าเข้าก่อนค้นหารายชื่อ');return;}
+  if(STATE.stockLines.some(function(x){return !x.model||!x.capacity||!x.color||Number(x.qty)<1;})){toast('กรุณาระบุรุ่น ความจุ สี และจำนวนสินค้าให้ครบ');return;}
+  $('matchResult').innerHTML=loadingHtml('กำลังค้นหารายชื่อ…');
+  var common={supplier:$('m-supply').value,group:$('m-group').value};
+  var grouped={};STATE.stockLines.forEach(function(x){var key=[x.model,x.capacity,x.color].join('|');if(!grouped[key])grouped[key]=Object.assign({},x,common);else grouped[key].qty+=Number(x.qty)||1;});
+  var requests=Object.keys(grouped).map(function(k){return grouped[k];});STATE.recentAllocations=[];
+  Promise.all(requests.map(function(p){return callApi('matchStock',p);})).then(function(results){
+    STATE.stockRemaining={};STATE.stockKey={};STATE.stockDeclared={};var h='';
+    results.forEach(function(r,idx){var p=requests[idx];STATE.stockRemaining[idx]=r.remaining;STATE.stockKey[idx]=r.lotKey;STATE.stockDeclared[idx]=r.qty;
+      var exact=applyPriority(r.exact),alt=applyPriority(r.alt); // ดันกลุ่ม VIP ที่เลือกขึ้นก่อน (คงลำดับคิวภายในกลุ่มเดียวกัน)
+      h+='<div class="stock-summary"><span><b>'+esc(p.model)+'</b> · '+esc(p.capacity)+' · '+esc(p.color)+' <span style="color:var(--t3)">· เข้า <span id="stockDeclared-'+idx+'">'+r.qty+'</span> เครื่อง<span id="stockAlloc-'+idx+'">'+(r.allocated?' · จัดสรรแล้ว '+r.allocated:'')+'</span></span></span><span style="display:flex;align-items:center;gap:10px">เหลือจัดสรร <b id="stockRemaining-'+idx+'">'+r.remaining+'</b> เครื่อง <button class="btn2" data-resetlot="'+idx+'" style="padding:4px 10px;font-size:12px;width:auto">ตั้งจำนวนใหม่</button></span></div>';
+      h+='<div class="list">'+(exact.length?exact.map(function(c,i){return matchRow(c,i,p,false,idx);}).join(''):'<div class="empty">ไม่มีคนรอสเปกนี้พอดี</div>')+'</div>';
+      if(alt.length)h+='<h2 style="font-size:13px">รับสเปกนี้ได้ แต่ต้องโทรถามก่อน</h2><div class="list">'+alt.map(function(c,i){return matchRow(c,i,p,true,idx);}).join('')+'</div>';
+    });
+    $('matchResult').innerHTML=h+'<div id="batchActions"></div>';
+    $('matchResult').querySelectorAll('[data-alloc]').forEach(function(b){b.onclick=function(){
+      var idx=Number(b.dataset.stock);if(STATE.stockRemaining[idx]<1){toast('จัดสรรครบจำนวนของสเปกนี้แล้ว');return;}
+      var p=requests[idx];
+      confirmAllocate(p.model+' · '+p.capacity+' · '+p.color,b.dataset.name,function(){
+        b.disabled=true;b.textContent='กำลังจัดสรร…';var days=STATE.boot.defaultDueDays;var d=new Date();d.setDate(d.getDate()+days);
+        callApi('allocateToCustomer',b.dataset.alloc,d.toISOString(),STATE.stockKey[idx]).then(function(){
+          STATE.stockRemaining[idx]--;
+          var rem=$('stockRemaining-'+idx);if(rem)rem.textContent=STATE.stockRemaining[idx];
+          // เอารายการที่จัดสรรสำเร็จออกทันที เพื่อให้หน้ารายชื่อเหลือเฉพาะคิวที่ยังรอเครื่อง
+          var allocatedRow=b.closest('.match-row');
+          if(allocatedRow)allocatedRow.remove();
+          STATE.recentAllocations.push({id:b.dataset.alloc,name:b.dataset.name});
+          renderBatchActions();
+          toast('จัดสรรแล้ว · เหลือ '+STATE.stockRemaining[idx]+' เครื่อง');
+          if(STATE.stockRemaining[idx]===0)$('matchResult').querySelectorAll('[data-stock="'+idx+'"]').forEach(function(x){x.disabled=true;});
+        }).catch(function(e){b.disabled=false;b.textContent='จัดสรร';toast(e.message);});
+      });
+    };});
+    $('matchResult').querySelectorAll('[data-resetlot]').forEach(function(b){b.onclick=function(){
+      var idx=Number(b.dataset.resetlot),p=requests[idx];
+      var cur=STATE.stockDeclared[idx]!=null?STATE.stockDeclared[idx]:(p.qty||1);
+      promptQty(p.model+' · '+p.capacity+' · '+p.color,cur,function(q){
+        callApi('resetStockLot',p.supplier,p.model,p.capacity,p.color,q).then(function(res){
+          STATE.stockRemaining[idx]=res.remaining;STATE.stockDeclared[idx]=res.declared;
+          var rem=$('stockRemaining-'+idx);if(rem)rem.textContent=res.remaining;
+          var dec=$('stockDeclared-'+idx);if(dec)dec.textContent=res.declared;
+          var alc=$('stockAlloc-'+idx);if(alc)alc.textContent=''; // จัดสรรแล้วกลับเป็น 0
+          // อัปเดตช่อง "จำนวนเข้า" ในฟอร์มด้านบนให้ตรงกับที่ตั้งใหม่ (ไม่ให้ตัวเลขบน/ล่างขัดกัน)
+          var specKey=[p.model,p.capacity,p.color].join('|');
+          STATE.stockLines.forEach(function(l){if([l.model,l.capacity,l.color].join('|')===specKey)l.qty=res.declared;});
+          if(typeof renderStockLines==='function')renderStockLines();
+          // re-enable ปุ่มจัดสรรของสเปกนี้ที่ถูกปิดไปตอนเหลือ 0
+          $('matchResult').querySelectorAll('[data-stock="'+idx+'"][data-alloc]').forEach(function(x){x.disabled=false;x.textContent='จัดสรร';});
+          toast('ตั้งจำนวนใหม่แล้ว · เข้า '+res.declared+' · เหลือจัดสรร '+res.remaining+' เครื่อง');
+        }).catch(function(e){toast(e.message);});
+      });
+    };});
+  }).catch(function(e){$('matchResult').innerHTML='<div class="empty">'+esc(e.message)+'</div>';});
+};
+
+function renderBatchActions(){
+  var box=$('batchActions');if(!box||!STATE.recentAllocations.length)return;
+  box.innerHTML='<div class="batch-box"><h2>จัดสรรรายการนี้แล้ว · '+STATE.recentAllocations.length+' ราย</h2><p class="batch-names">'+STATE.recentAllocations.map(function(x){return esc(x.name);}).join(' · ')+'</p><div class="row"><button class="btn2" id="openLastMatch">ดูรายการล่าสุด</button><button class="btn" id="printBatchLabels">พิมพ์ใบแปะสินค้าทั้งหมด</button></div></div>';
+  $('openLastMatch').onclick=function(){openDetail(STATE.recentAllocations[STATE.recentAllocations.length-1].id);};
+  $('printBatchLabels').onclick=function(){printBatchLabels();};
+}
+function printBatchLabels(){
+  var ids=STATE.recentAllocations.map(function(x){return x.id;});
+  var btn=$('printBatchLabels');if(btn){btn.disabled=true;btn.textContent='กำลังเตรียมใบแปะ…';}
+  var labelHtml='';
+  callApi('getPrintDataBatch',ids).then(function(docs){
+    labelHtml=docs.map(function(d){return '<div style="page-break-inside:avoid;break-inside:avoid">'+buildLabelHTML(d)+'</div>';}).join('');
+    if(doPrint(labelHtml,'labelsheet'))setTimeout(function(){askLabelPrintResult(ids);},400);
+  }).catch(function(e){toast(e.message);}).then(function(){
+    var b=$('printBatchLabels');if(b){b.disabled=false;b.textContent='พิมพ์ใบแปะสินค้าทั้งหมด';}
+  });
+}
+</script>

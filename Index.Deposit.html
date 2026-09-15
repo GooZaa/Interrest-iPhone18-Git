@@ -1,0 +1,41 @@
+<script>
+function splitDepositAmount(total,count){
+  total=Math.max(0,Math.floor(Number(total)||0));count=Math.max(1,Number(count)||1);
+  var base=Math.floor(total/count),rem=total%count,out=[];
+  for(var i=0;i<count;i++)out.push(base+(i<rem?1:0));
+  return out;
+}
+function depositAllocationsForDevices(total){
+  var count=STATE.devices.length, saved=(STATE.refs.depositAllocations||[]).map(Number);
+  if(saved.length===count&&saved.every(function(v){return Number.isInteger(v)&&v>=0;})&&saved.reduce(function(a,b){return a+b;},0)===Number(total||0))return saved;
+  return splitDepositAmount(total,count);
+}
+function depositDialogHtml(){
+  var total=Math.max(0,Number(STATE.refs.deposit)||0),alloc=depositAllocationsForDevices(total);
+  return '<div class="field"><label>เลขที่บิลมัดจำ</label><input id="ref-bill" value="'+esc(STATE.refs.billNo)+'" placeholder="เช่น A00123"></div>'+ 
+    '<div class="field"><label>ยอดมัดจำรวมของบิล (บาท)</label><input id="ref-deposit" value="'+(total||'')+'" inputmode="numeric" placeholder="เช่น 2,000"></div>'+ 
+    '<div class="alert" style="margin-bottom:12px">ระบบแบ่งยอดมัดจำให้แต่ละ Order อัตโนมัติ สามารถแก้ยอดรายเครื่องได้ แต่ยอดรวมต้องตรงกับบิล</div>'+ 
+    '<div id="deposit-allocation-list">'+STATE.devices.map(function(d,i){return '<div class="line" style="align-items:center;margin-bottom:8px"><span class="key">เครื่องที่ '+(i+1)+'<small style="display:block">'+esc(d.model||'ยังไม่ระบุรุ่น')+' · '+esc(d.capacity||'-')+'</small></span><input data-deposit-allocation="'+i+'" inputmode="numeric" value="'+alloc[i]+'" style="max-width:150px;text-align:right"></div>';}).join('')+'</div>'+ 
+    '<button class="btn2" id="deposit-auto-split" type="button" style="margin:4px 0 10px">แบ่งเท่ากันอัตโนมัติ</button>'+ 
+    '<div id="deposit-allocation-summary" class="sub"></div>';
+}
+function bindDepositDialog(){
+  var total=$('ref-deposit');
+  function values(){return [].slice.call(document.querySelectorAll('[data-deposit-allocation]')).map(function(el){return Math.max(0,Math.floor(Number(el.value)||0));});}
+  function summary(){var target=Math.max(0,Math.floor(Number(total.value.replace(/,/g,''))||0)),sum=values().reduce(function(a,b){return a+b;},0),box=$('deposit-allocation-summary');box.innerHTML='จัดสรรแล้ว <b>'+sum.toLocaleString()+'</b> / ยอดรวม <b>'+target.toLocaleString()+'</b> บาท'+(sum===target?' · <span style="color:var(--ok)">ยอดตรงกัน</span>':' · <span style="color:var(--danger)">ยอดยังไม่ตรง</span>');}
+  function autoSplit(){var vals=splitDepositAmount(total.value.replace(/,/g,''),STATE.devices.length);document.querySelectorAll('[data-deposit-allocation]').forEach(function(el,i){el.value=vals[i];});summary();}
+  total.oninput=function(){this.value=this.value.replace(/[^0-9]/g,'');autoSplit();};
+  document.querySelectorAll('[data-deposit-allocation]').forEach(function(el){el.oninput=function(){this.value=this.value.replace(/[^0-9]/g,'');summary();};});
+  $('deposit-auto-split').onclick=autoSplit;summary();
+}
+function saveDepositDialog(){
+  var total=Math.max(0,Math.floor(Number($('ref-deposit').value.replace(/,/g,''))||0));
+  var bill=$('ref-bill').value.trim();
+  var allocations=[].slice.call(document.querySelectorAll('[data-deposit-allocation]')).map(function(el){return Math.max(0,Math.floor(Number(el.value)||0));});
+  var sum=allocations.reduce(function(a,b){return a+b;},0);
+  if(total>0&&!bill)return 'กรุณาระบุเลขบิลมัดจำ';
+  if(sum!==total)return 'ยอดมัดจำของแต่ละรายการรวมกันต้องเท่ากับ '+total.toLocaleString()+' บาท';
+  STATE.refs.billNo=total?bill:'';STATE.refs.deposit=String(total||'');STATE.refs.depositAllocations=allocations;
+  return '';
+}
+</script>

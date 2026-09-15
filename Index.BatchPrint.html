@@ -1,0 +1,153 @@
+<style>
+.bp-wrap{max-width:1180px;margin:0 auto;padding-bottom:90px}.bp-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px}.bp-head h1{font-size:22px;margin:0 0 5px}.bp-head p{margin:0;color:var(--t2);font-size:13px}.bp-card{background:var(--cv);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-bottom:14px}.bp-card h2{font-size:14px;margin:0 0 12px}.bp-choice{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.bp-choice.two{grid-template-columns:repeat(2,1fr)}.bp-opt{border:1px solid var(--bd);background:var(--cv);color:var(--tx);border-radius:12px;padding:13px;text-align:left;cursor:pointer}.bp-opt b{display:block;font-size:13px}.bp-opt small{display:block;color:var(--t2);margin-top:3px;line-height:1.4}.bp-opt.on{border-color:var(--brand);background:var(--sel);color:var(--selT)}.bp-filters{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:9px}.bp-filters.advanced{grid-template-columns:repeat(5,1fr);margin-top:9px;align-items:end}.bp-filters input,.bp-filters select{width:100%;box-sizing:border-box;border:1px solid var(--bd);background:var(--cv);color:var(--tx);border-radius:10px;padding:10px;font:inherit}.bp-date label{display:block;margin:0 0 5px;font-size:11px;color:var(--t2)}.bp-aisline{display:inline-flex;gap:8px;align-items:center;margin:11px 0 0;color:var(--t2);font-size:12px;white-space:nowrap}.bp-aisline input{width:18px;height:18px;flex:0 0 18px;margin:0}.bp-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}.bp-toolbar span{font-size:12px;color:var(--t2)}.bp-table{border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--cv)}.bp-row{display:grid;grid-template-columns:38px 128px 1.35fr 1.4fr 1fr 115px;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--bd);cursor:pointer}.bp-row:first-child{border-top:0}.bp-row.head{font-size:11px;color:var(--t3);cursor:default;background:var(--btn)}.bp-row:not(.head):hover{background:var(--btn)}.bp-row.selected{background:var(--sel)}.bp-row input{width:18px;height:18px}.bp-main{font-size:13px;font-weight:600}.bp-sub{font-size:11.5px;color:var(--t2);margin-top:2px}.bp-badge{display:inline-block;border-radius:999px;background:var(--btn);padding:4px 8px;font-size:11px}.bp-bar{position:sticky;bottom:14px;z-index:8;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#202024;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:12px 14px;margin-top:14px;box-shadow:0 12px 30px #0004}.bp-bar .btn{width:auto;min-width:210px;background:var(--brand);color:var(--brandInk);box-shadow:none}.bp-bar .btn:not(:disabled):hover{background:var(--brandHover)}.bp-empty{text-align:center;padding:56px 20px;color:var(--t2)}.bp-warning{padding:10px 12px;border-radius:10px;background:#FFF3E0;color:#7A4A00;font-size:12px;margin:10px 0}.bp-preview-doc{background:#fff;color:#000;display:flex;justify-content:center;overflow:auto;max-height:420px;border:1px solid #ddd;border-radius:10px;padding:10px}.bp-preview-doc>div{transform:scale(.72);transform-origin:top center;margin-bottom:-28%}
+@media(max-width:820px){.bp-choice,.bp-choice.two{grid-template-columns:1fr}.bp-filters,.bp-filters.advanced{grid-template-columns:1fr 1fr}.bp-row{grid-template-columns:32px 1fr 1fr}.bp-row .bp-hide-sm{display:none}.bp-row.head{display:none}.bp-head{display:block}}
+</style>
+
+<script>
+var BP={loaded:false,type:'label',format:'a4',scale:100,items:[],selected:{},job:null,timer:null,seq:0};
+
+function bpOpen(){
+  if(!BP.loaded){bpRenderShell();BP.loaded=true;}bpLoad();
+}
+
+function bpRenderShell(){
+  var root=$('bp-root');if(!root)return;
+  root.innerHTML='<div class="bp-wrap">'+
+    '<div class="bp-head"><div><h1>พิมพ์หลายรายการ</h1><p>เลือกจากรายชื่อ สถานะ หรือกลุ่ม แล้วเตรียมเอกสารชุดเดียวกันได้สูงสุด 50 รายการ</p></div></div>'+
+    '<div class="bp-card"><h2>1. เอกสารที่ต้องการ</h2><div class="bp-choice" id="bp-types">'+
+      bpOption('type','label','ใบแปะเครื่อง','ข้อมูลเต็ม + QR เบอร์โทร + Barcode')+
+      bpOption('type','slip','ใบจองสินค้า','ข้อมูลบัง + QR เช็กสถานะ')+
+      bpOption('type','pair','ครบชุด','ใบแปะเครื่องและใบจองของแต่ละราย')+'</div></div>'+
+    '<div class="bp-card"><h2>2. กระดาษและขนาด</h2><div class="bp-choice two" id="bp-formats">'+
+      bpOption('format','a4','A4','จัดชิดขอบ เรียงประหยัดกระดาษ พร้อมมาร์กตัด')+
+      bpOption('format','thermal','Thermal 80mm','หนึ่งเอกสารต่อหนึ่งหน้า ตัดอัตโนมัติเมื่อเปิด Page cut ในไดรเวอร์')+'</div>'+
+      '<div id="bp-scale" style="margin-top:12px"></div></div>'+
+    '<div class="bp-card"><h2>3. เลือกรายชื่อ</h2><div class="bp-filters">'+
+      '<input id="bp-q" type="search" placeholder="ค้นชื่อ เบอร์ รหัสจอง รุ่น โครงการ">'+
+      '<select id="bp-group"></select><select id="bp-status"></select><select id="bp-model"></select></div>'+
+      '<div class="bp-filters advanced"><select id="bp-capacity"></select><select id="bp-color"></select><select id="bp-labeled"><option value="">การพิมพ์ใบแปะ: ทั้งหมด</option><option value="no">ยังไม่เคยพิมพ์ใบแปะ</option><option value="yes">เคยพิมพ์ใบแปะแล้ว</option></select><div class="bp-date"><label for="bp-from">วันนัดตั้งแต่</label><input id="bp-from" type="date"></div><div class="bp-date"><label for="bp-to">วันนัดถึง</label><input id="bp-to" type="date"></div></div>'+
+      '<label class="bp-aisline" for="bp-ais"><input id="bp-ais" type="checkbox"><span>เฉพาะเครื่อง AIS</span></label>'+
+      '<div class="bp-toolbar"><span id="bp-summary">กำลังโหลด…</span><button class="btn2" id="bp-select-all" type="button" style="width:auto">เลือกทั้งหมดที่แสดง</button></div><div id="bp-list"></div></div>'+
+    '<div class="bp-bar"><div><b id="bp-count">เลือกแล้ว 0 รายการ</b><div style="font-size:11px;opacity:.72">ระบบจะตรวจสถานะจริงอีกครั้งก่อนพิมพ์</div></div><button class="btn" id="bp-prepare" type="button" disabled>ตรวจสอบและดูตัวอย่าง</button></div></div>';
+  bpFillFilters();bpBind();bpRenderChoices();
+}
+
+function bpOption(kind,value,title,sub){return '<button class="bp-opt" type="button" data-bp-'+kind+'="'+value+'"><b>'+title+'</b><small>'+sub+'</small></button>';}
+function bpUnique(values){var seen={};return values.filter(function(v){v=String(v||'').trim();if(!v||seen[v])return false;seen[v]=1;return true;});}
+function bpOptions(first,values){return '<option value="">'+first+'</option>'+bpUnique(values).map(function(v){return '<option value="'+esc(v)+'">'+esc(v)+'</option>';}).join('');}
+function bpFillFilters(){
+  var b=STATE.boot||{groups:[],products:[]};
+  $('bp-group').innerHTML=bpOptions('ทุกกลุ่ม',b.groups.map(function(x){return x.name;}));
+  $('bp-model').innerHTML=bpOptions('ทุกรุ่น',b.products.map(function(x){return x.model;}));
+  $('bp-capacity').innerHTML=bpOptions('ทุกความจุ',[].concat.apply([],b.products.map(function(x){return x.capacities||[];})));
+  $('bp-color').innerHTML=bpOptions('ทุกสี',[].concat.apply([],b.products.map(function(x){return x.colors||[];})));
+  bpFillStatuses();
+}
+function bpFillStatuses(){
+  var statuses=BP.type==='slip'?['รอสินค้า','ของมาแล้ว','นัดรับแล้ว']:['ของมาแล้ว','นัดรับแล้ว'];
+  var old=$('bp-status')?$('bp-status').value:'';
+  $('bp-status').innerHTML=bpOptions('ทุกสถานะ',statuses);
+  if(statuses.indexOf(old)>-1)$('bp-status').value=old;
+}
+function bpRenderChoices(){
+  document.querySelectorAll('[data-bp-type]').forEach(function(x){x.classList.toggle('on',x.dataset.bpType===BP.type);});
+  document.querySelectorAll('[data-bp-format]').forEach(function(x){x.classList.toggle('on',x.dataset.bpFormat===BP.format);});
+  $('bp-scale').innerHTML=BP.format==='thermal'?'<span style="font-size:12px;color:var(--t2)">Thermal ใช้ขนาดจริง 100% · หากต้องการตัดทุกใบ ให้เลือก Cut each page / Page cut ใน Printer Options</span>':'<span style="font-size:12px;color:var(--t2);margin-right:9px">Scale A4</span>'+[100,95,90].map(function(n){return '<button class="chip'+(BP.scale===n?' on':'')+'" type="button" data-bp-scale="'+n+'">'+n+'%</button>';}).join('');
+  document.querySelectorAll('[data-bp-scale]').forEach(function(x){x.onclick=function(){BP.scale=Number(x.dataset.bpScale);bpRenderChoices();};});
+}
+function bpBind(){
+  document.querySelectorAll('[data-bp-type]').forEach(function(x){x.onclick=function(){BP.type=x.dataset.bpType;BP.selected={};bpFillStatuses();bpRenderChoices();bpLoad();};});
+  document.querySelectorAll('[data-bp-format]').forEach(function(x){x.onclick=function(){BP.format=x.dataset.bpFormat;bpRenderChoices();};});
+  ['bp-group','bp-status','bp-model','bp-capacity','bp-color','bp-labeled','bp-from','bp-to','bp-ais'].forEach(function(id){$(id).onchange=bpLoad;});
+  $('bp-q').oninput=function(){clearTimeout(BP.timer);BP.timer=setTimeout(bpLoad,250);};
+  $('bp-select-all').onclick=bpSelectAll;
+  $('bp-prepare').onclick=bpPrepare;
+}
+function bpFilter(){return {type:BP.type,q:$('bp-q').value,group:$('bp-group').value,status:$('bp-status').value,model:$('bp-model').value,capacity:$('bp-capacity').value,color:$('bp-color').value,labeled:$('bp-labeled').value,apptFrom:$('bp-from').value,apptTo:$('bp-to').value,aisOnly:$('bp-ais').checked};}
+function bpLoad(){
+  var current=++BP.seq;
+  $('bp-list').innerHTML=loadingHtml('กำลังโหลดรายชื่อ…');
+  callApi('listBatchPrintCandidates',bpFilter()).then(function(r){if(current!==BP.seq)return;BP.items=r.items||[];BP.max=r.maxSelection||50;bpRenderList();$('bp-summary').textContent='พบ '+r.total+' รายการ'+(r.limited?' · แสดง 300 รายการแรก':'');}).catch(function(e){if(current!==BP.seq)return;$('bp-list').innerHTML='<div class="bp-empty">'+esc(e.message)+'</div>';});
+}
+function bpRenderList(){
+  var box=$('bp-list');
+  if(!BP.items.length){box.innerHTML='<div class="bp-empty">ไม่พบรายการที่ตรงเงื่อนไข</div>';bpUpdateCount();return;}
+  var h='<div class="bp-table"><div class="bp-row head"><span></span><span>รหัสจอง</span><span>ลูกค้า</span><span>สินค้า</span><span>สถานะ</span><span>นัดรับ</span></div>';
+  h+=BP.items.map(function(x){var on=!!BP.selected[x.id],group=x.group||'ไม่ระบุกลุ่ม';return '<label class="bp-row'+(on?' selected':'')+'"><input type="checkbox" data-bp-id="'+esc(x.id)+'" '+(on?'checked':'')+'><div><div class="bp-main">'+esc(x.id)+'</div><div class="bp-sub">'+(x.labeled?'พิมพ์ใบแปะแล้ว':'ยังไม่พิมพ์ใบแปะ')+'</div></div><div><div class="bp-main">'+esc(x.name)+'</div><div class="bp-sub">'+esc(x.phone)+' · '+esc(group)+'</div></div><div class="bp-hide-sm"><div class="bp-main">'+esc(x.model)+'</div><div class="bp-sub">'+esc(x.capacity)+' · '+esc(x.color)+'</div></div><div class="bp-hide-sm"><span class="bp-badge">'+esc(x.displayStatus||x.status)+'</span></div><div class="bp-hide-sm bp-sub">'+esc(x.appt||'-')+'</div></label>';}).join('')+'</div>';
+  box.innerHTML=h;
+  box.querySelectorAll('[data-bp-id]').forEach(function(c){c.onchange=function(){if(c.checked&&Object.keys(BP.selected).length>=BP.max){c.checked=false;toast('เลือกได้สูงสุด '+BP.max+' รายการ');return;}if(c.checked)BP.selected[c.dataset.bpId]=1;else delete BP.selected[c.dataset.bpId];bpRenderList();};});
+  bpUpdateCount();
+}
+function bpSelectAll(){var left=BP.max-Object.keys(BP.selected).length;if(left<=0){toast('เลือกครบ '+BP.max+' รายการแล้ว');return;}BP.items.forEach(function(x){if(left>0&&!BP.selected[x.id]){BP.selected[x.id]=1;left--;}});bpRenderList();}
+function bpUpdateCount(){var n=Object.keys(BP.selected).length;$('bp-count').textContent='เลือกแล้ว '+n+' รายการ';$('bp-prepare').disabled=!n;}
+
+function bpPrepare(){
+  var ids=Object.keys(BP.selected);if(!ids.length)return;
+  callApi('prepareBatchPrintJob',{ids:ids,type:BP.type,format:BP.format,scale:BP.scale}).then(function(job){BP.job=job;bpShowReview(job);}).catch(function(e){toast(e.message);});
+}
+function bpTypeName(t){return t==='label'?'ใบแปะเครื่อง':t==='slip'?'ใบจองสินค้า':'ใบแปะเครื่อง + ใบจองสินค้า';}
+function bpShowReview(job){
+  var rejected=job.rejected||[],first=job.items[0],sample=job.type==='slip'?buildSlipThermalHTML(first):job.type==='pair'?(buildLabelThermalHTML(first)+'<div style="height:8px"></div>'+buildSlipThermalHTML(first)):buildLabelThermalHTML(first);
+  job._printBody=job.format==='thermal'?bpThermalBody(job):bpA4Body(job);
+  job._pageCount=(job._printBody.match(/<section class=/g)||[]).length;
+  openPanel('<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">ตรวจสอบก่อนพิมพ์</h2><span class="iconbtn" onclick="closePanel()" style="cursor:pointer"><span class="ic">×</span></span></div>'+
+    '<p style="font-size:13px;color:var(--t2)">'+bpTypeName(job.type)+' · '+(job.format==='a4'?'A4 '+job.scale+'%':'Thermal 80mm')+' · '+job.items.length+' รายการ · '+job._pageCount+' หน้า</p>'+
+    (rejected.length?'<div class="bp-warning">นำออก '+rejected.length+' รายการ เพราะสถานะเปลี่ยนหรือไม่ตรงเงื่อนไข<br>'+rejected.map(function(x){return esc(x.id)+' — '+esc(x.reason);}).join('<br>')+'</div>':'')+
+    '<div class="bp-preview-doc"><div>'+sample+'</div></div><p style="font-size:11.5px;color:var(--t2);line-height:1.55">ตัวอย่างใช้เอกสารจริงพร้อม QR และ Barcode · A4 มีมาร์กตัดทุกชิ้น · ระบบจะยังไม่บันทึกว่าแปะใบแล้วจนกว่าคุณจะยืนยันหลังพิมพ์</p>'+
+    '<div class="row"><button class="btn2" id="bp-review-back">กลับไปเลือก</button><button class="btn" id="bp-print-now"><svg class="ic"><use href="#i-print"></use></svg> พิมพ์ '+job.items.length+' รายการ</button></div>');
+  $('bp-review-back').onclick=closePanel;$('bp-print-now').onclick=function(){bpPrintJob(job);};
+}
+
+function bpCrop(inner,w,h,scale,rotate){
+  var transform=rotate?('translateY('+(80*scale)+'mm) rotate(-90deg) scale('+scale+')'):('scale('+scale+')');
+  var left=rotate?'0':'calc((100% - '+(76.2*scale)+'mm)/2)';
+  return '<div class="cutbox" style="width:'+w+'mm;height:'+h+'mm"><i class="mk tl"></i><i class="mk tr"></i><i class="mk bl"></i><i class="mk br"></i><div class="docinner" style="left:'+left+';transform:'+transform+'">'+inner+'</div></div>';
+}
+function bpMeasure(items,type){
+  var host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:288px;background:#fff;color:#000;visibility:hidden';document.body.appendChild(host);
+  var result=items.map(function(d){var o={};if(type!=='slip'){host.innerHTML=buildLabelThermalHTML(d);o.label=host.firstElementChild.scrollHeight*25.4/96;}if(type!=='label'){host.innerHTML=buildSlipThermalHTML(d);o.slip=host.firstElementChild.scrollHeight*25.4/96;}return o;});
+  host.remove();return result;
+}
+function bpChunk(arr,n){var out=[];for(var i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;}
+// แพ็กทีละแถวตามความสูงจริง: ใบยาวมีผลเฉพาะหน้าของตัวเอง ไม่ลดจำนวนทุกหน้าทั้งงาน
+function bpPackRows(items,measures,key,scale,columns,pageHeight){
+  var pages=[],page=[],used=0;
+  for(var i=0;i<items.length;i+=columns){
+    var row=items.slice(i,i+columns),rowHeight=0;
+    row.forEach(function(d){var idx=items.indexOf(d);rowHeight=Math.max(rowHeight,(measures[idx][key]||0)*scale);});
+    if(page.length&&used+rowHeight>pageHeight+.2){pages.push(page);page=[];used=0;}
+    page=page.concat(row);used+=rowHeight;
+  }
+  if(page.length)pages.push(page);return pages;
+}
+function bpSheet(content,landscape,cls){return '<section class="sheet '+(landscape?'landscape ':'')+(cls||'')+'">'+content+'</section>';}
+function bpA4Body(job){
+  var s=job.scale/100,m=bpMeasure(job.items,job.type),pages=[],i;
+  if(job.type==='label'){
+    bpPackRows(job.items,m,'label',s,2,287).forEach(function(chunk){var c=chunk.map(function(d){var idx=job.items.indexOf(d),h=m[idx].label*s;return bpCrop(buildLabelThermalHTML(d),80*s,h,s,false);}).join('');pages.push(bpSheet(c,false,'grid-label'));});
+  }else if(job.type==='slip'){
+    var maxs=Math.max.apply(Math,m.map(function(x){return x.slip;})),capS=(s<=.9&&maxs*s<=143.5)?4:(maxs*s<=200?3:1),land=capS===3;
+    var slipPages=capS===4?bpPackRows(job.items,m,'slip',s,2,287):bpChunk(job.items,capS);
+    slipPages.forEach(function(chunk){var c=chunk.map(function(d){var idx=job.items.indexOf(d),h=m[idx].slip*s;return bpCrop(buildSlipThermalHTML(d),80*s,h,s,false);}).join('');pages.push(bpSheet(c,land,'grid'+capS));});
+  }else{
+    var rotate=s<=.95&&m.every(function(x){return (x.label+x.slip)*s<=287;});
+    bpChunk(job.items,rotate?2:1).forEach(function(chunk){var rows=chunk.map(function(d){var idx=job.items.indexOf(d),a=m[idx];if(rotate)return '<div class="pairrow">'+bpCrop(buildLabelThermalHTML(d),a.label*s,80*s,s,true)+bpCrop(buildSlipThermalHTML(d),a.slip*s,80*s,s,true)+'</div>';return '<div class="pairrow normal">'+bpCrop(buildLabelThermalHTML(d),80*s,a.label*s,s,false)+bpCrop(buildSlipThermalHTML(d),80*s,a.slip*s,s,false)+'</div>';}).join('');pages.push(bpSheet(rows,rotate,'pairs'));
+    });
+  }
+  return pages.join('');
+}
+function bpThermalBody(job){var out=[];job.items.forEach(function(d){if(job.type!=='slip')out.push('<section class="thermal">'+buildLabelThermalHTML(d)+'<div class="cutline">ตัดหลังจบเอกสาร</div></section>');if(job.type!=='label')out.push('<section class="thermal">'+buildSlipThermalHTML(d)+'<div class="cutline">ตัดหลังจบเอกสาร</div></section>');});return out.join('');}
+function bpPrintJob(job){
+  var w=window.open('','_blank');if(!w){toast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต Popup แล้วลองใหม่');return;}
+  var thermal=job.format==='thermal',body=job._printBody||(thermal?bpThermalBody(job):bpA4Body(job));
+  var landscape=!thermal&&body.indexOf('sheet landscape')>-1;
+  var css='*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#000;font-family:\'IBM Plex Sans Thai\',-apple-system,\'Segoe UI\',sans-serif}.sheet{position:relative;width:210mm;height:297mm;padding:5mm;display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:flex-start;gap:0;break-after:page;page-break-after:always;break-inside:avoid;overflow:visible}.sheet.landscape{width:297mm;height:210mm}.sheet:last-child,.thermal:last-child{break-after:auto;page-break-after:auto}.sheet.grid4 .cutbox{margin:0}.sheet.grid3{align-items:flex-start}.sheet.grid1,.sheet.grid2{align-items:flex-start}.pairs{display:block}.pairrow{height:76mm;display:flex;align-items:flex-start;justify-content:flex-start}.pairrow.normal{height:auto}.cutbox{position:relative;flex:0 0 auto;overflow:visible}.docinner{position:absolute;top:0;width:288px;transform-origin:top left}.mk{position:absolute;width:3mm;height:3mm;z-index:2}.mk.tl{left:-2mm;top:-2mm;border-right:.25mm solid #000;border-bottom:.25mm solid #000}.mk.tr{right:-2mm;top:-2mm;border-left:.25mm solid #000;border-bottom:.25mm solid #000}.mk.bl{left:-2mm;bottom:-2mm;border-right:.25mm solid #000;border-top:.25mm solid #000}.mk.br{right:-2mm;bottom:-2mm;border-left:.25mm solid #000;border-top:.25mm solid #000}.thermal{width:80mm;break-after:page;page-break-after:always;break-inside:avoid;display:flex;flex-direction:column;align-items:center}.cutline{width:72mm;border-top:1px dashed #000;padding:2mm 0 1mm;text-align:center;font-size:8px;color:#555}@media print{'+(thermal?'@page{size:80mm auto;margin:0}':('@page{size:A4 '+(landscape?'landscape':'portrait')+';margin:0}'))+'}';
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>พิมพ์หลายรายการ</title><style>'+css+'</style></head><body>'+body+'<script>window.onload=function(){setTimeout(function(){window.print();},500)};<\/script></body></html>');w.document.close();
+  setTimeout(function(){bpAskPrinted(job);},400);
+}
+function bpAskPrinted(job){
+  openPanel('<div style="text-align:center;padding:8px"><div style="font-size:38px;margin-bottom:8px">🖨️</div><h2 style="margin:0 0 6px">เอกสารพิมพ์สำเร็จหรือไม่?</h2><p style="margin:0 0 15px;color:var(--t2);font-size:13px">กดยืนยันเมื่อเอกสารออกครบและตรวจ QR/Barcode แล้วเท่านั้น</p><div class="row"><button class="btn2" id="bp-print-failed">ยังไม่สำเร็จ</button><button class="btn" id="bp-print-ok">สำเร็จ · บันทึกประวัติ</button></div></div>');
+  $('bp-print-failed').onclick=function(){closePanel();toast('ยังไม่บันทึกสถานะการพิมพ์');};
+  $('bp-print-ok').onclick=function(){callApi('confirmBatchPrintJob',job.jobId).then(function(r){job.items.forEach(function(x){delete BP.selected[x.id];});markQueueViewsStale();closePanel();bpLoad();showDonePopup('บันทึกงานพิมพ์แล้ว','สำเร็จ '+r.count+' รายการ'+(r.labeledCount?' · ทำเครื่องหมายแปะใบแล้ว '+r.labeledCount:'') );}).catch(function(e){toast(e.message);});};
+}
+</script>

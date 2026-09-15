@@ -1,0 +1,150 @@
+<script>
+/* Detail actions: แยกเมนูการนัดรับ/ยกเลิกออกจาก Index.html เพื่อแก้กติกาได้เป็นส่วนเดียว */
+function localDateTimeValue(days) {
+  var d = new Date();
+  d.setDate(d.getDate() + (days || 0));
+  d.setHours(11, 0, 0, 0);
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function openCancellationDialog(id, kind) {
+  var byCustomer = kind === 'customer';
+  var title = byCustomer ? 'ลูกค้าขอยกเลิก' : 'ยกเลิกสิทธิ์ · พร้อมขาย';
+  var reasons = byCustomer
+    ? ['ลูกค้ายกเลิกการจอง', 'ได้สินค้าจากที่อื่นแล้ว', 'ไม่มีรุ่นที่ต้องการ', 'อื่นๆ']
+    : ['ข้อมูลการจองซ้ำ', 'ลูกค้าขอยกเลิก', 'อื่นๆ'];
+  openPanel('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+    '<h2 style="margin:0">' + title + '</h2><button class="iconbtn" onclick="closePanel()">×</button></div>' +
+    '<p style="font-size:12px;color:var(--t2);margin:0 0 12px">เลือกเหตุผลเพื่อบันทึกลงประวัติรายการ</p>' +
+    '<div id="cancelReasons" style="display:flex;flex-direction:column;gap:8px">' +
+    reasons.map(function(r) { return '<button class="btn2" data-reason="' + r + '">' + r + '</button>'; }).join('') +
+    '</div><div id="otherReason" style="display:none;margin-top:10px"><label>ระบุเหตุผล</label><textarea id="cancelOther" placeholder="รายละเอียดเพิ่มเติม"></textarea><button class="btn btn-danger" id="confirmOtherCancel" style="margin-top:8px">ยืนยันยกเลิก</button></div>');
+  document.querySelectorAll('[data-reason]').forEach(function(button) {
+    button.onclick = function() {
+      var reason = button.dataset.reason;
+      if (reason === 'อื่นๆ') {
+        $('otherReason').style.display = 'block';
+        $('confirmOtherCancel').onclick = function() { confirmCancellation(reason, $('cancelOther').value); };
+      } else {
+        confirmCancellation(reason, '');
+      }
+    };
+  });
+  function confirmCancellation(reason, other) {
+    if (reason === 'อื่นๆ' && !String(other || '').trim()) { toast('กรุณาระบุเหตุผลเพิ่มเติม'); return; }
+    callApi('getReservation', id).then(function(r) {
+      var detail = '<div class="confirmation">' +
+        '<div class="line"><span class="key">ORDER</span><strong class="ref-value">' + esc(r.id) + '</strong></div>' +
+        '<div class="line"><span class="key">ลูกค้า</span><span>' + esc(r.name) + '</span></div>' +
+        '<div class="line"><span class="key">เบอร์โทรศัพท์</span><span>' + esc(r.phone) + '</span></div>' +
+        '<div class="line"><span class="key">สินค้า</span><span>' + esc(r.model) + ' · ' + esc(r.capacity) + ' · ' + esc(r.color) + '</span></div>' +
+        '<div class="line"><span class="key">เหตุผลการยกเลิก</span><span>' + esc(reason + (reason === 'อื่นๆ' ? ': ' + other : '')) + '</span></div></div>';
+      openPanel('<div class="section-top"><h2>ยืนยันการยกเลิกรายการ</h2><button class="iconbtn" onclick="closePanel()">×</button></div>' +
+        '<p style="font-size:12px;color:var(--t2);margin:-4px 0 12px">โปรดตรวจสอบข้อมูลอีกครั้ง การดำเนินการนี้จะปิดรายการและไม่สามารถแก้ไขได้</p>' + detail +
+        '<div class="row" style="margin-top:16px"><button class="btn2" id="cancelBack">ยกเลิกการทำรายการ</button><button class="btn btn-danger" id="confirmCancel">ยืนยันการทำรายการ</button></div>');
+      $('cancelBack').onclick = function() { openCancellationDialog(id, kind); };
+      $('confirmCancel').onclick = function() { submitCancel(reason, other); };
+    }).catch(function(e) { toast(e.message); });
+  }
+  function submitCancel(reason, other) {
+    var api = byCustomer ? 'cancelByCustomer' : 'releaseReservation';
+    openPanel(loadingHtml('กำลังดำเนินการยกเลิกรายการ…'));
+    callApi(api, id, reason, other).then(function() {
+      markQueueViewsStale();
+      openPanel('<div class="section-top"><h2>ยกเลิกรายการสำเร็จ</h2></div><div class="card" style="text-align:center;padding:24px 16px"><div style="font-size:28px;color:var(--ok);margin-bottom:8px">✓</div><p style="margin:0 0 6px;font-weight:600">ได้ยกเลิก ORDER เรียบร้อยแล้ว</p><p class="ref-value" style="margin:0">' + esc(id) + '</p></div><button class="btn" id="backToList" style="margin-top:14px">กลับไปที่รายชื่อจอง</button>');
+      $('backToList').onclick = function() { closePanel(); document.querySelector('#tabs button[data-p="list"]').click(); loadList(); };
+    }).catch(function(e) { toast(e.message); });
+  }
+}
+
+
+/** ยกเลิกคิวอัตโนมัติสำหรับรายการที่เกินกำหนดรับ */
+function openAutoCancelDialog(id) {
+  callApi('getReservation', id).then(function(r) {
+    var detail = '<div class="confirmation">' +
+      '<div class="line"><span class="key">ORDER</span><strong class="ref-value">' + esc(r.id) + '</strong></div>' +
+      '<div class="line"><span class="key">ลูกค้า</span><span>' + esc(r.name) + '</span></div>' +
+      '<div class="line"><span class="key">สินค้า</span><span>' + esc(r.model) + ' · ' + esc(r.capacity) + ' · ' + esc(r.color) + '</span></div>' +
+      '<div class="line"><span class="key">เหตุผล</span><span>เกินกำหนดรับ (เลยวันนัด · ไม่มารับตามกำหนด)</span></div></div>';
+    openPanel('<div class="section-top"><h2>ยืนยันยกเลิกคิวอัตโนมัติ</h2><button class="iconbtn" onclick="closePanel()">×</button></div>' +
+      '<p style="font-size:12px;color:var(--t2);margin:-4px 0 12px">ระบบจะนำเครื่องออกจากคิวและปิดรายการนี้ · ไม่สามารถแก้ไขได้</p>' + detail +
+      '<div class="row" style="margin-top:16px"><button class="btn2" id="acBack">ยกเลิกการทำรายการ</button><button class="btn ui-modal-danger" id="acConfirm">ยืนยัน นำเครื่องออกจากคิว</button></div>');
+    $('acBack').onclick = function() { openDetail(id); };
+    $('acConfirm').onclick = function() {
+      openPanel(loadingHtml('กำลังยกเลิกคิวออกจากระบบ…'));
+      callApi('releaseReservation', id, 'เกินกำหนดรับ', '').then(function() {
+        markQueueViewsStale();
+        openPanel('<div class="section-top"><h2>ยกเลิกคิวสำเร็จ</h2></div>' +
+          '<div class="card" style="text-align:center;padding:22px 16px"><div class="ui-modal-icon" style="margin:0 auto 12px;background:var(--okBg);color:var(--ok)"><svg viewBox="0 0 24 24" style="width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M4.5 12.6l4.8 4.8L19.6 6.7"></path></svg></div><p style="margin:0 0 4px;font-weight:600">นำเครื่องออกจากระบบคิวเรียบร้อยแล้ว</p><p class="ref-value" style="margin:0">' + esc(id) + '</p></div>' +
+          '<div class="card" style="margin-top:10px;border:1px solid var(--warn);background:var(--warnBg);padding:13px"><b style="font-size:13px;color:var(--warn)">โปรดทำก่อนนำเครื่องไปจำหน่าย</b><p style="margin:5px 0 0;font-size:12.5px;line-height:1.65;color:var(--tx)">กรุณานำใบแปะชื่อลูกค้าเดิมออกจากตัวเครื่องก่อน จากนั้นสามารถนำเครื่องไปจำหน่ายให้ลูกค้าหน้าร้าน หรือจัดสรรให้ลูกค้าคิวถัดไปได้ตามปกติ</p></div>' +
+          '<button class="btn" id="acBackList" style="margin-top:14px">กลับไปที่รายชื่อจอง</button>');
+        $('acBackList').onclick = function() { closePanel(); loadList(); };
+      }).catch(function(e) { toast(e.message); openDetail(id); });
+    };
+  }).catch(function(e) { toast(e.message); });
+}
+
+/** บันทึกผลการโทรอื่น ๆ พร้อมข้อความที่พนักงานระบุ และเก็บใน timeline */
+function openCallOtherDialog(id) {
+  openPanel('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+    '<h2 style="margin:0">บันทึกการโทร</h2><button class="iconbtn" onclick="closePanel()">×</button></div>' +
+    '<label>รายละเอียดการติดต่อ</label><textarea id="callOtherNote" placeholder="เช่น ลูกค้าขอเลื่อนเพราะเดินทางต่างจังหวัด"></textarea>' +
+    '<button class="btn" id="saveCallOther" style="margin-top:8px">บันทึกผลการโทร</button>');
+  $('saveCallOther').onclick = function() {
+    var note = $('callOtherNote').value.trim();
+    if (!note) { toast('กรอกรายละเอียดก่อนบันทึก'); return; }
+    callApi('logCallResult', id, 'อื่นๆ', note).then(function() {
+      toast('บันทึกผลการโทรแล้ว'); openDetail(id); loadList();
+    }).catch(function(e) { toast(e.message); });
+  };
+}
+
+/** popup ยืนยันก่อนยกเลิกเคสเร่งด่วน แล้วยกเลิกพร้อม spinner แสดงสถานะ */
+function confirmClearUrgent(id) {
+  openPanel('<div class="section-top"><h2 style="margin:0">ยกเลิกเคสเร่งด่วน</h2><button class="iconbtn" onclick="closePanel()">×</button></div>' +
+    '<p style="font-size:13px;color:var(--t2);margin:6px 0 18px">ต้องการยกเลิกสถานะเคสเร่งด่วนของรายการนี้ใช่หรือไม่? รายการจะกลับไปอยู่ในลำดับคิวปกติ</p>' +
+    '<div style="display:flex;gap:10px"><button class="btn2" id="urgentClearNo" style="flex:1">ไม่ยกเลิก</button><button class="btn btn-danger" id="urgentClearYes" style="flex:1">ยืนยันยกเลิก</button></div>');
+  $('urgentClearNo').onclick = function() { openDetail(id); };
+  $('urgentClearYes').onclick = function() {
+    callApi('clearUrgent', id).then(function() {
+      toast('ยกเลิกเคสเร่งด่วนแล้ว'); openDetail(id); markQueueViewsStale(); loadList();
+    }).catch(function(e) { toast(e.message); });
+  };
+}
+
+/** popup กรอกเหตุผลเคสเร่งด่วน แล้วตั้งสถานะ + บันทึกประวัติสีแดง */
+function openUrgentDialog(id) {
+  openPanel('<div class="section-top"><h2 style="margin:0;color:var(--urgent)">⚠ ทำเป็นเคสเร่งด่วน</h2><button class="iconbtn" onclick="closePanel()">×</button></div>' +
+    '<p style="font-size:12px;color:var(--t2);margin:6px 0 12px">ใช้เฉพาะกรณีจำเป็นจริง ๆ เช่น ลูกค้าจองแล้วไม่มีเครื่องให้ · รายชื่อตกหล่น · เหตุสุดวิสัย</p>' +
+    '<label>เหตุผลที่เป็นเคสเร่งด่วน</label><textarea id="urgentReasonInput" placeholder="เช่น ลูกค้าจองแล้วเครื่องขาด ต้องได้รับก่อน"></textarea>' +
+    '<button class="btn btn-danger" id="urgentSave" style="margin-top:10px">ยืนยันเป็นเคสเร่งด่วน</button>');
+  $('urgentSave').onclick = function() {
+    var rsn = $('urgentReasonInput').value.trim();
+    if (!rsn) { toast('กรุณาระบุเหตุผล'); return; }
+    callApi('markUrgent', id, rsn).then(function() {
+      toast('ตั้งเป็นเคสเร่งด่วนแล้ว'); openDetail(id); markQueueViewsStale(); loadList();
+    }).catch(function(e) { toast(e.message); });
+  };
+}
+
+function bindAppointmentControls(id) {
+  function saveAppointment(value) {
+    if (!value) { toast('เลือกวันและเวลานัดรับก่อน'); return; }
+    callApi('getAppointmentSlot', new Date(value).toISOString(), id).then(function(slot) {
+      if (slot.isBusy && !confirm('ช่วงเวลา ' + slot.label + ' มีคิวนัดแล้ว ' + slot.count + ' คิว ต้องการใช้เวลาเดิมหรือไม่?')) return;
+      return callApi('setAppointment', id, new Date(value).toISOString(), slot.isBusy);
+    }).then(function(out) {
+      if (!out) return;
+      if (out.needsConfirm) return;
+      toast('บันทึกนัดรับแล้ว · ครบกำหนด ' + out.dueDate);
+      STATE.changeAppt[id] = false; markQueueViewsStale(); openDetail(id); loadList(); loadDue(true);
+    }).catch(function(e) { toast(e.message); });
+  }
+  document.querySelectorAll('[data-appt-day]').forEach(function(button) {
+    button.onclick = function() { $('apptDt').value = localDateTimeValue(Number(button.dataset.apptDay)); };
+  });
+  var save = $('btnAppt');
+  if (save) save.onclick = function() { saveAppointment($('apptDt').value); };
+}
+</script>

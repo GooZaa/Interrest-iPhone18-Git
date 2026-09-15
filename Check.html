@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>.ic{display:inline-block;font-style:normal;line-height:1}</style>
+<style>
+:root{--bg:#fff;--cv:#F4F3F0;--tx:#1A1A19;--t2:#63625D;--t3:#8B8A84;--bd:rgba(0,0,0,.16);--btn:#EDECE7;--btnh:#E3E2DC;--sel:#EEEDFE;--selT:#3C3489;--ink:#262624;--inkT:#fff;--ok:#0F6E56;--okBg:#E1F5EE;--r:12px}
+*{box-sizing:border-box}
+body{margin:0;font-family:'IBM Plex Sans Thai',-apple-system,sans-serif;background:var(--cv);color:var(--tx);font-size:16px}
+button{font:inherit;cursor:pointer;font-family:inherit}
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:0.5px solid var(--bd);padding:calc(11px + env(safe-area-inset-top)) 18px 11px}
+.header-inner{max-width:420px;margin:0 auto;display:flex;justify-content:flex-end;align-items:center}
+.lang-control{display:inline-flex;align-items:center;gap:8px}
+.lang-control svg{width:18px;height:18px;stroke:var(--t2);fill:none;stroke-width:1.8;flex:none;pointer-events:none}
+.lang-control select{width:auto;min-width:104px;padding:8px 32px 8px 11px;font:inherit;font-size:13px;border:0.5px solid var(--bd);border-radius:9px;-webkit-appearance:none;appearance:none;background:var(--btn) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") no-repeat right 11px center;background-size:13px;color:var(--tx)}
+.lang-control select:focus{outline:none;border-color:var(--selT);box-shadow:0 0 0 3px color-mix(in srgb,var(--selT) 18%,transparent)}
+main{max-width:420px;margin:0 auto;padding:24px 18px 40px}
+.card{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r);padding:18px}
+.pill{font-size:11px;padding:3px 9px;border-radius:8px;background:var(--btn);color:var(--t2);display:inline-block}
+.pill.ok{background:var(--okBg);color:var(--ok)}
+h1{font-size:16px;font-weight:600;text-align:center;margin:0 0 22px}
+input{width:100%;font:inherit;font-size:16px;padding:11px 13px;border:0.5px solid var(--bd);border-radius:9px;background:var(--bg);margin-bottom:8px}
+input:disabled{opacity:.5}
+.btn{width:100%;background:var(--ink);color:var(--inkT);padding:12px;border-radius:9px;border:none;font-size:15px;margin-top:6px}
+.btn:disabled{opacity:.5}
+.kv{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-top:0.5px solid var(--bd);gap:12px}
+.kv:first-child{border-top:none}
+.kv .k{color:var(--t2)}
+.hint{font-size:11.5px;color:var(--t2);margin-top:12px;line-height:1.6}
+.loading{text-align:center;color:var(--t2);padding:40px}
+.order{font-size:21px;color:var(--tx);letter-spacing:1.4px;font-weight:700;margin:11px 0 18px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.status-note{margin-top:14px;padding:11px 12px;border-radius:9px;background:var(--cv);font-size:12.5px;color:var(--t2);line-height:1.6}
+.status-note.warn{background:#FFF1E8;color:#93420A}.status-note.danger{background:#FDEBEC;color:#A61B1B}
+.status-note.info{background:#EAF2FF;color:#0C447C}.appointment{color:#0C447C;font-weight:600}
+.spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.42);border-top-color:#fff;border-radius:50%;vertical-align:-2px;margin-right:7px;animation:spin .7s linear infinite}
+.shake{animation:shake .36s ease-in-out both}.err{color:#B91C1C;font-size:12.5px;margin-top:10px;line-height:1.5}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+</style>
+</head>
+<body>
+<header><div class="header-inner">
+  <div class="lang-control" title="Language">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M3 12h18"/><path d="M12 2.8c2.6 2.6 2.6 15.8 0 18.4M12 2.8c-2.6 2.6-2.6 15.8 0 18.4"/></svg>
+    <select id="langSel" aria-label="Language"><option value="th">ไทย</option><option value="en">English</option><option value="zh">中文</option><option value="ko">한국어</option><option value="ja">日本語</option></select>
+  </div>
+</div></header>
+<main>
+<h1 id="pageTitle">ตรวจสอบสถานะการจอง</h1>
+<div id="box" class="card"><div class="loading">…</div></div>
+</main>
+<script>
+var $=function(id){return document.getElementById(id);};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+function call(name){var args=[].slice.call(arguments,1);return new Promise(function(res,rej){var r=google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(e);});r[name].apply(r,args);});}
+
+/* ===== i18n (5 ภาษา · แชร์ localStorage กับหน้า Welcome/Signup) ===== */
+var I18N={
+  th:{title:'ตรวจสอบสถานะการลงชื่อแสดงความสนใจ',loading:'กำลังโหลด…',badLink:'ลิงก์ไม่ถูกต้อง',maskedHint:'ข้อมูลอื่นๆ ถูกซ่อนไว้เพื่อความปลอดภัยของข้อมูลส่วนบุคคล',verifyBtn:'ยืนยันตัวตนเพื่อดูข้อมูล',notInfo:'ระบบนี้ไม่ใช่ระบบจองสินค้า แต่เป็นระบบตรวจสอบลำดับคิวของผู้ที่ลงชื่อแสดงความสนใจไว้ตามลำดับก่อน-หลัง การลงชื่อไม่ได้เป็นการรับประกันว่าจะได้รับสินค้า และเนื่องจากสินค้ามีจำนวนจำกัด ระยะเวลาที่จะได้รับอาจเร็วหรือช้าแตกต่างกันไป',phonePrompt:'กรอกเบอร์โทรที่ใช้ตอนลงทะเบียนแสดงความสนใจ',confirm:'ยืนยัน',checking:'กำลังตรวจสอบข้อมูล…',hintRemain:'กรอกผิดเกิน 5 ครั้งระบบจะล็อกชั่วคราว · เหลืออีก {n} ครั้ง',phoneWrong:'เบอร์โทรไม่ตรงกับข้อมูลที่บันทึกไว้',genericErr:'เกิดข้อผิดพลาด',lockedMsg:'คุณใส่ข้อมูลผิดเกินจำนวนที่กำหนด กรุณาทำรายการใหม่',lockCountdown:'ระบบล็อกชั่วคราว · ลองใหม่ได้ในอีก {t}',verified:'ยืนยันตัวตนแล้ว',condition:'เงื่อนไข',aisOnly:'เครื่อง AIS เท่านั้น',preOrder:'เลข Pre-Order',preBooking:'Pre-Booking AIS',depositBill:'มัดจำของรายการนี้',depositVal:'บิล {no} · {amt} บาท',dueDate:'ครบกำหนดรับ',appt:'นัดรับ',moreInfo:'ข้อมูลเพิ่มเติม',statusTitle:'การอัปเดตสถานะ',lastUpdate:'อัปเดตล่าสุด {t}',st_appt_pre:'ท่านมีวันนัดรับสินค้าแล้ว โปรดมาตามวันที่นัดหมาย ภายใน {n} วัน',st_appt_over:'เลยวันรับสินค้าที่กำหนดแล้ว ทางร้านขออนุญาตยกเลิกคิวของท่าน เพื่อส่งต่อสิทธิ์ให้ลูกค้าลำดับถัดไป',st_appt_ok:'ท่านมีวันนัดรับสินค้าแล้ว โปรดมาตามวันที่นัดหมาย ถึงวันที่ {date} ({n} วัน)',st_wait:'ระบบได้รับการลงชื่อแสดงความสนใจของท่านแล้ว ขณะนี้อยู่ระหว่างรอสินค้าเข้า',st_arrived:'สินค้าเข้าร้านแล้ว พนักงานกำลังติดต่อเพื่อนัดรับสินค้า',st_done:'รายการนี้รับสินค้าเรียบร้อยแล้ว',st_generic:'สถานะการลงชื่อของท่านได้รับการอัปเดตแล้ว',remarkChangeLabel:'สินค้ามีจำนวนจำกัด',remarkChange:'เนื่องจากสินค้ามีจำนวนจำกัด จึงไม่สามารถเปลี่ยนแปลงรุ่น สี หรือความจุที่ท่านลงทะเบียนไว้ได้',remarkOntimeLabel:'กรุณามารับตรงเวลา',remarkOntime:'กรุณามารับสินค้าตามวันและเวลาที่นัดหมาย ภายในระยะเวลาที่กำหนด หากเลยกำหนด ทางร้านขออนุญาตยกเลิกคิวของท่านโดยอัตโนมัติ เพื่อส่งมอบสิทธิ์ให้ลูกค้าท่านถัดไป ต้องขออภัยในความไม่สะดวกมา ณ ที่นี้',aheadQueue:'คิวก่อนหน้า (สเปกเดียวกัน)',people:'{n} ราย',avgWait:'ค่าเฉลี่ยรอ (คนก่อนหน้า)',days:'{n} วัน'},
+  en:{title:'Check Interest Registration Status',loading:'Loading…',badLink:'Invalid link',maskedHint:'Other details are hidden to protect your personal information.',verifyBtn:'Verify to view details',notInfo:'This is not a product reservation system. It only shows your position in the interest-registration queue, in the order people signed up. Registering does not guarantee that you will receive the item, and because stock is limited, the waiting time may be shorter or longer.',phonePrompt:'Enter the phone number used when registering your interest',confirm:'Confirm',checking:'Verifying…',hintRemain:'After 5 wrong attempts the system locks temporarily · {n} attempts left',phoneWrong:'The phone number does not match our records',genericErr:'An error occurred',lockedMsg:'You have entered incorrect information too many times. Please try again.',lockCountdown:'Temporarily locked · try again in {t}',verified:'Identity verified',condition:'Condition',aisOnly:'AIS network only',preOrder:'Pre-Order No.',preBooking:'AIS Pre-Booking',depositBill:'Deposit receipt',depositVal:'No. {no} · {amt} THB',dueDate:'Pickup deadline',appt:'Pickup appointment',moreInfo:'Additional info',statusTitle:'Status update',lastUpdate:'Last updated {t}',st_appt_pre:'Your pickup appointment is set. Please come on the appointed date, within {n} day(s).',st_appt_over:'The pickup deadline has passed. We may cancel your place in the queue and offer it to the next customer.',st_appt_ok:'Your pickup appointment is set. Please come by {date} ({n} day(s) left).',st_wait:'We have received your interest registration. It is currently awaiting stock.',st_arrived:'Your item has arrived. Our staff will contact you to arrange pickup.',st_done:'This item has been picked up.',st_generic:'Your registration status has been updated.',remarkChangeLabel:'Limited stock',remarkChange:'Because stock is limited, the model, colour, or capacity you registered cannot be changed.',remarkOntimeLabel:'Please arrive on time',remarkOntime:'Please collect your item on the appointed date and time, within the specified period. If the deadline passes, your place in the queue will be cancelled automatically and offered to the next customer. We apologise for any inconvenience.',aheadQueue:'Queue ahead (same spec)',people:'{n}',avgWait:'Avg. wait (previous customers)',days:'{n} day(s)'},
+  zh:{title:'查询意向登记状态',loading:'加载中…',badLink:'链接无效',maskedHint:'为保护您的个人信息，其他资料已隐藏。',verifyBtn:'验证身份以查看信息',notInfo:'本系统并非商品预订系统，仅用于查询您在意向登记中的排队顺序（按登记先后排列）。登记并不保证您能获得商品；由于数量有限，到货时间可能有快有慢。',phonePrompt:'请输入登记意向时使用的电话号码',confirm:'确认',checking:'正在核对…',hintRemain:'错误超过 5 次将暂时锁定 · 还剩 {n} 次',phoneWrong:'电话号码与记录不符',genericErr:'发生错误',lockedMsg:'您输入的信息错误次数过多，请重新操作。',lockCountdown:'暂时锁定 · {t} 后可重试',verified:'已验证身份',condition:'条件',aisOnly:'仅限 AIS 网络',preOrder:'预购编号',preBooking:'AIS Pre-Booking',depositBill:'订金单',depositVal:'单号 {no} · {amt} 泰铢',dueDate:'取货截止',appt:'取货预约',moreInfo:'补充信息',statusTitle:'状态更新',lastUpdate:'最后更新 {t}',st_appt_pre:'已为您安排取货预约，请在预约日期起 {n} 天内到店取货。',st_appt_over:'已超过取货期限，我们可能取消您的排队名额并转给下一位顾客。',st_appt_ok:'已为您安排取货预约，请在 {date} 前（剩 {n} 天）到店取货。',st_wait:'已收到您的意向登记，正在等待到货。',st_arrived:'商品已到店，店员将联系您安排取货。',st_done:'此订单已完成取货。',st_generic:'您的登记状态已更新。',remarkChangeLabel:'商品数量有限',remarkChange:'由于商品数量有限，您登记的型号、颜色或容量将无法更改。',remarkOntimeLabel:'请准时取货',remarkOntime:'请在预约的日期和时间、于规定期限内取货。若超过期限，您的排队名额将自动取消并转给下一位顾客，敬请谅解。',aheadQueue:'前面排队（相同规格）',people:'{n} 位',avgWait:'平均等待（前面顾客）',days:'{n} 天'},
+  ko:{title:'관심 등록 상태 확인',loading:'불러오는 중…',badLink:'잘못된 링크',maskedHint:'개인정보 보호를 위해 나머지 정보는 숨겨져 있습니다.',verifyBtn:'본인 확인 후 정보 보기',notInfo:'이 시스템은 상품 예약 시스템이 아니라, 관심 등록 순서(등록 선후 순)를 확인하는 시스템입니다. 등록이 상품 수령을 보장하지 않으며, 수량이 한정되어 있어 수령 시점은 빠르거나 늦을 수 있습니다.',phonePrompt:'관심 등록 시 사용한 전화번호를 입력하세요',confirm:'확인',checking:'확인 중…',hintRemain:'5회 이상 틀리면 일시적으로 잠깁니다 · {n}회 남음',phoneWrong:'전화번호가 등록된 정보와 일치하지 않습니다',genericErr:'오류가 발생했습니다',lockedMsg:'정보를 규정 횟수 이상 잘못 입력하셨습니다. 다시 시도해 주세요.',lockCountdown:'일시 잠금 · {t} 후 다시 시도',verified:'본인 확인 완료',condition:'조건',aisOnly:'AIS 전용',preOrder:'프리오더 번호',preBooking:'AIS 프리부킹',depositBill:'예약금 영수증',depositVal:'번호 {no} · {amt} THB',dueDate:'수령 기한',appt:'수령 예약',moreInfo:'추가 정보',statusTitle:'상태 업데이트',lastUpdate:'마지막 업데이트 {t}',st_appt_pre:'수령 예약이 완료되었습니다. 예약일로부터 {n}일 이내에 방문해 주세요.',st_appt_over:'수령 기한이 지났습니다. 대기 순번을 취소하고 다음 고객에게 넘길 수 있습니다.',st_appt_ok:'수령 예약이 완료되었습니다. {date}까지 ({n}일 남음) 방문해 주세요.',st_wait:'관심 등록이 접수되었습니다. 현재 입고 대기 중입니다.',st_arrived:'상품이 입고되었습니다. 직원이 수령 안내를 위해 연락드립니다.',st_done:'이 건은 수령이 완료되었습니다.',st_generic:'등록 상태가 업데이트되었습니다.',remarkChangeLabel:'수량 한정',remarkChange:'수량이 한정되어 있어 등록하신 모델·색상·용량은 변경하실 수 없습니다.',remarkOntimeLabel:'시간을 지켜 방문해 주세요',remarkOntime:'지정된 기간 내 예약하신 날짜와 시간에 상품을 수령해 주세요. 기한이 지나면 대기 순번이 자동으로 취소되어 다음 고객에게 넘어갑니다. 불편을 드려 죄송합니다.',aheadQueue:'앞선 대기 (동일 사양)',people:'{n}명',avgWait:'평균 대기 (이전 고객)',days:'{n}일'},
+  ja:{title:'関心登録の状況確認',loading:'読み込み中…',badLink:'リンクが無効です',maskedHint:'個人情報保護のため、その他の情報は非表示です。',verifyBtn:'本人確認して情報を見る',notInfo:'これは商品予約システムではなく、関心登録の順番（登録の先着順）を確認するためのシステムです。登録は商品のお受け取りを保証するものではなく、数量が限られているため、受け取り時期は早い場合も遅い場合もあります。',phonePrompt:'関心登録の際に使用した電話番号を入力してください',confirm:'確認',checking:'確認中…',hintRemain:'5回間違えると一時的にロックされます · 残り {n} 回',phoneWrong:'電話番号が登録情報と一致しません',genericErr:'エラーが発生しました',lockedMsg:'情報の入力を規定回数以上間違えました。もう一度お試しください。',lockCountdown:'一時ロック中 · {t} 後に再試行できます',verified:'本人確認済み',condition:'条件',aisOnly:'AIS 専用',preOrder:'予約番号（Pre-Order）',preBooking:'AIS プリブッキング',depositBill:'手付金伝票',depositVal:'番号 {no} · {amt} バーツ',dueDate:'受取期限',appt:'受取予約',moreInfo:'追加情報',statusTitle:'ステータス更新',lastUpdate:'最終更新 {t}',st_appt_pre:'受取予約が確定しました。予約日から {n} 日以内にご来店ください。',st_appt_over:'受取期限を過ぎました。お客様の順番をキャンセルし、次のお客様にご案内する場合があります。',st_appt_ok:'受取予約が確定しました。{date} まで（残り {n} 日）にご来店ください。',st_wait:'関心登録を受け付けました。現在入荷待ちです。',st_arrived:'商品が入荷しました。スタッフが受取のご案内でご連絡します。',st_done:'この注文は受取が完了しました。',st_generic:'登録状況が更新されました。',remarkChangeLabel:'数量限定',remarkChange:'数量が限られているため、ご登録の機種・カラー・容量の変更はできません。',remarkOntimeLabel:'時間どおりにご来店ください',remarkOntime:'指定期間内の予約日時に商品をお受け取りください。期限を過ぎるとお客様の順番は自動的にキャンセルされ、次のお客様にご案内いたします。ご不便をおかけし申し訳ございません。',aheadQueue:'前の待ち（同一仕様）',people:'{n} 件',avgWait:'平均待ち（前のお客様）',days:'{n} 日'}
+};
+I18N.th.price='ราคา';I18N.th.priceUnit='บาท';
+I18N.en.price='Price';I18N.en.priceUnit='THB';
+I18N.zh.price='价格';I18N.zh.priceUnit='泰铢';
+I18N.ko.price='가격';I18N.ko.priceUnit='THB';
+I18N.ja.price='価格';I18N.ja.priceUnit='バーツ';
+var LANG='th';try{LANG=localStorage.getItem('iphoneQueueWelcomeLang')||'th';}catch(e){}
+if(!I18N[LANG])LANG='th';
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.th[k]||k;}
+function tt(k,params){var s=t(k);for(var p in (params||{}))s=s.split('{'+p+'}').join(params[p]);return s;}
+function applyStatic(){document.documentElement.lang=LANG;$('pageTitle').textContent=t('title');}
+
+var token=(function(){var t='<?= qToken ?>';return t&&t.indexOf('?')<0?t:(new URLSearchParams(window.location.search).get('t')||'');})();
+
+/* ===== ติดตามจอปัจจุบัน เพื่อ re-render เมื่อเปลี่ยนภาษา ===== */
+var VIEW='loading', DATA=null;
+function rerender(){
+  if(VIEW==='masked'&&DATA)renderMasked(DATA);
+  else if(VIEW==='full'&&DATA)renderFull(DATA);
+  else if(VIEW==='verify')showVerifyForm();
+  else if(VIEW==='badlink')$('box').innerHTML='<div class="loading">'+t('badLink')+'</div>';
+  else if(VIEW==='loading')$('box').innerHTML='<div class="loading">'+t('loading')+'</div>';
+}
+
+function renderMasked(d){
+  VIEW='masked'; DATA=d;
+  var h='<div class="order">'+esc(d.id)+'</div>';
+  h+='<p style="margin:10px 0 0;font-size:16px;font-weight:600">'+esc(d.maskedName)+'</p>';
+  h+='<p style="margin:3px 0 0;font-size:13px;color:var(--t2)">'+esc(d.maskedPhone)+'</p>';
+  h+='<p style="margin:12px 0 0;font-size:14px">'+esc(d.model)+'<br>'+esc(d.capacity)+' · '+esc(d.color)+'</p>';
+  if(d.price!=null)h+='<p style="margin:8px 0 0;font-size:14px">'+t('price')+' <b style="color:var(--selT)">'+Number(d.price).toLocaleString('th-TH')+'</b> '+t('priceUnit')+'</p>';
+  h+='<p class="hint">'+t('maskedHint')+'</p>';
+  h+='<button class="btn" id="btnVerify">'+t('verifyBtn')+'</button>';
+  h+='<p class="hint" style="margin-top:14px;padding-top:12px;border-top:0.5px solid var(--bd)">'+t('notInfo')+'</p>';
+  $('box').innerHTML=h;
+  $('btnVerify').onclick=showVerifyForm;
+}
+
+var lockTimer=null;
+function showVerifyForm(){
+  VIEW='verify';
+  if(lockTimer){clearInterval(lockTimer);lockTimer=null;}
+  $('box').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--t2)">'+t('phonePrompt')+'</p>'+
+    '<input id="vphone" type="tel" inputmode="tel" placeholder="0812345678">'+
+    '<button class="btn" id="btnGo">'+t('confirm')+'</button>'+
+    '<p class="err" id="verr" style="display:none"></p>'+
+    '<p class="hint" id="vhint">'+tt('hintRemain',{n:'<b id="vremain">5</b>'})+'</p>';
+  $('btnGo').onclick=submitVerify;
+  $('vphone').addEventListener('keydown',function(e){if(e.key==='Enter')submitVerify();});
+}
+function submitVerify(){
+  var btn=$('btnGo'); if(btn.disabled) return;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>'+t('checking');
+  call('verifyAndReveal',token,$('vphone').value).then(function(res){
+    if(res&&res.ok){renderFull(res.data);return;}
+    btn.disabled=false; btn.textContent=t('confirm');
+    if(res&&res.locked){startLock(res.lockedSec);return;}
+    var v=$('verr'); v.style.display='block'; v.textContent=t('phoneWrong');
+    if($('vremain'))$('vremain').textContent=(res&&res.remaining!=null)?res.remaining:'';
+    $('box').classList.remove('shake');void $('box').offsetWidth;$('box').classList.add('shake');$('vphone').focus();
+  }).catch(function(e){
+    btn.disabled=false; btn.textContent=t('confirm');
+    var v=$('verr'); v.style.display='block'; v.textContent=(e&&e.message)||t('genericErr');
+  });
+}
+function startLock(sec){
+  if(lockTimer){clearInterval(lockTimer);lockTimer=null;}
+  var btn=$('btnGo'), input=$('vphone'), err=$('verr'), hint=$('vhint');
+  if(btn){btn.disabled=true; btn.textContent=t('confirm');}
+  if(input)input.disabled=true;
+  if(err){err.style.display='block'; err.textContent=t('lockedMsg');}
+  var left=Math.max(1,Number(sec)||180);
+  function tick(){
+    var m=Math.floor(left/60), s=left%60;
+    if(hint)hint.innerHTML=tt('lockCountdown',{t:'<b>'+m+':'+(s<10?'0':'')+s+'</b>'});
+    if(left<=0){
+      clearInterval(lockTimer);lockTimer=null;
+      if(input)input.disabled=false;
+      if(btn)btn.disabled=false;
+      if(err)err.style.display='none';
+      if(hint)hint.innerHTML=tt('hintRemain',{n:'<b id="vremain">5</b>'});
+    }
+    left--;
+  }
+  tick(); lockTimer=setInterval(tick,1000);
+}
+
+function renderFull(d){
+  VIEW='full'; DATA=d;
+  var h='<span class="pill ok"><span class="ic">✓</span> '+t('verified')+'</span>';
+  h+='<div class="order">'+esc(d.id)+'</div>';
+  h+='<p style="margin:10px 0 0;font-size:16px;font-weight:600">'+esc(d.name)+'</p>';
+  h+='<p style="margin:3px 0 0;font-size:13px;color:var(--t2)">'+esc(d.phone)+(d.showCustomerGroup&&d.group?' · '+esc(d.group):'')+'</p>';
+  h+='<p style="margin:12px 0 0;font-size:14px">'+esc(d.model)+'<br>'+esc(d.capacity)+' · '+esc(d.color)+'</p>';
+  h+='<div style="margin-top:12px">';
+  if(d.price!=null)h+='<div class="kv"><span class="k">'+t('price')+'</span><span><b style="color:var(--selT)">'+Number(d.price).toLocaleString('th-TH')+'</b> '+t('priceUnit')+'</span></div>';
+  if(d.supplierLock)h+='<div class="kv"><span class="k">'+t('condition')+'</span><span>'+t('aisOnly')+(d.promo?' · '+esc(d.promo):'')+'</span></div>';
+  if(d.preOrder)h+='<div class="kv"><span class="k">'+t('preOrder')+'</span><span>'+esc(d.preOrder)+'</span></div>';
+  if(d.preBooking)h+='<div class="kv"><span class="k">'+t('preBooking')+'</span><span>'+esc(d.preBooking)+'</span></div>';
+  if(d.deposit)h+='<div class="kv"><span class="k">'+t('depositBill')+'</span><span>'+tt('depositVal',{no:esc(d.billNo),amt:d.deposit.toLocaleString()})+'</span></div>';
+  if(d.dueDate)h+='<div class="kv"><span class="k">'+t('dueDate')+'</span><span>'+esc(d.dueDate)+'</span></div>';
+  if(d.appt)h+='<div class="kv appointment"><span>'+t('appt')+'</span><span>'+esc(d.appt)+'</span></div>';
+  if(d.additionalNote)h+='<div class="kv"><span class="k">'+t('moreInfo')+'</span><span>'+esc(d.additionalNote)+'</span></div>';
+  h+='</div>';
+  var updateText='',noteClass='',rem=Math.max(0,Number(d.dueRemainingDays||0));
+  if(d.status==='นัดรับแล้ว'&&d.appt){
+    if(d.preOrder||d.preBooking){updateText=tt('st_appt_pre',{n:rem});noteClass='info';}
+    else if(Number(d.dueRemainingDays)<0){updateText=t('st_appt_over');noteClass='danger';}
+    else{updateText=tt('st_appt_ok',{date:esc(d.dueDate),n:rem});noteClass='info';}
+  }else if(d.status==='รอสินค้า'){updateText=t('st_wait');}
+  else if(d.status==='ของมาแล้ว'){updateText=t('st_arrived');}
+  else if(d.status==='รับของแล้ว'){updateText=t('st_done');}
+  else{updateText=t('st_generic');}
+  h+='<div class="status-note '+noteClass+'"><b style="color:inherit">'+t('statusTitle')+'</b><br>'+updateText+(d.updatedAt?'<br><span style="font-size:11px;color:var(--t3)">'+tt('lastUpdate',{t:esc(d.updatedAt)})+'</span>':'')+'</div>';
+  if(d.status==='นัดรับแล้ว'&&d.appt&&Number(d.dueRemainingDays)>=0){h+='<p style="font-size:11.5px;color:var(--t2);line-height:1.65;margin:12px 2px 0"><b>'+t('remarkChangeLabel')+':</b> '+t('remarkChange')+'</p><p style="font-size:11.5px;color:var(--t2);line-height:1.65;margin:8px 2px 0"><b>'+t('remarkOntimeLabel')+':</b> '+t('remarkOntime')+'</p>';}
+  h+='<div style="margin-top:12px">';
+  if(d.status==='รอสินค้า'&&d.aheadCount!==undefined){
+    h+='<div class="kv"><span class="k">'+t('aheadQueue')+'</span><span>'+tt('people',{n:d.aheadCount})+'</span></div>';
+    if(d.avgWaitDays)h+='<div class="kv"><span class="k">'+t('avgWait')+'</span><span>'+tt('days',{n:d.avgWaitDays})+'</span></div>';
+  }
+  h+='</div>';
+  $('box').innerHTML=h;
+}
+
+/* เปลี่ยนภาษา → บันทึก (แชร์ข้ามหน้า) + re-render จอปัจจุบัน */
+$('langSel').value=LANG;
+$('langSel').onchange=function(){
+  LANG=$('langSel').value;
+  try{localStorage.setItem('iphoneQueueWelcomeLang',LANG);}catch(e){}
+  applyStatic(); rerender();
+};
+
+applyStatic();
+if(!token){VIEW='badlink';$('box').innerHTML='<div class="loading">'+t('badLink')+'</div>';}
+else{VIEW='loading';$('box').innerHTML='<div class="loading">'+t('loading')+'</div>';call('checkByToken',token).then(renderMasked).catch(function(e){$('box').innerHTML='<div class="loading">'+esc(e.message)+'</div>';});}
+</script>
+</body>
+</html>

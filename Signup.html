@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>.ic{display:inline-block;font-style:normal;line-height:1}</style>
+<style>
+:root{--bg:#fff;--cv:#F5F4F1;--tx:#1A1A19;--t2:#63625D;--t3:#8B8A84;--bd:rgba(0,0,0,.15);--btn:#EDECE7;--btnh:#E3E2DC;--sel:#EEEDFE;--selT:#3C3489;--ink:#262624;--inkT:#fff;--r:14px}
+*{box-sizing:border-box} body{margin:0;font-family:'IBM Plex Sans Thai',-apple-system,sans-serif;background:var(--cv);color:var(--tx);font-size:16px;-webkit-font-smoothing:antialiased} button{font:inherit;cursor:pointer;font-family:inherit}
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:0.5px solid var(--bd);padding:calc(13px + env(safe-area-inset-top)) 24px 13px}.header-inner{width:min(100%,1180px);margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-size:17px;font-weight:600;white-space:nowrap}.brand-sub{display:block;font-size:11.5px;color:var(--t3);font-weight:400;margin-top:1px}.lang-control{display:inline-flex;align-items:center;gap:9px}.lang-control svg{width:19px;height:19px;stroke:var(--t2);fill:none;stroke-width:1.8;flex:none;pointer-events:none}.lang-control select{width:auto;min-width:104px;padding:9px 34px 9px 12px;font-size:13px;border:0.5px solid var(--bd);border-radius:9px;-webkit-appearance:none;appearance:none;background:var(--btn) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") no-repeat right 12px center;background-size:13px}.lang-control select:focus{outline:none;border-color:var(--selT);box-shadow:0 0 0 3px color-mix(in srgb,var(--selT) 18%,transparent)}.home-link{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;border:0.5px solid var(--bd);background:var(--btn);color:var(--t2)}.home-link:hover{background:var(--btnh);color:var(--tx)}.home-link svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.header-actions{display:flex;align-items:center;gap:10px}
+main{max-width:1180px;margin:0 auto;padding:32px 24px 56px}.signup-hero{margin:0 0 22px}.signup-hero h1{font-size:27px;line-height:1.25;margin:0 0 5px;font-weight:600}.signup-hero p{font-size:14px;color:var(--t2);margin:0}.signup-layout{display:grid;grid-template-columns:minmax(280px,.83fr) minmax(470px,1.35fr);gap:16px;align-items:start}.signup-card{border:0.5px solid var(--bd);border-radius:var(--r);padding:20px;background:var(--bg);box-shadow:0 1px 1px rgba(0,0,0,.015)}.signup-card.full{grid-column:1/-1}.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}.section-title h2{font-size:17px;font-weight:600;margin:0}.section-title span{font-size:12px;color:var(--t3)}
+.field{margin-bottom:14px} label{display:block;font-size:13px;color:var(--t2);margin-bottom:7px} input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px 13px;border:0.5px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}select{-webkit-appearance:none;appearance:none;padding-right:40px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 15px center;background-size:14px}textarea{min-height:96px;resize:vertical;line-height:1.5}input:focus,select:focus,textarea:focus{outline:2px solid var(--selT);outline-offset:1px}.phone-status{display:none;align-items:flex-start;gap:8px;margin-top:7px;padding:8px 10px;border-radius:9px;font-size:12.5px;line-height:1.45}.phone-status.on{display:flex}.phone-status-dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:5px;background:currentColor}.phone-status.checking{color:#64748B;background:#F1F5F9}.phone-status.new{color:#047857;background:#ECFDF5}.phone-status.known{color:#2563EB;background:#EFF6FF}.phone-status.active{color:#B45309;background:#FFFBEB}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.card{border:0.5px solid var(--bd);border-radius:11px;padding:16px;margin-bottom:12px;background:var(--bg)}.sub{border-left:2px solid var(--sel);padding-left:12px;margin-bottom:14px}.option-title{font-size:12.5px;color:var(--t2);margin:0 0 8px}.sg-price{margin:0 0 12px;font-size:14px;color:var(--tx)}.sg-price b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:16px;color:var(--selT)}.sg-price small{color:var(--t3);font-size:11.5px}.sg-total{display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding:11px 13px;border-radius:11px;background:var(--sel);color:var(--selT);font-size:14px}.sg-total b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:16px}.chip{font-size:13.5px;padding:9px 12px;border-radius:9px;border:0.5px solid var(--bd);background:var(--btn);text-align:center;flex:1;cursor:pointer}.chip:hover{background:var(--btnh)}.chip.on{background:var(--sel);color:var(--selT);border-color:var(--sel)}.chiprow{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}.promo{border-radius:9px;padding:10px 12px;margin-bottom:8px;cursor:pointer;border:0.5px solid var(--bd);background:var(--btn)}.promo.on{background:var(--sel);border-color:var(--sel)}.promo p{margin:0;font-size:14px}.promo p.d{margin-top:2px;font-size:11.5px;color:var(--t2)}.btn{width:100%;background:var(--ink);color:var(--inkT);padding:14px;border-radius:10px;border:none;font-size:16px;font-weight:500;text-decoration:none;text-align:center;display:block}.btn:disabled{opacity:.5}.btn2{width:100%;background:var(--btn);color:var(--tx);padding:11px;border-radius:10px;border:0.5px solid var(--bd);font-size:14px;text-align:center}.btn2:hover{background:var(--btnh)}.form-actions{grid-column:1/-1;display:flex;justify-content:flex-end}.form-actions .btn{width:min(100%,430px)}.done{text-align:center;padding:80px 10px}.done .ic{width:52px;height:52px;border-radius:50%;background:var(--sel);color:var(--selT);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:26px}.done .home-btn{width:min(100%,310px);margin:22px auto 0}.msg{margin:0 0 20px;font-size:13.5px;color:var(--t2);line-height:1.7}.capnum{font-size:24px;font-weight:600;text-align:center;margin-bottom:12px}.err{color:#B91C1C;font-size:12.5px;margin-top:6px}.modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(20,20,18,.4);display:flex;align-items:center;justify-content:center;padding:20px}.modal{width:min(100%,410px);border-radius:16px;background:var(--bg);box-shadow:0 18px 50px rgba(0,0,0,.22);padding:22px}.modal-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FDECEC;color:#B42318;font-size:20px;font-weight:600;margin-bottom:13px}.modal-icon.warn{background:#FFF4E5;color:#B45309}.modal h2{font-size:18px;line-height:1.3;margin:0 0 7px}.modal p{font-size:14px;line-height:1.55;color:var(--t2);margin:0 0 18px}.modal .btn{padding:11px;font-size:15px}.modal-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:9px}.modal-actions .btn2,.modal-actions .btn{padding:11px;font-size:14px}
+.saving-backdrop{position:fixed;inset:0;z-index:120;background:rgba(245,244,241,.76);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:20px}.saving-card{width:min(100%,360px);padding:28px 24px;border:0.5px solid var(--bd);border-radius:18px;background:var(--bg);box-shadow:0 22px 60px rgba(0,0,0,.18);text-align:center}.saving-spinner{display:block;width:44px;height:44px;margin:0 auto 17px;border:4px solid var(--sel);border-top-color:var(--selT);border-radius:50%;animation:saving-spin .78s linear infinite}.saving-card h2{margin:0 0 7px;font-size:19px}.saving-card p{margin:0;color:var(--t2);font-size:14px;line-height:1.55}@keyframes saving-spin{to{transform:rotate(360deg)}}
+@media(max-width:720px){header{padding-left:16px;padding-right:16px}.brand{font-size:15px}.brand-sub{display:none}.lang-control{gap:7px}.lang-control select{min-width:auto;padding:9px 10px}.signup-hero h1{font-size:23px}main{padding:22px 16px 42px}.signup-layout{grid-template-columns:1fr;gap:12px}.signup-card{padding:16px}.signup-card.full,.form-actions{grid-column:auto}.form-actions .btn{width:100%}.row{gap:9px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div><span class="brand" id="t-brand">ลงชื่อแสดงความสนใจ iPhone</span><span class="brand-sub" id="t-heroDesc">เลือกสเปกที่ต้องการ แล้วเจ้าหน้าที่จะติดต่อกลับตามลำดับคิว</span></div>
+    <div class="header-actions">
+      <div class="lang-control" title="เลือกภาษา">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M3.5 12h17M12 3.5c2.3 2.4 3.5 5.2 3.5 8.5S14.3 18.1 12 20.5C9.7 18.1 8.5 15.3 8.5 12S9.7 5.9 12 3.5"></path></svg>
+        <select id="langSel" aria-label="เลือกภาษา"><option value="th">ไทย</option><option value="en">English</option><option value="zh">中文</option><option value="ko">한국어</option><option value="ja">日本語</option></select>
+      </div>
+      <a class="home-link" href="<?= appUrl ?>" title="กลับหน้าแรก" aria-label="กลับหน้าแรก"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"></path></svg></a>
+    </div>
+  </div>
+</header>
+<main>
+  <div id="formView" class="signup-layout">
+    <section class="signup-card customer-card">
+      <div class="section-title"><h2 id="t-contactTitle">ข้อมูลติดต่อ</h2><span id="t-contactHint">สำหรับเจ้าหน้าที่ติดต่อกลับ</span></div>
+      <div class="field"><label id="t-name">ชื่อ-นามสกุล</label><input id="f-name" autocomplete="name"></div>
+      <div class="field"><label id="t-phone">เบอร์โทร</label><input id="f-phone" type="tel" inputmode="tel" autocomplete="tel"><div class="phone-status" id="phoneStatus" aria-live="polite"><span class="phone-status-dot"></span><span id="phoneStatusText"></span></div></div>
+      <div id="contactRows"></div>
+      <div class="field" style="margin-bottom:0"><label id="t-note">ข้อมูลเพิ่มเติม (ถ้ามี)</label><textarea id="f-note" placeholder="เช่น ช่วงเวลาที่สะดวกให้ติดต่อ หรือรายละเอียดเพิ่มเติม"></textarea></div>
+    </section>
+
+    <section class="signup-card product-card">
+      <div class="section-title"><h2 id="t-productTitle">สินค้าที่สนใจ</h2><span id="t-productHint">ระบุได้มากกว่า 1 เครื่อง</span></div>
+      <div id="deviceList"></div>
+      <button class="btn2" id="addDevice" style="margin-bottom:16px"><span class="ic">+</span> <span id="t-add">ต้องการอีกเครื่อง</span></button>
+      <div id="aisSection"><p id="t-ais" style="font-size:13px;color:var(--t2);margin:0 0 8px">ต้องการใช้ส่วนลดของ AIS ไหม</p>
+      <div class="chiprow"><span class="chip on" data-ais="0">ไม่ต้องการ</span><span class="chip" data-ais="1">ต้องการ</span></div></div>
+      <div class="sub" id="promoBox" style="display:none"></div>
+    </section>
+
+    <section class="signup-card full" id="capBox" style="display:none">
+      <div class="section-title"><h2 id="t-confirmTitle">ยืนยันการส่งข้อมูล</h2><span id="t-confirmHint">ป้องกันการส่งข้อมูลอัตโนมัติ</span></div>
+      <p id="t-capq" style="font-size:13px;color:var(--t2);margin:16px 0 10px">กรุณาตอบคำถามก่อนส่งข้อมูล</p>
+      <p class="capnum" id="capQuestion"></p>
+      <input id="capAnswer" inputmode="numeric" style="max-width:140px;margin:0 auto 6px;display:block;text-align:center">
+      <p class="err" id="capErr" style="display:none;text-align:center"></p>
+    </section>
+
+    <div class="form-actions"><button class="btn" id="btnNext">ถัดไป</button></div>
+  </div>
+
+  <div id="doneView" style="display:none" class="done">
+    <div class="ic"><span class="ic">✓</span></div>
+    <p style="font-size:17px;font-weight:600;margin:0 0 8px" id="t-donetitle">ได้รับข้อมูลแล้ว</p>
+    <p class="msg" id="t-donemsg">ขอบคุณที่สนใจสินค้า เจ้าหน้าที่จะตรวจสอบและติดต่อกลับตามลำดับ</p>
+    <a class="btn home-btn" id="t-home" href="<?= appUrl ?>">กลับเมนูหลัก</a>
+  </div>
+</main>
+<div class="modal-backdrop" id="errorModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal"><div class="modal-icon">!</div><h2 id="modalTitle">ตรวจสอบข้อมูลอีกครั้ง</h2><p id="modalMessage"></p><button class="btn" id="modalClose">เข้าใจแล้ว</button></div>
+</div>
+<div class="modal-backdrop" id="duplicateModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="duplicateTitle">
+  <div class="modal"><div class="modal-icon warn">↻</div><h2 id="duplicateTitle">พบสินค้ารายการเดิม</h2><p id="duplicateMessage"></p><div class="modal-actions"><button class="btn2" id="duplicateBack">กลับไปตรวจสอบ</button><button class="btn" id="duplicateConfirm">ยืนยันว่าเป็นเครื่องเพิ่ม</button></div></div>
+</div>
+<div class="saving-backdrop" id="savingOverlay" style="display:none" role="status" aria-live="assertive" aria-label="กำลังบันทึกข้อมูล">
+  <div class="saving-card"><span class="saving-spinner" aria-hidden="true"></span><h2 id="savingTitle">กำลังบันทึกข้อมูล</h2><p id="savingMessage">กรุณารอสักครู่ และอย่าปิดหน้านี้</p></div>
+</div>
+
+<script>
+var I18N={
+th:{brand:'ลงชื่อแสดงความสนใจ iPhone',heroDesc:'เลือกสเปกที่ต้องการ แล้วเจ้าหน้าที่จะติดต่อกลับตามลำดับคิว',contactTitle:'ข้อมูลติดต่อ',contactHint:'สำหรับเจ้าหน้าที่ติดต่อกลับ',productTitle:'สินค้าที่สนใจ',productHint:'ระบุได้มากกว่า 1 เครื่อง',confirmTitle:'ยืนยันการส่งข้อมูล',confirmHint:'ป้องกันการส่งข้อมูลอัตโนมัติ',name:'ชื่อ-นามสกุล',phone:'เบอร์โทร',channel:'ช่องทางติดต่อ',contact:'ไอดี/อีเมล',addContact:'เพิ่มช่องทางติดต่อ',email:'อีเมล',note:'ข้อมูลเพิ่มเติม (ถ้ามี)',notePlaceholder:'เช่น ช่วงเวลาที่สะดวกให้ติดต่อ หรือรายละเอียดเพิ่มเติม',model:'รุ่น',cap:'ความจุ',color:'สี',altq:'หากสเปกนี้หมด ยินดีรับตัวเลือกอื่นหรือไม่',altyes:'รับได้',altno:'ขอรอแบบนี้',altcolors:'สีอื่น · ความจุเดิม',altcaps:'ความจุอื่น · สีเดิม',add:'ต้องการอีกเครื่อง',aisq:'ต้องการรับเครื่องเปล่า หรือ เครื่องโครงการ AIS',aisyes:'เครื่องโครงการ AIS',aisno:'เครื่องเปล่า',aisnote:'ใช้ส่วนลด AIS ได้เฉพาะเครื่องของ AIS เท่านั้น',capq:'กรุณาตอบคำถามก่อนส่งข้อมูล เพื่อยืนยันว่าไม่ใช่โปรแกรมอัตโนมัติ',next:'ถัดไป',submit:'ส่งข้อมูล',err:'คำตอบไม่ถูกต้อง กรุณาลองใหม่',need:'กรุณากรอกชื่อและเบอร์โทรให้ครบ',donetitle:'ได้รับข้อมูลแล้ว',donemsg:'ขอบคุณที่สนใจสินค้า เจ้าหน้าที่จะตรวจสอบและติดต่อกลับตามลำดับ',home:'กลับเมนูหลัก',remove:'ลบ'},
+en:{brand:'iPhone interest registration',heroDesc:'Choose your preferred specifications and our team will contact you in queue order.',contactTitle:'Contact details',contactHint:'For our team to contact you',productTitle:'Products of interest',productHint:'You may specify more than one device',confirmTitle:'Confirm submission',confirmHint:'Protection against automated submissions',name:'Full name',phone:'Phone number',channel:'Contact channel',contact:'ID / email',addContact:'Add contact channel',email:'Email',note:'Additional details (optional)',notePlaceholder:'For example, a convenient time to contact you',model:'Model',cap:'Storage',color:'Color',altq:'If this specification is unavailable, would you accept another option?',altyes:'Yes',altno:'Wait for this one',altcolors:'Other colors · same storage',altcaps:'Other storage · same color',add:'Add another device',aisq:'Plain device or AIS program device?',aisyes:'AIS program',aisno:'Plain device',aisnote:'AIS plans require an AIS device only',capq:'Please answer to confirm you are not a bot',next:'Next',submit:'Submit',err:'Wrong answer, please try again',need:'Please enter your name and phone number',donetitle:'Received',donemsg:'Thank you for your interest. Our staff will review and contact you in order.',home:'Back to home',remove:'Remove'},
+zh:{brand:'iPhone 意向登记',heroDesc:'请选择您需要的规格，工作人员将按排队顺序与您联系。',contactTitle:'联系信息',contactHint:'便于工作人员与您联系',productTitle:'感兴趣的产品',productHint:'可登记多台设备',confirmTitle:'确认提交',confirmHint:'防止自动提交',name:'姓名',phone:'电话号码',channel:'联系方式',contact:'账号/邮箱',addContact:'添加联系方式',email:'电子邮箱',note:'补充信息（可选）',notePlaceholder:'例如方便联系的时间或其他说明',model:'型号',cap:'容量',color:'颜色',altq:'如果此规格无货，您是否接受其他选择？',altyes:'可以',altno:'只要这款',altcolors:'其他颜色 · 相同容量',altcaps:'其他容量 · 相同颜色',add:'添加另一台设备',aisq:'普通机型还是 AIS 合约机型？',aisyes:'AIS 合约机',aisno:'普通机型',aisnote:'AIS 优惠仅限 AIS 机型',capq:'请回答以下问题以确认非机器人',next:'下一步',submit:'提交',err:'答案错误，请重试',need:'请填写姓名和电话号码',donetitle:'已收到您的信息',donemsg:'感谢您的关注，工作人员会审核后按顺序与您联系。',home:'返回首页',remove:'删除'},
+ko:{brand:'iPhone 관심 등록',heroDesc:'원하는 사양을 선택해 주세요. 직원이 대기 순서대로 연락드립니다.',contactTitle:'연락처 정보',contactHint:'직원이 연락드릴 정보',productTitle:'관심 상품',productHint:'여러 기기를 등록할 수 있습니다',confirmTitle:'제출 확인',confirmHint:'자동 제출 방지',name:'성명',phone:'전화번호',channel:'연락 방법',contact:'아이디/이메일',addContact:'연락 방법 추가',email:'이메일',note:'추가 정보 (선택)',notePlaceholder:'예: 연락 가능한 시간 또는 추가 요청',model:'모델',cap:'용량',color:'색상',altq:'이 사양이 없으면 다른 옵션도 괜찮으신가요?',altyes:'괜찮습니다',altno:'이 옵션만 원해요',altcolors:'다른 색상 · 같은 용량',altcaps:'다른 용량 · 같은 색상',add:'기기 추가',aisq:'일반 기기 또는 AIS 프로그램 기기?',aisyes:'AIS 프로그램',aisno:'일반 기기',aisnote:'AIS 할인은 AIS 기기에만 적용됩니다',capq:'봇이 아님을 확인하기 위해 답변해 주세요',next:'다음',submit:'제출',err:'답이 틀렸습니다. 다시 시도해 주세요',need:'이름과 전화번호를 입력해 주세요',donetitle:'접수되었습니다',donemsg:'관심 가져주셔서 감사합니다. 직원이 확인 후 순서대로 연락드리겠습니다.',home:'홈으로 돌아가기',remove:'삭제'},
+ja:{brand:'iPhone購入希望登録',heroDesc:'ご希望の仕様を選択してください。スタッフが順番にご連絡します。',contactTitle:'連絡先情報',contactHint:'スタッフからのご連絡用',productTitle:'ご希望の商品',productHint:'複数の端末を登録できます',confirmTitle:'送信確認',confirmHint:'自動送信を防止します',name:'お名前',phone:'電話番号',channel:'連絡方法',contact:'ID/メール',addContact:'連絡方法を追加',email:'メール',note:'補足情報（任意）',notePlaceholder:'例：連絡しやすい時間帯やご要望',model:'モデル',cap:'容量',color:'カラー',altq:'この仕様がない場合、他の選択肢でもよろしいですか？',altyes:'よい',altno:'この仕様のみ希望',altcolors:'他のカラー · 同じ容量',altcaps:'他の容量 · 同じカラー',add:'端末を追加',aisq:'通常端末またはAISプログラム端末？',aisyes:'AISプログラム',aisno:'通常端末',aisnote:'AIS割引はAIS端末のみ対象です',capq:'ボットでないことを確認するためお答えください',next:'次へ',submit:'送信',err:'回答が正しくありません。もう一度お試しください',need:'お名前と電話番号を入力してください',donetitle:'受け付けました',donemsg:'ご関心をお寄せいただきありがとうございます。スタッフが確認後、順番にご連絡いたします。',home:'ホームに戻る',remove:'削除'}
+};
+Object.assign(I18N.th,{chooseModel:'โปรดระบุรุ่น',chooseCap:'โปรดระบุความจุ',chooseColor:'โปรดระบุสี',needProduct:'กรุณาระบุรุ่น ความจุ และสีของสินค้าที่สนใจให้ครบ'});
+Object.assign(I18N.en,{chooseModel:'Please select a model',chooseCap:'Please select storage',chooseColor:'Please select a color',needProduct:'Please select the model, storage, and color for every device.'});
+Object.assign(I18N.zh,{chooseModel:'请选择型号',chooseCap:'请选择容量',chooseColor:'请选择颜色',needProduct:'请为每台设备选择型号、容量和颜色。'});
+Object.assign(I18N.ko,{chooseModel:'모델을 선택해 주세요',chooseCap:'용량을 선택해 주세요',chooseColor:'색상을 선택해 주세요',needProduct:'각 기기의 모델, 용량, 색상을 모두 선택해 주세요.'});
+Object.assign(I18N.ja,{chooseModel:'モデルを選択してください',chooseCap:'容量を選択してください',chooseColor:'カラーを選択してください',needProduct:'すべての端末のモデル、容量、カラーを選択してください。'});
+Object.assign(I18N.th,{price:'ราคา',priceUnit:'บาท',priceNote:'ราคาอาจเปลี่ยนแปลง',estTotal:'รวมโดยประมาณ'});
+Object.assign(I18N.en,{price:'Price',priceUnit:'THB',priceNote:'Price may change',estTotal:'Estimated total'});
+Object.assign(I18N.zh,{price:'价格',priceUnit:'泰铢',priceNote:'价格可能变动',estTotal:'预计总计'});
+Object.assign(I18N.ko,{price:'가격',priceUnit:'THB',priceNote:'가격은 변동될 수 있습니다',estTotal:'예상 합계'});
+Object.assign(I18N.ja,{price:'価格',priceUnit:'バーツ',priceNote:'価格は変わる場合があります',estTotal:'概算合計'});
+Object.assign(I18N.th,{phoneChecking:'กำลังตรวจสอบเบอร์…',phoneNew:'เบอร์นี้ยังไม่เคยลงทะเบียน สามารถกรอกข้อมูลต่อได้',phoneKnown:'พบข้อมูลลูกค้าเดิม สามารถลงทะเบียนสินค้าเพิ่มเติมได้',phoneActive:'พบรายการที่กำลังดำเนินการอยู่ คุณยังลงทะเบียนเครื่องเพิ่มได้',duplicateTitle:'พบสินค้ารายการเดิม',duplicateMessage:'เบอร์นี้มีรายการรุ่น ความจุ และสีเดียวกันที่ยังดำเนินการอยู่ ต้องการลงทะเบียนเพิ่มอีกหนึ่งเครื่องหรือไม่?',duplicateBack:'กลับไปตรวจสอบ',duplicateConfirm:'ยืนยันว่าเป็นเครื่องเพิ่ม'});
+Object.assign(I18N.en,{phoneChecking:'Checking this phone number…',phoneNew:'This number has not been registered. You can continue.',phoneKnown:'Existing customer information found. You can register another product.',phoneActive:'An active registration exists. You may still register another device.',duplicateTitle:'Existing product found',duplicateMessage:'This number already has an active registration for the same model, storage, and color. Register one more device?',duplicateBack:'Review details',duplicateConfirm:'Confirm additional device'});
+Object.assign(I18N.zh,{phoneChecking:'正在检查电话号码…',phoneNew:'此号码尚未登记，可以继续填写。',phoneKnown:'已找到原有客户资料，可以登记其他商品。',phoneActive:'此号码有正在处理的登记，仍可添加其他设备。',duplicateTitle:'发现相同商品登记',duplicateMessage:'此号码已有相同型号、容量和颜色的处理中登记。是否再登记一台？',duplicateBack:'返回检查',duplicateConfirm:'确认添加设备'});
+Object.assign(I18N.ko,{phoneChecking:'전화번호를 확인하는 중…',phoneNew:'등록 이력이 없는 번호입니다. 계속 진행할 수 있습니다.',phoneKnown:'기존 고객 정보가 있습니다. 다른 상품을 등록할 수 있습니다.',phoneActive:'진행 중인 등록이 있습니다. 기기를 추가로 등록할 수 있습니다.',duplicateTitle:'동일 상품 등록 발견',duplicateMessage:'같은 모델, 용량, 색상의 진행 중인 등록이 있습니다. 기기를 한 대 더 등록하시겠습니까?',duplicateBack:'다시 확인',duplicateConfirm:'추가 기기 확인'});
+Object.assign(I18N.ja,{phoneChecking:'電話番号を確認しています…',phoneNew:'この番号の登録履歴はありません。続けて入力できます。',phoneKnown:'既存のお客様情報が見つかりました。別の商品を登録できます。',phoneActive:'処理中の登録があります。端末を追加登録することもできます。',duplicateTitle:'同じ商品の登録があります',duplicateMessage:'同じモデル・容量・カラーの処理中の登録があります。もう1台追加しますか？',duplicateBack:'内容を確認',duplicateConfirm:'追加端末として確認'});
+Object.assign(I18N.th,{savingTitle:'กำลังบันทึกข้อมูล',savingMessage:'กรุณารอสักครู่ และอย่าปิดหน้านี้'});
+Object.assign(I18N.en,{savingTitle:'Saving your information',savingMessage:'Please wait and keep this page open.'});
+Object.assign(I18N.zh,{savingTitle:'正在保存信息',savingMessage:'请稍候，不要关闭此页面。'});
+Object.assign(I18N.ko,{savingTitle:'정보를 저장하는 중',savingMessage:'잠시 기다려 주시고 이 페이지를 닫지 마세요.'});
+Object.assign(I18N.ja,{savingTitle:'情報を保存しています',savingMessage:'しばらくお待ちください。このページを閉じないでください。'});
+var LANG='th';try{LANG=localStorage.getItem('iphoneQueueWelcomeLang')||'th';}catch(e){}
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.th[k]||k;}
+var $=function(id){return document.getElementById(id);};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+function showError(message){$('modalTitle').textContent=LANG==='th'?'ตรวจสอบข้อมูลอีกครั้ง':'Please check your details';$('modalMessage').textContent=message;$('modalClose').textContent=LANG==='th'?'เข้าใจแล้ว':'OK';$('errorModal').style.display='flex';}
+$('modalClose').onclick=function(){$('errorModal').style.display='none';};
+$('errorModal').onclick=function(e){if(e.target===$('errorModal'))$('errorModal').style.display='none';};
+
+var BOOT=null, DEVICES=[], captcha=null, wantAIS=false, selectedPromo='',PHONE_STATUS='',PHONE_CHECK_TIMER=null,PHONE_CHECK_SEQ=0;
+
+function call(name){var args=[].slice.call(arguments,1);return new Promise(function(res,rej){var r=google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(e);});r[name].apply(r,args);});}
+
+function setPhoneStatus(state){
+  PHONE_STATUS=state||'';
+  var box=$('phoneStatus'),text=$('phoneStatusText');if(!box||!text)return;
+  var keys={checking:'phoneChecking',new:'phoneNew',known:'phoneKnown',active:'phoneActive'};
+  box.className='phone-status'+(keys[PHONE_STATUS]?' on '+PHONE_STATUS:'');
+  text.textContent=keys[PHONE_STATUS]?t(keys[PHONE_STATUS]):'';
+}
+function schedulePhoneCheck(){
+  clearTimeout(PHONE_CHECK_TIMER);PHONE_CHECK_SEQ++;
+  var seq=PHONE_CHECK_SEQ,phone=$('f-phone').value,digits=phone.replace(/\D/g,'');
+  if(digits.length<9||digits.length>15){setPhoneStatus('');return;}
+  setPhoneStatus('checking');
+  PHONE_CHECK_TIMER=setTimeout(function(){
+    if(!captcha||!captcha.sid){setPhoneStatus('');return;}
+    call('checkSignupPhone',captcha.sid,phone).then(function(result){
+      if(seq!==PHONE_CHECK_SEQ||phone!==$('f-phone').value)return;
+      setPhoneStatus(result&&/^(new|known|active)$/.test(result.state)?result.state:'');
+    }).catch(function(){if(seq===PHONE_CHECK_SEQ)setPhoneStatus('');});
+  },650);
+}
+
+$('langSel')&&($('langSel').onchange=function(){LANG=$('langSel').value;try{localStorage.setItem('iphoneQueueWelcomeLang',LANG);}catch(e){}applyI18n();renderDevices();});
+
+var contacts=[{channel:'LINE',id:''}];
+function renderContactRows(){
+  var wrap=$('contactRows');if(!wrap)return;
+  var chOpts=[['LINE','LINE'],['WhatsApp','WhatsApp'],['Email',t('email')]];
+  wrap.innerHTML=contacts.map(function(c,i){
+    var opts=chOpts.map(function(o){return '<option value="'+o[0]+'"'+(c.channel===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join('');
+    return '<div class="row" style="margin-bottom:12px">'+
+      '<div class="field" style="margin-bottom:0"><label>'+esc(t('channel'))+'</label><select data-cch="'+i+'">'+opts+'</select></div>'+
+      '<div class="field" style="margin-bottom:0"><label>'+esc(t('contact'))+'</label><div style="display:flex;gap:6px"><input data-cid="'+i+'" value="'+esc(c.id)+'">'+(i>0?'<button type="button" class="chip" data-crm="'+i+'" style="flex:none;width:auto;padding:0 13px" aria-label="'+esc(t('remove'))+'">×</button>':'')+'</div></div>'+
+    '</div>';
+  }).join('')+(contacts.length<4?'<button type="button" class="btn2" id="addContact" style="margin-bottom:4px">+ '+esc(t('addContact'))+'</button>':'');
+  wrap.querySelectorAll('[data-cch]').forEach(function(el){el.onchange=function(){contacts[+el.dataset.cch].channel=el.value;};});
+  wrap.querySelectorAll('[data-cid]').forEach(function(el){el.oninput=function(){contacts[+el.dataset.cid].id=el.value;};});
+  wrap.querySelectorAll('[data-crm]').forEach(function(el){el.onclick=function(){contacts.splice(+el.dataset.crm,1);renderContactRows();};});
+  var ac=$('addContact');if(ac)ac.onclick=function(){contacts.push({channel:'Email',id:''});renderContactRows();};
+}
+// รวมค่าช่องทางติดต่อ: กรอกช่องเดียว = เก็บแบบเดิม, หลายช่อง = ติดป้ายชื่อช่องทาง เช่น "LINE: abc · Email: x@y.com"
+function filledContacts_(){return contacts.filter(function(c){return String(c.id||'').trim();});}
+function contactChannelValue(){var f=filledContacts_();return (f[0]||contacts[0]||{channel:'LINE'}).channel;}
+function contactIdValue(){var f=filledContacts_();if(f.length<=1)return f.length?String(f[0].id).trim():'';return f.map(function(c){return c.channel+': '+String(c.id).trim();}).join(' · ');}
+function applyI18n(){
+  var ls=$('langSel');if(ls)ls.value=LANG;
+  $('t-brand').textContent=t('brand');$('t-heroDesc').textContent=t('heroDesc');$('t-contactTitle').textContent=t('contactTitle');$('t-contactHint').textContent=t('contactHint');$('t-productTitle').textContent=t('productTitle');$('t-productHint').textContent=t('productHint');$('t-confirmTitle').textContent=t('confirmTitle');$('t-confirmHint').textContent=t('confirmHint');
+  $('t-name').textContent=t('name');$('t-phone').textContent=t('phone');$('t-note').textContent=t('note');$('f-note').placeholder=t('notePlaceholder');$('t-add').textContent=t('add');renderContactRows();
+  $('t-ais').textContent=t('aisq');$('t-capq').textContent=t('capq');$('t-donetitle').textContent=t('donetitle');$('t-donemsg').textContent=t('donemsg');$('t-home').textContent=t('home');
+  document.querySelectorAll('[data-ais="1"]')[0].textContent=t('aisyes');document.querySelectorAll('[data-ais="0"]')[0].textContent=t('aisno');
+  $('btnNext').textContent=captchaShown?t('submit'):t('next');setPhoneStatus(PHONE_STATUS);
+  $('duplicateTitle').textContent=t('duplicateTitle');$('duplicateMessage').textContent=t('duplicateMessage');$('duplicateBack').textContent=t('duplicateBack');$('duplicateConfirm').textContent=t('duplicateConfirm');
+  renderPromo();
+}
+
+call('getSignupBootstrap').then(function(b){BOOT=b;captcha=b.captcha;DEVICES=[freshDevice()];renderDevices();applyI18n();schedulePhoneCheck();}).catch(function(e){showError(e.message);});
+
+$('f-name').oninput=function(){this.value=this.value.replace(/[0-9๐-๙]/g,'');};
+$('f-phone').oninput=function(){var v=this.value.replace(/[^0-9+]/g,'');var i=v.indexOf('+');if(i>0)v=v.replace(/\+/g,'');else if(i===0)v='+'+v.slice(1).replace(/\+/g,'');this.value=v;schedulePhoneCheck();};
+
+function freshDevice(){return {model:'',capacity:'',color:'',acceptAlt:false,altColors:[],altCaps:[]};}
+function sgPrice(model,capacity){if(!BOOT||!BOOT.products)return null;var p=BOOT.products.filter(function(x){return x.model===model;})[0];if(!p||!p.prices)return null;var v=p.prices[capacity];return (v==null||v==='')?null:Number(v);}
+
+
+$('addDevice').onclick=function(){DEVICES.push(freshDevice());renderDevices();};
+
+function renderDevices(){
+  var wrap=$('deviceList');wrap.innerHTML='';
+  DEVICES.forEach(function(d,i){
+    var prod=BOOT.products.filter(function(p){return p.model===d.model;})[0]||null;
+    var complete=!!(prod&&d.capacity&&d.color);
+    var box=document.createElement('div');box.className='card';
+    box.innerHTML=
+      (DEVICES.length>1?'<div style="text-align:right;margin-bottom:6px"><span data-rm="'+i+'" style="cursor:pointer;font-size:12px;color:var(--t2)">'+t('remove')+' <span class="ic">×</span></span></div>':'')+
+      '<label>'+t('model')+'</label><select data-f="model" data-i="'+i+'" style="margin-bottom:9px"><option value="" disabled'+(!d.model?' selected':'')+'>'+esc(t('chooseModel'))+'</option>'+BOOT.products.map(function(p){return '<option value="'+esc(p.model)+'"'+(p.model===d.model?' selected':'')+'>'+esc(p.model)+'</option>';}).join('')+'</select>'+
+      '<div class="row" style="margin-bottom:9px">'+
+        '<div><label>'+t('cap')+'</label><select data-f="capacity" data-i="'+i+'"'+(!prod?' disabled':'')+'><option value="" disabled'+(!d.capacity?' selected':'')+'>'+esc(t('chooseCap'))+'</option>'+(prod?prod.capacities.map(function(c){return '<option value="'+esc(c)+'"'+(c===d.capacity?' selected':'')+'>'+esc(c)+'</option>';}).join(''):'')+'</select></div>'+
+        '<div><label>'+t('color')+'</label><select data-f="color" data-i="'+i+'"'+(!prod?' disabled':'')+'><option value="" disabled'+(!d.color?' selected':'')+'>'+esc(t('chooseColor'))+'</option>'+(prod?prod.colors.map(function(c){return '<option value="'+esc(c)+'"'+(c===d.color?' selected':'')+'>'+esc(c)+'</option>';}).join(''):'')+'</select></div>'+
+            '</div>'+
+      (function(){var pr=sgPrice(d.model,d.capacity);return pr!=null?'<div class="sg-price">'+t('price')+' <b>'+pr.toLocaleString('th-TH')+'</b> '+t('priceUnit')+' <small>· '+t('priceNote')+'</small></div>':'';})()+
+      (BOOT.alternativeOptionsEnabled&&complete?'<p style="font-size:12.5px;color:var(--t2);margin:0 0 8px">'+t('altq')+'</p>'+
+      '<div class="chiprow"><span class="chip'+(d.acceptAlt?' on':'')+'" data-alt="1" data-i="'+i+'">'+t('altyes')+'</span><span class="chip'+(!d.acceptAlt?' on':'')+'" data-alt="0" data-i="'+i+'">'+t('altno')+'</span></div>'+
+      (d.acceptAlt?('<div class="sub"><p class="option-title">'+t('altcolors')+'</p><div class="chiprow">'+
+        prod.colors.filter(function(c){return c!==d.color;}).map(function(c){return '<span class="chip'+(d.altColors.indexOf(c)>-1?' on':'')+'" data-altc="'+i+'" data-v="'+esc(c)+'">'+esc(c)+'</span>';}).join('')+
+        '</div><p class="option-title">'+t('altcaps')+'</p><div class="chiprow">'+
+        prod.capacities.filter(function(c){return c!==d.capacity;}).map(function(c){return '<span class="chip'+(d.altCaps.indexOf(c)>-1?' on':'')+'" data-altk="'+i+'" data-v="'+esc(c)+'">'+esc(c)+'</span>';}).join('')+'</div></div>'):''):'');
+    wrap.appendChild(box);
+  });
+  wrap.querySelectorAll('select[data-f]').forEach(function(el){el.onchange=function(){var i=+el.dataset.i,f=el.dataset.f;DEVICES[i][f]=el.value;if(f==='model'){DEVICES[i].capacity='';DEVICES[i].color='';DEVICES[i].acceptAlt=false;DEVICES[i].altColors=[];DEVICES[i].altCaps=[];}renderDevices();};});
+  wrap.querySelectorAll('[data-alt]').forEach(function(el){el.onclick=function(){DEVICES[+el.dataset.i].acceptAlt=el.dataset.alt==='1';renderDevices();};});
+  wrap.querySelectorAll('[data-altc]').forEach(function(el){el.onclick=function(){var i=+el.dataset.altc,v=el.dataset.v,a=DEVICES[i].altColors;var p=a.indexOf(v);if(p>-1)a.splice(p,1);else a.push(v);renderDevices();};});
+  wrap.querySelectorAll('[data-altk]').forEach(function(el){el.onclick=function(){var i=+el.dataset.altk,v=el.dataset.v,a=DEVICES[i].altCaps;var p=a.indexOf(v);if(p>-1)a.splice(p,1);else a.push(v);renderDevices();};});
+    wrap.querySelectorAll('[data-rm]').forEach(function(el){el.onclick=function(){DEVICES.splice(+el.dataset.rm,1);renderDevices();};});
+  var prices=DEVICES.map(function(d){return sgPrice(d.model,d.capacity);});
+  var allPriced=DEVICES.length>0&&prices.every(function(v){return v!=null;});
+  if(allPriced){var sum=prices.reduce(function(a,b){return a+b;},0);var tt2=document.createElement('div');tt2.className='sg-total';tt2.innerHTML='<span>'+t('estTotal')+'</span><b>'+sum.toLocaleString('th-TH')+' '+t('priceUnit')+'</b>';wrap.appendChild(tt2);}
+}
+
+document.querySelectorAll('[data-ais]').forEach(function(el){el.onclick=function(){wantAIS=el.dataset.ais==='1';document.querySelectorAll('[data-ais]').forEach(function(x){x.classList.remove('on');});el.classList.add('on');renderPromo();};});
+function renderPromo(){
+  var box=$('promoBox'), section=$('aisSection');
+  if(!BOOT||!BOOT.supplierLockEnabled||(BOOT.aisThaiOnly&&LANG!=='th')){wantAIS=false;selectedPromo='';section.style.display='none';box.style.display='none';return;}
+  section.style.display='block';
+  if(!wantAIS||!BOOT){box.style.display='none';return;}
+  box.style.display='block';
+  box.innerHTML=BOOT.promos.map(function(p){return '<div class="promo'+(selectedPromo===p.name?' on':'')+'" data-promo="'+esc(p.name)+'"><p>'+esc(p.name)+'</p><p class="d">'+esc(p.desc)+'</p></div>';}).join('')+
+    '<p style="font-size:11.5px;color:var(--t2);margin:10px 0 0">'+t('aisnote')+'</p>';
+  box.querySelectorAll('[data-promo]').forEach(function(el){el.onclick=function(){selectedPromo=selectedPromo===el.dataset.promo?'':el.dataset.promo;renderPromo();};});
+}
+
+var captchaShown=false;
+function devicesComplete(){return DEVICES.length>0&&!DEVICES.some(function(d){return !d.model||!d.capacity||!d.color;});}
+$('duplicateBack').onclick=function(){$('duplicateModal').style.display='none';$('btnNext').disabled=false;};
+$('duplicateConfirm').onclick=function(){$('duplicateModal').style.display='none';submitForm(true);};
+$('duplicateModal').onclick=function(e){if(e.target===$('duplicateModal')){$('duplicateModal').style.display='none';$('btnNext').disabled=false;}};
+function showDuplicateConfirm(){$('duplicateTitle').textContent=t('duplicateTitle');$('duplicateMessage').textContent=t('duplicateMessage');$('duplicateBack').textContent=t('duplicateBack');$('duplicateConfirm').textContent=t('duplicateConfirm');$('duplicateModal').style.display='flex';}
+function showSaving(){$('savingTitle').textContent=t('savingTitle');$('savingMessage').textContent=t('savingMessage');$('savingOverlay').setAttribute('aria-label',t('savingTitle'));$('savingOverlay').style.display='flex';}
+function hideSaving(){$('savingOverlay').style.display='none';}
+function refreshSignupCaptcha(){return call('getSignupBootstrap').then(function(b){captcha=b.captcha;$('capQuestion').textContent=captcha.a+' + '+captcha.b+' = ?';$('capAnswer').value='';schedulePhoneCheck();});}
+$('btnNext').onclick=function(){
+  if(!captchaShown){
+    if(!$('f-name').value.trim()||$('f-phone').value.replace(/\D/g,'').length<9){showError(t('need'));return;}
+    if(!devicesComplete()){showError(t('needProduct'));return;}
+    captchaShown=true;$('capBox').style.display='block';$('capQuestion').textContent=captcha.a+' + '+captcha.b+' = ?';
+    $('btnNext').textContent=t('submit');window.scrollTo(0,document.body.scrollHeight);
+    return;
+  }
+  submitForm();
+};
+
+function submitForm(confirmDuplicate){
+  if(!devicesComplete()){showError(t('needProduct'));return;}
+  $('btnNext').disabled=true;$('capErr').style.display='none';
+  var p={
+    name:$('f-name').value.trim(),phone:$('f-phone').value.trim(),channel:contactChannelValue(),contactId:contactIdValue(),
+    lang:{th:'ไทย',en:'English',zh:'中文',ko:'한국어',ja:'日本語'}[LANG],note:$('f-note').value.trim(),
+    devices:DEVICES.map(function(d){return {model:d.model,capacity:d.capacity,color:d.color,altColors:BOOT.alternativeOptionsEnabled&&d.acceptAlt?d.altColors:[],altCaps:BOOT.alternativeOptionsEnabled&&d.acceptAlt?d.altCaps:[],supplierLock:BOOT.supplierLockEnabled&&wantAIS,promo:BOOT.supplierLockEnabled?selectedPromo:'',deposit:0,billNo:''};}),
+    captchaSid:captcha.sid,captchaAnswer:$('capAnswer').value,confirmDuplicate:confirmDuplicate===true
+  };
+  showSaving();
+  call('submitSignup',p).then(function(){
+    hideSaving();
+    $('formView').style.display='none';$('doneView').style.display='block';
+  }).catch(function(e){
+    hideSaving();
+    $('btnNext').disabled=false;
+    var message=String(e&&e.message||e||'').replace(/^Exception:\s*/,'');
+    if(message.indexOf('DUPLICATE_CONFIRM_REQUIRED')>-1){showDuplicateConfirm();return;}
+    if(message.indexOf('คำตอบไม่ถูกต้อง')>-1){$('capErr').style.display='block';$('capErr').textContent=t('err');}
+    else showError(message||t('err'));
+    refreshSignupCaptcha().catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
