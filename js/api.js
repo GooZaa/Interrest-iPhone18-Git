@@ -87,6 +87,14 @@
     return map;
   }
 
+  function isSettingEnabled(v, defaultVal) {
+    if (v === undefined || v === null || v === '') return defaultVal !== undefined ? defaultVal : true;
+    if (typeof v === 'boolean') return v;
+    const s = String(v).trim().toLowerCase();
+    return s === 'true' || s === '1' || s === 'yes';
+  }
+
+
   function optFirst(a, b) {
     return (typeof a === 'string' && (a.startsWith('staff_') || a === 'logged_in')) ? b : a;
   }
@@ -153,22 +161,29 @@
     // SIGNUP
     // -------------------------------------------------------------
     async getSignupBootstrap() {
-      let { data: prods } = await sb().from('products').select('*').eq('is_active', true);
-      const products = (prods || []).map(p => ({
+      const [prodsRes, promosRes, cfgRes] = await Promise.all([
+        sb().from('products').select('*').eq('is_active', true),
+        sb().from('discount_campaigns').select('*').eq('is_active', true),
+        sb().from('system_configs').select('*')
+      ]);
+
+      const products = (prodsRes.data || []).map(p => ({
         model: p.model,
         capacities: (p.capacities || '').split(',').map(s => s.trim()).filter(Boolean),
         colors: (p.colors || '').split(',').map(s => s.trim()).filter(Boolean),
         prices: parsePriceMap(p.prices)
       }));
 
-      let { data: promos } = await sb().from('discount_campaigns').select('*').eq('is_active', true);
+      const configs = {};
+      (cfgRes.data || []).forEach(c => { configs[c.key] = c.value; });
+
       const n1 = Math.floor(Math.random() * 9) + 1;
       const n2 = Math.floor(Math.random() * 9) + 1;
       return {
         products: products,
-        promos: (promos || []).map(pr => ({ name: pr.name, description: pr.description })),
-        alternativeOptionsEnabled: true,
-        aisPromoThaiOnly: false,
+        promos: (promosRes.data || []).map(pr => ({ name: pr.name, description: pr.description })),
+        alternativeOptionsEnabled: isSettingEnabled(configs['เปิดใช้ตัวเลือกเครื่องทางเลือก'], true),
+        aisPromoThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], true),
         captcha: { sid: 'cap_' + Date.now(), q: `${n1} + ${n2} = ?`, a: n1 + n2 }
       };
     },
@@ -306,6 +321,10 @@
         aheadCount = count || 0;
       }
 
+      const { data: cfgRows } = await sb().from('system_configs').select('*');
+      const configs = {};
+      (cfgRows || []).forEach(c => { configs[c.key] = c.value; });
+
       return {
         ok: true,
         data: {
@@ -331,7 +350,7 @@
           dueRemainingDays: dueRemainingDays,
           aheadCount: aheadCount,
           avgWaitDays: 5,
-          showCustomerGroup: true
+          showCustomerGroup: isSettingEnabled(configs['แสดงกลุ่มลูกค้าในข้อมูลสำหรับลูกค้า'], false)
         }
       };
     },
@@ -342,7 +361,18 @@
     isInstalled() { return Promise.resolve(true); },
     runSetupFromWeb() { return Promise.resolve(true); },
 
-    async validateLocationCode(tokenOrCode, code) {
+        async getWelcomeConfig() {
+      try {
+        const { data: cfg } = await sb().from('system_configs').select('value').eq('key', 'แสดง QR ลงทะเบียนหน้า Welcome').single();
+        return {
+          showWelcomeQr: isSettingEnabled(cfg ? cfg.value : true, true)
+        };
+      } catch (e) {
+        return { showWelcomeQr: true };
+      }
+    },
+
+async validateLocationCode(tokenOrCode, code) {
       const c = String(code || tokenOrCode || '').trim();
       const validCodes = ['22100', '1234'];
       try {
@@ -409,9 +439,9 @@
         promos: promos,
         defaultDueDays: 5,
         configs: configs,
-        depositEnabled: configs['เก็บมัดจำ'] !== 'false',
-        supplierLockEnabled: configs['ล็อกซัพ'] !== 'false',
-        alternativeOptionsEnabled: configs['เปิดใช้ตัวเลือกเครื่องทางเลือก'] !== 'false'
+                depositEnabled: isSettingEnabled(configs['เก็บมัดจำ'], true),
+        supplierLockEnabled: isSettingEnabled(configs['ล็อกซัพ'], true),
+        alternativeOptionsEnabled: isSettingEnabled(configs['เปิดใช้ตัวเลือกเครื่องทางเลือก'], true)
       };
     },
 
