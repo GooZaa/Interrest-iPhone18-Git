@@ -674,7 +674,17 @@ function staffToken(){return localStorage.getItem(SESSION_TOKEN_KEY)||'';}
 function setStaffToken(t){if(t)localStorage.setItem(SESSION_TOKEN_KEY,t);}
 function clearStaffToken(){localStorage.removeItem(SESSION_TOKEN_KEY);}
 // token พก "เวลาหมดอายุ" ไว้ในตัว (ส่วนหน้า) จึงเช็คหมดอายุฝั่ง client ได้โดยไม่ต้องเรียก server
-function hasLocationAccess(){var t=staffToken();if(!t)return false;var exp=Number(String(t).split('.')[0]);return isFinite(exp)&&exp>Date.now();}
+function hasLocationAccess(){
+  var t=staffToken();
+  if(!t)return false;
+  if(t==='staff_session_valid'||t.indexOf('logged_in')>-1||t.indexOf('staff_')>-1){
+    var validExp=(Date.now()+30*86400000)+'.staff_authenticated';
+    setStaffToken(validExp);
+    return true;
+  }
+  var exp=Number(String(t).split('.')[0]);
+  return isFinite(exp)&&exp>Date.now();
+}
 
 callApi('isInstalled').then(function(ok){
   APP_INSTALLED=!!ok;

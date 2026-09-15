@@ -340,8 +340,10 @@
       }
 
       if (validCodes.includes(c)) {
-        sessionStorage.setItem('staff_auth_token', 'logged_in_' + Date.now());
-        return { ok: true, token: 'staff_session_valid' };
+        const expTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
+        const token = expTime + '.staff_authenticated';
+        sessionStorage.setItem('staff_auth_token', token);
+        return { ok: true, token: token };
       }
       return { ok: false, locked: false, remaining: 3 };
     },
@@ -954,13 +956,17 @@
           id: r.id,
           name: r.customer_name,
           phone: r.phone,
+          group: r.customer_group || 'Walk-in',
+          customerGroup: r.customer_group || 'Walk-in',
           model: r.model,
           capacity: r.capacity,
           color: r.color,
           status: r.status,
           token: r.token,
           checkUrl: getCheckUrl(r.token),
-          isLabeled: r.is_labeled
+          labeled: !!r.is_labeled,
+          isLabeled: !!r.is_labeled,
+          appt: r.appointment_at ? fmtDate(r.appointment_at) : (r.due_date ? fmtDay(r.due_date) : '-')
         })),
         total: (data || []).length,
         maxSelection: 50
