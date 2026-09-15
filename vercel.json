@@ -1,9 +1,3 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/Welcome.html" },
-    { "source": "/signup", "destination": "/Signup.html" },
-    { "source": "/check", "destination": "/Check.html" },
-    { "source": "/staff", "destination": "/staff.html" }
-  ]
+  "cleanUrls": true
 }

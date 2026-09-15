@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--ink:#17213A;--sub:#64748B;--blue:#2563EB;--bg:#F5F7FC;--line:#D8DFEC}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;font-family:'IBM Plex Sans Thai',-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 24px;position:relative}
+    .welcome{width:min(100%,480px);text-align:center}.mark{width:70px;height:70px;background:var(--blue);color:#fff;margin:0 auto 22px;border-radius:21px;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 28px rgba(37,99,235,.22)}
+    .mark svg{width:40px;height:40px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}.welcome h1{font-size:29px;line-height:1.35;margin:0 0 5px;font-weight:600}.branch{font-size:20px;line-height:1.35;font-weight:700;margin:0;color:#334155}.welcome p{font-size:15px;line-height:1.65;color:var(--sub);margin:15px 0 30px}
+    .qr-card{display:flex;flex-direction:column;align-items:center;gap:12px;margin:0 0 22px;padding:20px 18px;background:#fff;border:1px solid var(--line);border-radius:16px;text-align:center;box-shadow:0 12px 30px rgba(15,23,42,.07)}.qr-frame{flex:0 0 auto;width:170px;height:170px;padding:8px;background:#fff;border:1px solid #E2E8F0;border-radius:12px;display:flex;align-items:center;justify-content:center}.qr-frame img,.qr-frame canvas,.qr-frame svg{display:block;width:152px!important;height:152px!important}.qr-copy{min-width:0;max-width:330px}.qr-title{display:block;margin:0 0 5px;font-size:17px;line-height:1.4;font-weight:700;color:var(--ink)}.qr-hint{display:block;font-size:13px;line-height:1.55;color:var(--sub)}.qr-fallback{font-size:12px;line-height:1.45;color:#B91C1C;text-align:center}
+    .start{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;background:var(--blue);color:#fff;text-decoration:none;border-radius:11px;font-size:18px;font-weight:600;box-shadow:0 8px 18px rgba(37,99,235,.16);transition:transform .15s,background .15s}.start:hover{background:#1D4ED8;transform:translateY(-1px)}.start:active{transform:translateY(0)}
+    .language{position:absolute;top:max(18px,env(safe-area-inset-top));right:18px;display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:5px 9px;color:var(--sub)}.language svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8}.language select{border:0;background:transparent;color:var(--ink);font:inherit;font-size:13px;outline:0;cursor:pointer;padding:2px 0}.staff-entry{position:absolute;right:18px;bottom:18px;width:32px;height:32px;padding:0;border:0;background:transparent;color:#94A3B8;opacity:.32;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,color .15s}.staff-entry:hover,.staff-entry:focus{opacity:1;color:#475569;outline:none}.staff-entry svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    @media(max-width:520px){main{padding:84px 24px 56px;align-items:flex-start}.welcome h1{font-size:25px}.branch{font-size:18px}.mark{width:64px;height:64px;border-radius:19px}.welcome p{margin-bottom:22px}.qr-card{gap:11px;padding:18px 14px}.qr-frame{width:158px;height:158px}.qr-frame img,.qr-frame canvas,.qr-frame svg{width:140px!important;height:140px!important}.qr-title{font-size:16px}.qr-hint{font-size:12px}}
+  </style>
+<script src="js/qr.js"></script>
+</head>
+<body>
+  <main>
+    <div class="language"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M3.8 12h16.4M12 3.5c2.2 2.35 3.3 5.18 3.3 8.5S14.2 18.15 12 20.5c-2.2-2.35-3.3-5.18-3.3-8.5S9.8 5.85 12 3.5"></path></svg><select id="lang" aria-label="Language"><option value="th">ไทย</option><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option><option value="ko">한국어</option></select></div>
+    <section class="welcome" aria-labelledby="welcomeTitle">
+      <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2"></rect><path d="M10 5h4M10.5 16.5l1.5 1.5 3-3"></path></svg></div>
+      <h1 id="welcomeTitle">ระบบลงชื่อแสดงความสนใจ iPhone</h1>
+      <p class="branch">iStudio Central Embassy</p>
+      <p id="welcomeText">ลงชื่อเพื่อแจ้งความสนใจสินค้า<br>เจ้าหน้าที่จะตรวจสอบและติดต่อกลับตามลำดับ</p>
+      
+      <div class="qr-card" id="signupQrCard">
+        <div class="qr-frame" id="signupQr" role="img" aria-label="QR Code สำหรับลงทะเบียน"></div>
+        <div class="qr-copy">
+          <strong class="qr-title" id="qrTitle">สแกนเพื่อลงทะเบียน</strong>
+          <span class="qr-hint" id="qrHint">เปิดกล้องมือถือ แล้วสแกน QR Code เพื่อกรอกข้อมูลได้ทันที</span>
+        </div>
+      </div>
+      
+      <a class="start" id="startBtn" href="signup">START</a>
+    </section>
+    <a class="staff-entry" href="staff" aria-label="เข้าสู่ระบบพนักงาน"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"></rect><rect x="14" y="4" width="6" height="6" rx="1"></rect><rect x="4" y="14" width="6" height="6" rx="1"></rect><path d="M15 17h5M17.5 14.5v5"></path></svg></a>
+  </main>
+  
+  
+  
+  <script>
+    (function(){
+      var copy={
+        th:{title:'ระบบลงชื่อแสดงความสนใจ iPhone',text:'ลงชื่อเพื่อแจ้งความสนใจสินค้า<br>เจ้าหน้าที่จะตรวจสอบและติดต่อกลับตามลำดับ',qrTitle:'สแกนเพื่อลงทะเบียน',qrHint:'เปิดกล้องมือถือ แล้วสแกน QR Code เพื่อกรอกข้อมูลได้ทันที',start:'เริ่มต้น'},
+        en:{title:'iPhone interest registration',text:'Register your interest in an iPhone.<br>Our team will review and contact you in queue order.',qrTitle:'Scan to register',qrHint:'Open your phone camera and scan this QR Code to register.',start:'START'},
+        zh:{title:'iPhone 意向登记',text:'登记您感兴趣的 iPhone。<br>工作人员将按排队顺序审核并与您联系。',qrTitle:'扫码登记',qrHint:'打开手机相机，扫描此二维码即可填写资料。',start:'开始'},
+        ja:{title:'iPhone 購入希望登録',text:'ご希望のiPhoneを登録してください。<br>担当者が順番に確認し、ご連絡します。',qrTitle:'スキャンして登録',qrHint:'スマートフォンのカメラでQRコードを読み取ってください。',start:'開始'},
+        ko:{title:'iPhone 관심 등록',text:'원하는 iPhone을 등록해 주세요.<br>담당자가 순서대로 확인 후 연락드립니다.',qrTitle:'스캔하여 등록',qrHint:'휴대폰 카메라로 QR 코드를 스캔하여 등록하세요.',start:'시작'}
+      };
+      var select=document.getElementById('lang');
+      function setLang(lang){var c=copy[lang]||copy.th,qrTitle=document.getElementById('qrTitle'),qrHint=document.getElementById('qrHint'),qr=document.getElementById('signupQr');document.documentElement.lang=lang;document.getElementById('welcomeTitle').textContent=c.title;document.getElementById('welcomeText').innerHTML=c.text;if(qrTitle)qrTitle.textContent=c.qrTitle;if(qrHint)qrHint.textContent=c.qrHint;if(qr)qr.setAttribute('aria-label',c.qrTitle);document.getElementById('startBtn').textContent=c.start;select.value=lang;try{localStorage.setItem('iphoneQueueWelcomeLang',lang);}catch(e){}}
+      function renderSignupQr(){
+        var target=document.getElementById('signupQr');
+        if(!target)return;
+        var signupUrl=new URL('signup', window.location.href).href;
+        if(typeof qrSvgMarkup!=='function'){
+          target.innerHTML='<span class="qr-fallback">ไม่สามารถสร้าง QR Code ได้<br>กรุณากดปุ่มเริ่มต้น</span>';
+          return;
+        }
+        target.innerHTML=qrSvgMarkup(signupUrl,132);
+      }
+      setLang('th'); // หน้าแรกเริ่มเป็นภาษาไทยเสมอ
+      renderSignupQr();
+      select.onchange=function(){setLang(select.value);};
+    })();
+  </script>
+</body>
+</html>
