@@ -753,10 +753,6 @@
       const resId = optFirst(tokenOrId, id);
       await sb().from('reservations').update({ is_labeled: true }).eq('id', resId);
       return { ok: true };
-        source: 'auto',
-        created_at: new Date().toISOString()
-      });
-      return true;
     },
 
     async logCallResult(tokenOrId, idOrResult, resultOrNote, note) {
