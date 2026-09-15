@@ -182,8 +182,10 @@
       return {
         products: products,
         promos: (promosRes.data || []).map(pr => ({ name: pr.name, description: pr.description })),
+        supplierLockEnabled: isSettingEnabled(configs['ล็อกซัพ'], true),
+        aisThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], false),
+        aisPromoThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], false),
         alternativeOptionsEnabled: isSettingEnabled(configs['เปิดใช้ตัวเลือกเครื่องทางเลือก'], true),
-        aisPromoThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], true),
         captcha: { sid: 'cap_' + Date.now(), q: `${n1} + ${n2} = ?`, a: n1 + n2 }
       };
     },
@@ -441,6 +443,8 @@ async validateLocationCode(tokenOrCode, code) {
         configs: configs,
                 depositEnabled: isSettingEnabled(configs['เก็บมัดจำ'], true),
         supplierLockEnabled: isSettingEnabled(configs['ล็อกซัพ'], true),
+        aisThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], false),
+        aisPromoThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], false),
         alternativeOptionsEnabled: isSettingEnabled(configs['เปิดใช้ตัวเลือกเครื่องทางเลือก'], true)
       };
     },

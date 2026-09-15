@@ -218,7 +218,8 @@ function renderDevices(){
 document.querySelectorAll('[data-ais]').forEach(function(el){el.onclick=function(){wantAIS=el.dataset.ais==='1';document.querySelectorAll('[data-ais]').forEach(function(x){x.classList.remove('on');});el.classList.add('on');renderPromo();};});
 function renderPromo(){
   var box=$('promoBox'), section=$('aisSection');
-  if(!BOOT||!BOOT.supplierLockEnabled||(BOOT.aisThaiOnly&&LANG!=='th')){wantAIS=false;selectedPromo='';section.style.display='none';box.style.display='none';return;}
+  var thaiOnly = BOOT && (BOOT.aisThaiOnly !== undefined ? BOOT.aisThaiOnly : BOOT.aisPromoThaiOnly);
+  if(!BOOT||!BOOT.supplierLockEnabled||(thaiOnly&&LANG!=='th')){wantAIS=false;selectedPromo='';section.style.display='none';box.style.display='none';return;}
   section.style.display='block';
   if(!wantAIS||!BOOT){box.style.display='none';return;}
   box.style.display='block';
