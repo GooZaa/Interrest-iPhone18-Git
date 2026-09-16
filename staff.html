@@ -1288,14 +1288,14 @@ function openBookingConfirm(p){
     var priceRow = (pr != null)
       ? '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:8px;border-top:0.5px dashed var(--bd2)">' +
           '<span style="font-size:12px;color:var(--t2)">ราคาจำหน่าย (ประมาณ)</span>' +
-          '<span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--selT)">฿' + pr.toLocaleString('th-TH') + '</span>' +
+          '<span class="mono" style="font-size:16px;font-weight:700;color:var(--selT)">฿' + pr.toLocaleString('th-TH') + '</span>' +
         '</div>'
       : '';
 
     var depositRow = d.deposit
       ? '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:12px;color:var(--ok)">' +
           '<span>มัดจำของรายการนี้</span>' +
-          '<b style="font-family:'IBM Plex Mono',monospace;font-size:13px">฿' + Number(d.deposit).toLocaleString('th-TH') + '</b>' +
+          '<b class="mono" style="font-size:13px">฿' + Number(d.deposit).toLocaleString('th-TH') + '</b>' +
         '</div>'
       : '';
 
@@ -1337,11 +1337,11 @@ function openBookingConfirm(p){
     summaryBar = '<div style="margin:14px 0 10px;padding:12px 14px;border-radius:13px;background:linear-gradient(135deg,color-mix(in srgb,var(--sel) 42%,var(--bg)),var(--bg));border:0.5px solid color-mix(in srgb,var(--selT) 22%,var(--bd));box-shadow:var(--shadow)">' +
       (hasAnyPrice ? '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<div><span style="font-size:13px;color:var(--t2)">ราคารวมโดยประมาณ</span><small style="display:block;color:var(--t3);font-size:10.5px">(' + p.devices.length + ' เครื่อง)</small></div>' +
-        '<b style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:var(--selT)">฿' + totalEstPrice.toLocaleString('th-TH') + '</b>' +
+        '<b class="mono" style="font-size:19px;color:var(--selT)">฿' + totalEstPrice.toLocaleString('th-TH') + '</b>' +
       '</div>' : '') +
       (Number(p.depositTotal || 0) > 0 ? '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:0.5px dashed var(--bd2)">' +
         '<span style="font-size:12px;color:var(--ok)">ยอดมัดจำรวม</span>' +
-        '<b style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ok)">฿' + Number(p.depositTotal).toLocaleString('th-TH') + '</b>' +
+        '<b class="mono" style="font-size:15px;color:var(--ok)">฿' + Number(p.depositTotal).toLocaleString('th-TH') + '</b>' +
       '</div>' : '') +
     '</div>';
   }
@@ -1364,7 +1364,7 @@ function openBookingConfirm(p){
     '</div>' +
     '<div style="display:grid;gap:6px;font-size:13px">' +
       '<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">ชื่อลูกค้า</span><b style="color:var(--tx)">' + esc(p.name) + '</b></div>' +
-      '<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">เบอร์โทรศัพท์</span><b style="font-family:'IBM Plex Mono',monospace;color:var(--tx)">' + esc(p.phone) + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">เบอร์โทรศัพท์</span><b class="mono" style="color:var(--tx)">' + esc(p.phone) + '</b></div>' +
       '<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">ช่องทางติดต่อ</span><span style="color:var(--tx)">' + esc(p.channel) + (p.contactId ? ' · ' + esc(p.contactId) : '') + '</span></div>' +
     '</div>' +
     refsHtml +
