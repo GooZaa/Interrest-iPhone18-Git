@@ -239,7 +239,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
     <div class="form-section"><div class="section-top"><h2>ข้อมูลลูกค้า</h2></div><div class="chipbar" id="groupChips" style="margin:0 0 14px"><span class="lb">กลุ่มลูกค้า</span></div>
       <div id="dupBox"></div>
       <div class="row"><div class="field"><label>ชื่อ-นามสกุล</label><input id="f-name" type="text" autocomplete="name" placeholder="ระบุชื่อและนามสกุล"></div><div class="field"><label>เบอร์โทรศัพท์</label><input id="f-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678"></div></div>
-      <div class="row"><div class="field"><label>ช่องทางติดต่อ</label><select id="f-channel"><option value="LINE">LINE</option><option value="WhatsApp">WhatsApp</option><option value="อีเมล">E-Mail</option><option value="โทรอย่างเดียว">โทรอย่างเดียว</option></select></div><div class="field"><label id="contactLabel">LINE ID</label><input id="f-contact" type="text" placeholder="ระบุ LINE ID"></div></div>
+      <div class="row"><div class="field"><label>ช่องทางติดต่อ</label><select id="f-channel"><option value="" disabled selected>โปรดระบุ</option><option value="LINE">LINE</option><option value="WhatsApp">WhatsApp</option><option value="อีเมล">E-Mail</option><option value="โทรอย่างเดียว">โทรอย่างเดียว</option></select></div><div class="field"><label id="contactLabel">ไอดี / ข้อมูลติดต่อ</label><input id="f-contact" type="text" placeholder="ระบุข้อมูลติดต่อ"></div></div>
     </div>
     <div class="form-section"><div class="section-top"><h2>ข้อมูลอ้างอิง <span style="color:var(--t3);font-weight:400">(ถ้ามี)</span></h2></div><div class="ref-grid" id="referenceCards"></div></div>
     <div class="form-section"><div class="section-top"><h2>เครื่องที่จอง</h2><span style="font-size:11.5px;color:var(--t2)">หนึ่งเครื่องต่อหนึ่งรายการ</span></div><div id="devices"></div><button class="btn2" id="addDevice"><span class="ic">+</span> เพิ่มเครื่อง</button></div>
@@ -802,7 +802,7 @@ function refreshStaffDataAfterSettings(){
     $('chipsGroup').innerHTML='<span class="lb">กลุ่ม</span>';
     $('chipsStatus').innerHTML='<span class="lb">สถานะ</span>';
     renderGroupChips();renderModelSelects();renderReferences();renderDevices();renderStockLines();renderPriorityChips();
-    renderListResult(data[1]);renderDueResult(data[2]);
+    renderListResult(data[1]);renderDueResult(data[2]);syncContactField();
     STATE.views.list=true;STATE.views.due=true;STATE.views.settings=false;
     loadSettings();
     toast('ใช้การตั้งค่าใหม่เรียบร้อยแล้ว');
@@ -855,9 +855,9 @@ function syncPreBook(){
   renderReferences();
 }
 function syncContactField(){
-  var c=$('f-channel').value, labels={LINE:'LINE ID',WhatsApp:'หมายเลข WhatsApp',อีเมล:'E-Mail',โทรอย่างเดียว:'รายละเอียดเพิ่มเติม (ถ้ามี)'};
-  $('contactLabel').textContent=labels[c]||'ข้อมูลติดต่อ';
-  $('f-contact').placeholder=c==='อีเมล'?'name@example.com':c==='WhatsApp'?'เช่น +66 81 234 5678':c==='LINE'?'ระบุ LINE ID':'ระบุข้อมูลเพิ่มเติม';
+  var c=$('f-channel').value, labels={'':'ไอดี / ข้อมูลติดต่อ',LINE:'LINE ID',WhatsApp:'หมายเลข WhatsApp',อีเมล:'E-Mail',โทรอย่างเดียว:'รายละเอียดเพิ่มเติม (ถ้ามี)'};
+  $('contactLabel').textContent=labels[c]||'ไอดี / ข้อมูลติดต่อ';
+  $('f-contact').placeholder=c==='อีเมล'?'name@example.com':c==='WhatsApp'?'เช่น +66 81 234 5678':c==='LINE'?'ระบุ LINE ID':c==='โทรอย่างเดียว'?'ระบุข้อมูลเพิ่มเติม (ถ้ามี)':'ระบุข้อมูลติดต่อ';
 }
 $('f-channel').onchange=syncContactField;
 
@@ -994,14 +994,14 @@ $('f-phone').addEventListener('input',function(){
   phoneTimer=setTimeout(function(){
     callApi('lookupPhone',v).then(function(r){
       if(!r){$('dupBox').innerHTML='';return;}
-      if(r.customer){if(!$('f-name').value)$('f-name').value=r.customer.name||'';$('f-channel').value=r.customer.channel||'LINE';if(!$('f-contact').value)$('f-contact').value=r.customer.contactId||'';}
+      if(r.customer){if(!$('f-name').value)$('f-name').value=r.customer.name||'';if(r.customer.channel)$('f-channel').value=r.customer.channel;syncContactField();if(!$('f-contact').value)$('f-contact').value=r.customer.contactId||'';}
       $('dupBox').innerHTML=r.reservations.length?'<div class="alert">เบอร์นี้มีในระบบแล้ว จองไว้ '+r.reservations.length+' รายการ: '+r.reservations.map(function(x){return esc(x.model+' '+x.capacity+' '+x.color+' ('+x.status+')');}).join(', ')+'</div>':'';
     }).catch(function(){});
   },450);
 });
 
-function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value,contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;return x;})};}
-function validateBooking(p){if(!p.name.trim())return 'กรุณาระบุชื่อ-นามสกุล';if(p.phone.replace(/\D/g,'').length<9)return 'กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง';if(!p.devices.length||p.devices.some(function(d){return !d.model||!d.capacity||!d.color;}))return 'กรุณาระบุรุ่น ความจุ และสีของเครื่องให้ครบ';if(p.group==='Pre-Order'&&!String(p.preOrder||'').trim())return 'กรุณาระบุเลข Pre-Order';if(p.preBooking&&p.devices.some(function(d){return !d.supplierLock||d.supplier!=='AIS';}))return 'Pre-Booking AIS ต้องใช้เครื่องจากซัพ AIS เท่านั้น';if(Number(p.depositTotal||0)>0&&!p.billNo)return 'กรุณาระบุเลขบิลมัดจำ';if((p.depositAllocations||[]).reduce(function(a,b){return a+Number(b||0);},0)!==Number(p.depositTotal||0))return 'ยอดมัดจำที่แบ่งให้แต่ละรายการไม่ตรงกับยอดรวม';return '';}
+function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;return x;})};}
+function validateBooking(p){if(!p.name.trim())return 'กรุณาระบุชื่อ-นามสกุล';if(p.phone.replace(/\D/g,'').length<9)return 'กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง';if(p.contactId.trim()&&!$('f-channel').value)return 'กรุณาเลือกช่องทางติดต่อ (เช่น LINE, WhatsApp หรือ E-Mail)';if(!p.devices.length||p.devices.some(function(d){return !d.model||!d.capacity||!d.color;}))return 'กรุณาระบุรุ่น ความจุ และสีของเครื่องให้ครบ';if(p.group==='Pre-Order'&&!String(p.preOrder||'').trim())return 'กรุณาระบุเลข Pre-Order';if(p.preBooking&&p.devices.some(function(d){return !d.supplierLock||d.supplier!=='AIS';}))return 'Pre-Booking AIS ต้องใช้เครื่องจากซัพ AIS เท่านั้น';if(Number(p.depositTotal||0)>0&&!p.billNo)return 'กรุณาระบุเลขบิลมัดจำ';if((p.depositAllocations||[]).reduce(function(a,b){return a+Number(b||0);},0)!==Number(p.depositTotal||0))return 'ยอดมัดจำที่แบ่งให้แต่ละรายการไม่ตรงกับยอดรวม';return '';}
 $('btnSave').onclick=function(){var p=bookingPayload(),err=validateBooking(p);if(err){toast(err);return;}openBookingConfirm(p);};
 function openBookingConfirm(p){
   var devices=p.devices.map(function(d,i){var alt=((d.altColors||[]).length?'สีอื่น: '+esc(d.altColors.join(', ')):'')+((d.altColors||[]).length&&(d.altCaps||[]).length?' · ':'')+((d.altCaps||[]).length?'ความจุอื่น: '+esc(d.altCaps.join(', ')):''),altLine=alt?'<div style="font-size:12px;color:var(--selT);margin-top:3px">รับสเปกสำรอง — '+alt+'</div>':'';return '<div style="border-top:0.5px solid var(--bd2);padding:9px 0"><div style="font-weight:600;margin-bottom:4px">เครื่องที่ '+(i+1)+'</div><div style="font-size:13px">'+esc(d.model)+' · '+esc(d.capacity)+' · '+esc(d.color)+'</div><div style="font-size:12px;color:var(--t2);margin-top:3px">'+(d.supplierLock?'ซัพ AIS'+(d.promo?' · '+esc(d.promo):''):'เครื่องเปล่า')+'</div>'+(d.deposit?'<div style="font-size:12px;color:var(--selT);margin-top:3px">มัดจำของรายการนี้ '+Number(d.deposit).toLocaleString()+' บาท</div>':'')+altLine+'</div>';}).join('');
@@ -1021,7 +1021,7 @@ function showSavedPrintChoice(id,count){
   $('saved-thermal').onclick=function(){previewDoc(id,'slip80',back);};
   $('saved-ok').onclick=closePanel;
 }
-function resetBookingForm(){['f-phone','f-name','f-contact','f-note'].forEach(function(id){$(id).value='';});$('dupBox').innerHTML='';STATE.refs={preOrder:'',preBooking:'',deposit:'',billNo:'',depositAllocations:[]};STATE.devices=[];addDeviceRow();selectDefaultBookingGroup();renderReferences();}
+function resetBookingForm(){['f-phone','f-name','f-contact','f-note','f-channel'].forEach(function(id){$(id).value='';});syncContactField();$('dupBox').innerHTML='';STATE.refs={preOrder:'',preBooking:'',deposit:'',billNo:'',depositAllocations:[]};STATE.devices=[];addDeviceRow();selectDefaultBookingGroup();renderReferences();}
 
 // ---- list ----
 var qTimer,listRequestSeq=0;

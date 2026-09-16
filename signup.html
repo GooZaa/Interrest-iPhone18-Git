@@ -105,7 +105,7 @@ zh:{brand:'iPhone 意向登记',heroDesc:'请选择您需要的规格，工作�
 ko:{brand:'iPhone 관심 등록',heroDesc:'원하는 사양을 선택해 주세요. 직원이 대기 순서대로 연락드립니다.',contactTitle:'연락처 정보',contactHint:'직원이 연락드릴 정보',productTitle:'관심 상품',productHint:'여러 기기를 등록할 수 있습니다',confirmTitle:'제출 확인',confirmHint:'자동 제출 방지',name:'성명',phone:'전화번호',channel:'연락 방법',contact:'아이디/이메일',addContact:'연락 방법 추가',email:'이메일',note:'추가 정보 (선택)',notePlaceholder:'예: 연락 가능한 시간 또는 추가 요청',model:'모델',cap:'용량',color:'색상',altq:'이 사양이 없으면 다른 옵션도 괜찮으신가요?',altyes:'괜찮습니다',altno:'이 옵션만 원해요',altcolors:'다른 색상 · 같은 용량',altcaps:'다른 용량 · 같은 색상',add:'기기 추가',aisq:'일반 기기 또는 AIS 프로그램 기기?',aisyes:'AIS 프로그램',aisno:'일반 기기',aisnote:'AIS 할인은 AIS 기기에만 적용됩니다',capq:'봇이 아님을 확인하기 위해 답변해 주세요',next:'다음',submit:'제출',err:'답이 틀렸습니다. 다시 시도해 주세요',need:'이름과 전화번호를 입력해 주세요',donetitle:'접수되었습니다',donemsg:'관심 가져주셔서 감사합니다. 직원이 확인 후 순서대로 연락드리겠습니다.',home:'홈으로 돌아가기',remove:'삭제'},
 ja:{brand:'iPhone購入希望登録',heroDesc:'ご希望の仕様を選択してください。スタッフが順番にご連絡します。',contactTitle:'連絡先情報',contactHint:'スタッフからのご連絡用',productTitle:'ご希望の商品',productHint:'複数の端末を登録できます',confirmTitle:'送信確認',confirmHint:'自動送信を防止します',name:'お名前',phone:'電話番号',channel:'連絡方法',contact:'ID/メール',addContact:'連絡方法を追加',email:'メール',note:'補足情報（任意）',notePlaceholder:'例：連絡しやすい時間帯やご要望',model:'モデル',cap:'容量',color:'カラー',altq:'この仕様がない場合、他の選択肢でもよろしいですか？',altyes:'よい',altno:'この仕様のみ希望',altcolors:'他のカラー · 同じ容量',altcaps:'他の容量 · 同じカラー',add:'端末を追加',aisq:'通常端末またはAISプログラム端末？',aisyes:'AISプログラム',aisno:'通常端末',aisnote:'AIS割引はAIS端末のみ対象です',capq:'ボットでないことを確認するためお答えください',next:'次へ',submit:'送信',err:'回答が正しくありません。もう一度お試しください',need:'お名前と電話番号を入力してください',donetitle:'受け付けました',donemsg:'ご関心をお寄せいただきありがとうございます。スタッフが確認後、順番にご連絡いたします。',home:'ホームに戻る',remove:'削除'}
 };
-Object.assign(I18N.th,{chooseModel:'โปรดระบุรุ่น',chooseCap:'โปรดระบุความจุ',chooseColor:'โปรดระบุสี',needProduct:'กรุณาระบุรุ่น ความจุ และสีของสินค้าที่สนใจให้ครบ'});
+Object.assign(I18N.th,{chooseChannel:'โปรดระบุ',chooseModel:'โปรดระบุรุ่น',chooseCap:'โปรดระบุความจุ',chooseColor:'โปรดระบุสี',needProduct:'กรุณาระบุรุ่น ความจุ และสีของสินค้าที่สนใจให้ครบ'});
 Object.assign(I18N.en,{chooseModel:'Please select a model',chooseCap:'Please select storage',chooseColor:'Please select a color',needProduct:'Please select the model, storage, and color for every device.'});
 Object.assign(I18N.zh,{chooseModel:'请选择型号',chooseCap:'请选择容量',chooseColor:'请选择颜色',needProduct:'请为每台设备选择型号、容量和颜色。'});
 Object.assign(I18N.ko,{chooseModel:'모델을 선택해 주세요',chooseCap:'용량을 선택해 주세요',chooseColor:'색상을 선택해 주세요',needProduct:'각 기기의 모델, 용량, 색상을 모두 선택해 주세요.'});
@@ -160,10 +160,10 @@ function schedulePhoneCheck(){
 
 $('langSel')&&($('langSel').onchange=function(){LANG=$('langSel').value;try{localStorage.setItem('iphoneQueueWelcomeLang',LANG);}catch(e){}applyI18n();renderDevices();});
 
-var contacts=[{channel:'LINE',id:''}];
+var contacts=[{channel:'',id:''}];
 function renderContactRows(){
   var wrap=$('contactRows');if(!wrap)return;
-  var chOpts=[['LINE','LINE'],['WhatsApp','WhatsApp'],['Email',t('email')]];
+  var chOpts=[['',t('chooseChannel')||'โปรดระบุ'],['LINE','LINE'],['WhatsApp','WhatsApp'],['Email',t('email')]];
   wrap.innerHTML=contacts.map(function(c,i){
     var opts=chOpts.map(function(o){return '<option value="'+o[0]+'"'+(c.channel===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join('');
     return '<div class="row contact-row" style="margin-bottom:12px">'+
@@ -178,7 +178,7 @@ function renderContactRows(){
 }
 // รวมค่าช่องทางติดต่อ: กรอกช่องเดียว = เก็บแบบเดิม, หลายช่อง = ติดป้ายชื่อช่องทาง เช่น "LINE: abc · Email: x@y.com"
 function filledContacts_(){return contacts.filter(function(c){return String(c.id||'').trim();});}
-function contactChannelValue(){var f=filledContacts_();return (f[0]||contacts[0]||{channel:'LINE'}).channel;}
+function contactChannelValue(){var f=filledContacts_();var fc=f.filter(function(c){return !!c.channel;})[0];return fc?fc.channel:(f.length?(f[0].channel||'โทรอย่างเดียว'):'โทรอย่างเดียว');}
 function contactIdValue(){var f=filledContacts_();if(f.length<=1)return f.length?String(f[0].id).trim():'';return f.map(function(c){return c.channel+': '+String(c.id).trim();}).join(' · ');}
 function applyI18n(){
   var ls=$('langSel');if(ls)ls.value=LANG;
