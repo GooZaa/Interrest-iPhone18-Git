@@ -38,12 +38,24 @@
 body{margin:0;font-family:'IBM Plex Sans Thai',-apple-system,sans-serif;background:radial-gradient(circle at 18% -10%,rgba(99,91,255,.08),transparent 30%),var(--cv);color:var(--tx);font-size:15px;-webkit-font-smoothing:antialiased}
 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
 button{font:inherit;cursor:pointer;font-family:inherit}
-header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 84%,transparent);backdrop-filter:blur(18px) saturate(160%);border-bottom:0.5px solid var(--bd);
-  padding:calc(10px + env(safe-area-inset-top)) 14px 10px; display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-header .brand{font-size:14px;font-weight:600}
+html,body{overflow-x:hidden;max-width:100vw;width:100%}
+header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 84%,transparent);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border-bottom:0.5px solid var(--bd);
+  padding:calc(8px + env(safe-area-inset-top)) 14px 8px}
+.header-bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand-wrap{display:flex;align-items:center;gap:8px}
+.brand-wrap svg{width:18px;height:18px;stroke:var(--brand);fill:none;stroke-width:2;flex-shrink:0}
+header .brand{font-size:15px;font-weight:700;white-space:nowrap}
+.header-tools{display:flex;align-items:center;gap:8px}
 nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav.tabs::-webkit-scrollbar{display:none}
-nav.tabs button{font-size:12.5px;color:var(--t2);padding:7px 12px;border-radius:10px;border:none;background:none;white-space:nowrap;transition:.18s ease}
-nav.tabs button:hover{background:var(--btn);color:var(--tx)}nav.tabs button.on{background:var(--bg);color:var(--tx);box-shadow:0 3px 12px rgba(20,20,30,.08)}
+nav.tabs button{font-size:12.5px;color:var(--t2);padding:7px 12px;border-radius:10px;border:none;background:none;white-space:nowrap;transition:.18s ease;flex-shrink:0}
+nav.tabs button:hover{background:var(--btn);color:var(--tx)}nav.tabs button.on{background:var(--bg);color:var(--tx);box-shadow:0 3px 12px rgba(20,20,30,.08);font-weight:600}
+@media(min-width:721px){
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:calc(10px + env(safe-area-inset-top)) 18px 10px}
+  .header-bar{display:contents}
+  .brand-wrap{order:1;flex-shrink:0}
+  nav.tabs{order:2;flex:1;min-width:0}
+  .header-tools{order:3;flex-shrink:0}
+}
 .hbtn{width:36px;height:32px;cursor:pointer;color:var(--t2);display:inline-flex;align-items:center;justify-content:center;background:var(--btn);border:1px solid var(--bd);border-radius:8px;padding:0;transition:background .16s,color .16s,border-color .16s,transform .16s}
 .hbtn:hover{background:var(--sel);color:var(--tx);border-color:rgba(0,0,0,.2)}
 .hbtn:active{transform:scale(.96)}
@@ -163,8 +175,65 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
 .access-overlay{position:fixed;inset:0;z-index:110;background:#F5F7FC;display:flex;align-items:center;justify-content:center;padding:24px}
 .access-card{width:min(100%,430px);text-align:center}.access-mark{width:60px;height:60px;margin:0 auto 18px;border-radius:18px;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff}.access-mark svg{width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.access-card h1{font-size:29px;line-height:1.2;margin:0 0 8px;color:var(--tx)}.access-card p{font-size:15px;line-height:1.6;margin:0 0 28px;color:var(--t2)}.access-card label{text-align:left;color:var(--tx);font-size:14px;font-weight:600;margin-bottom:7px}.access-card input{background:var(--bg);border:1px solid var(--bd);font-size:19px;letter-spacing:3px;text-align:center;padding:13px;color:var(--tx)}.access-card input:focus{outline:2px solid var(--brand)}.access-card .btn{margin-top:14px;background:var(--brand);border-radius:10px;padding:13px}.access-card .btn:hover{background:var(--brandHover)}.access-error{min-height:22px;text-align:left;margin-top:8px;color:var(--danger);font-size:12.5px}.access-error.on{animation:shake .36s ease-in-out}.access-loading{width:min(100%,340px);text-align:center;background:var(--bg);border:1px solid var(--bd);border-radius:18px;padding:28px 22px;box-shadow:0 12px 40px rgba(15,23,42,.12)}.spinner{width:28px;height:28px;margin:0 auto 14px;border:3px solid var(--bd2);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 @media(max-width:720px){
-  main{padding:14px}.list-head{display:none}.row-item{grid-template-columns:96px minmax(0,1fr) 18px;gap:8px}.row-item .col-product,.row-item .col-call,.row-item .col-status,.row-item .col-updated{display:none}.ref-grid{grid-template-columns:1fr}.form-section{padding:14px}.form-actions .btn{width:100%}.stock-card{padding:14px}.stock-grid{grid-template-columns:1fr 1fr}.stock-grid .model-field{grid-column:1/-1}.stock-grid.secondary{grid-template-columns:1fr}.match-row{grid-template-columns:22px minmax(0,1fr) auto}.match-row .match-date{display:none}
-  .work-focus{padding:13px}.work-cards{grid-template-columns:1fr 1fr}.work-card:first-child{grid-column:1/-1}.work-focus-title small{max-width:230px}.settings-summary{align-items:flex-start;flex-direction:column}.settings-toolbar{align-items:flex-start;flex-direction:column}.settings-grid{grid-template-columns:1fr;gap:10px}.settings-grid .settings-accordion[open]{grid-column:auto}.settings-grid .settings-accordion summary{min-height:auto;padding:14px}.settings-description{max-width:240px}.settings-title{min-width:0}.settings-meta{display:block;margin-top:2px}.setHead{display:none}.setRow{grid-template-columns:1fr!important;gap:8px;padding:12px 14px}.setRow .sw{justify-self:start}.settings-erase{justify-self:end}.product-setting{margin-inline:10px;padding:13px}.product-top{align-items:flex-start;flex-direction:column}.product-top>div:last-child{width:100%;justify-content:flex-end}.settings-footer{bottom:8px;flex-wrap:wrap}.settings-footer-note{width:100%}.settings-footer .btn{width:100%;min-width:0}.ui-modal{padding:20px;border-radius:19px}.ui-modal-actions{grid-template-columns:1fr}
+  html,body{overflow-x:hidden;width:100%;max-width:100vw}
+  header{display:flex;flex-direction:column;gap:7px;padding:calc(6px + env(safe-area-inset-top)) 12px 6px}
+  .header-bar{display:flex;align-items:center;justify-content:space-between;width:100%}
+  .header-tools{display:flex;align-items:center;gap:6px}
+  nav.tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex;gap:5px;padding:1px 0 3px}
+  nav.tabs button{font-size:13px;padding:6px 12px;border-radius:8px;background:var(--cv);flex-shrink:0}
+  nav.tabs button.on{background:var(--sel);color:var(--selT);box-shadow:none;font-weight:600}
+  main{padding:12px;width:100%;max-width:100vw;box-sizing:border-box;overflow-x:hidden}
+  .work-focus{padding:12px 13px;border-radius:15px;margin-bottom:12px}
+  .work-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+  .work-card:first-child{grid-column:1/-1}
+  .work-card{padding:9px 11px;border-radius:11px;min-width:0;box-sizing:border-box}
+  .work-card .work-count{font-size:20px}
+  .work-card .work-name{font-size:11px}
+  .work-card .work-hint{font-size:9.5px}
+  .field input#q{font-size:14px;padding:10px 12px;border-radius:10px}
+  .chipbar{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap;padding:2px 0 6px;width:100%}
+  .chipbar::-webkit-scrollbar{display:none}
+  .chipbar .lb{font-size:11px;color:var(--t3);white-space:nowrap;flex-shrink:0}
+  .chip{flex-shrink:0;font-size:12px;padding:5px 11px;white-space:nowrap}
+  .summary{padding:8px 10px;font-size:11.5px;gap:8px}
+  .summary-actions{gap:8px}
+  .list{border-radius:14px;width:100%;overflow:hidden;box-sizing:border-box}
+  .list-head{display:none}
+  .row-item{grid-template-columns:84px minmax(0,1fr) 16px;gap:8px;padding:11px 12px;box-sizing:border-box}
+  .row-item .col-product,.row-item .col-call,.row-item .col-status,.row-item .col-updated{display:none}
+  .booking-id{font-size:10.5px;letter-spacing:-0.2px;overflow:hidden;text-overflow:ellipsis}
+  .skel-row{grid-template-columns:84px minmax(0,1fr) 16px;gap:8px;padding:11px 12px;box-sizing:border-box}
+  .skel-row>div:nth-child(3),.skel-row>div:nth-child(4),.skel-row>div:nth-child(5),.skel-row>div:nth-child(6){display:none}
+  .row,.row3{grid-template-columns:1fr;gap:8px}
+  .ref-grid{grid-template-columns:1fr}
+  .form-section{padding:13px;border-radius:13px}
+  .form-actions .btn{width:100%}
+  .stock-card{padding:13px;border-radius:13px}
+  .stock-grid{grid-template-columns:1fr 1fr}
+  .stock-grid .model-field{grid-column:1/-1}
+  .stock-grid.secondary{grid-template-columns:1fr}
+  .match-row{grid-template-columns:22px minmax(0,1fr) auto;gap:8px;padding:10px 11px}
+  .match-row .match-date{display:none}
+  .settings-summary{align-items:flex-start;flex-direction:column;padding:13px}
+  .settings-toolbar{align-items:flex-start;flex-direction:column;padding:12px}
+  .settings-grid{grid-template-columns:1fr;gap:10px}
+  .settings-grid .settings-accordion[open]{grid-column:auto}
+  .settings-grid .settings-accordion summary{min-height:auto;padding:13px}
+  .settings-description{max-width:240px}
+  .settings-title{min-width:0}
+  .settings-meta{display:block;margin-top:2px}
+  .setHead{display:none}
+  .setRow{grid-template-columns:1fr!important;gap:8px;padding:11px 13px}
+  .setRow .sw{justify-self:start}
+  .settings-erase{justify-self:end}
+  .product-setting{margin-inline:8px;padding:12px}
+  .product-top{align-items:flex-start;flex-direction:column}
+  .product-top>div:last-child{width:100%;justify-content:flex-end}
+  .settings-footer{bottom:8px;flex-wrap:wrap;padding:10px}
+  .settings-footer-note{width:100%}
+  .settings-footer .btn{width:100%;min-width:0}
+  .ui-modal{padding:20px 18px;border-radius:18px}
+  .ui-modal-actions{grid-template-columns:1fr}
 }
 @media(min-width:721px) and (max-width:1050px){.work-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
@@ -200,23 +269,26 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs><symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.2 1.8 20.5h20.4L12 3.2Z"/><path d="M12 9.6v4.6"/><path d="M12 17.4h.01"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 3.5l2.64 5.35 5.9.86-4.27 4.16 1.01 5.88L12 17.02l-5.28 2.73 1.01-5.88L3.46 9.71l5.9-.86L12 3.5Z"/></symbol><symbol id="i-print" viewBox="0 0 24 24"><path d="M6.5 8.5V3.5h11v5"/><path d="M6.5 17.5h-2a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6.5" y="14" width="11" height="6.7" rx="1"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L18.6 9.4a2 2 0 0 0-2.83-2.83L5 17.2 4 20Z"/><path d="M14.5 7l2.5 2.5"/></symbol><symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5.4" fill="currentColor" stroke="none"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.6l4.8 4.8L19.6 6.7"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 5.5l6 6.5-6 6.5"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M5.5 14.5 12 8l6.5 6.5"/></symbol><symbol id="i-down" viewBox="0 0 24 24"><path d="M5.5 9.5 12 16l6.5-6.5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.8 3.5h3l1.4 3.6-1.9 1.4a11 11 0 0 0 5 5l1.4-1.9 3.6 1.4v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.8 5.7a2 2 0 0 1 2-2.2Z"/></symbol></defs></svg>
 
 <header>
-  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <span class="brand">คิวจอง iPhone</span>
-    <nav class="tabs" id="tabs">
-      <button class="on" data-p="list">รายชื่อ</button>
-      <button data-p="new">จองใหม่</button>
-      <button data-p="match">ของเข้า</button>
-      <button data-p="due">ตามด่วน</button>
-      <button data-p="batchprint">พิมพ์หลายรายการ</button>
-      <button data-p="report">รายงาน</button>
-      <button data-p="settings">ตั้งค่า</button>
-    </nav>
+  <div class="header-bar">
+    <div class="brand-wrap">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2"></rect><path d="M10 5h4M10.5 16.5l1.5 1.5 3-3"></path></svg>
+      <span class="brand">คิวจอง iPhone</span>
+    </div>
+    <div class="header-tools">
+      <span id="who" style="font-size:11.5px;color:var(--t3)"></span>
+      <button class="hbtn" id="darkToggle" type="button" aria-label="เปิดโหมดมืด" title="เปิดโหมดมืด"></button>
+      <button class="hbtn" id="btnLogout" type="button" aria-label="ออกจากระบบ" title="ออกจากระบบ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+    </div>
   </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <span id="who" style="font-size:11.5px;color:var(--t3)"></span>
-    <button class="hbtn" id="darkToggle" type="button" aria-label="เปิดโหมดมืด" title="เปิดโหมดมืด"></button>
-    <button class="hbtn" id="btnLogout" type="button" aria-label="ออกจากระบบ" title="ออกจากระบบ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
-  </div>
+  <nav class="tabs" id="tabs">
+    <button class="on" data-p="list">รายชื่อ</button>
+    <button data-p="new">จองใหม่</button>
+    <button data-p="match">ของเข้า</button>
+    <button data-p="due">ตามด่วน</button>
+    <button data-p="batchprint">พิมพ์หลายรายการ</button>
+    <button data-p="report">รายงาน</button>
+    <button data-p="settings">ตั้งค่า</button>
+  </nav>
 </header>
 
 <main>

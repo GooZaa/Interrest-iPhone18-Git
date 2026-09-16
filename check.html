@@ -121,10 +121,10 @@ function showVerifyForm(){
   var fails=Number(localStorage.getItem(failKey)||0);
   var remain=Math.max(1,5-fails);
 
-  $('box').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--t2)">'+t('phonePrompt')+'</p>'+\
-    '<input id="vphone" type="tel" inputmode="tel" placeholder="0812345678">'+\
-    '<button class="btn" id="btnGo">'+t('confirm')+'</button>'+\
-    '<p class="err" id="verr" style="display:none"></p>'+\
+  $('box').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--t2)">'+t('phonePrompt')+'</p>'+
+    '<input id="vphone" type="tel" inputmode="tel" placeholder="0812345678">'+
+    '<button class="btn" id="btnGo">'+t('confirm')+'</button>'+
+    '<p class="err" id="verr" style="display:none"></p>'+
     '<p class="hint" id="vhint">'+tt('hintRemain',{n:'<b id="vremain">'+remain+'</b>'})+'</p>';
   $('btnGo').onclick=submitVerify;
   $('vphone').addEventListener('keydown',function(e){if(e.key==='Enter')submitVerify();});
