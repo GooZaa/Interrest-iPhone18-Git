@@ -768,6 +768,19 @@ async validateLocationCode(tokenOrCode, code) {
       if (dataPatch.model !== undefined) updateData.model = dataPatch.model;
       if (dataPatch.capacity !== undefined) updateData.capacity = dataPatch.capacity;
       if (dataPatch.color !== undefined) updateData.color = dataPatch.color;
+      if (dataPatch.price !== undefined && dataPatch.price !== null) {
+        updateData.price_at_booking = Number(dataPatch.price);
+      } else if (dataPatch.model && dataPatch.capacity) {
+        try {
+          const { data: prodRow } = await sb().from('products').select('prices').eq('model', dataPatch.model).single();
+          if (prodRow && prodRow.prices) {
+            const pmap = parsePriceMap(prodRow.prices);
+            if (pmap[dataPatch.capacity] != null) {
+              updateData.price_at_booking = Number(pmap[dataPatch.capacity]);
+            }
+          }
+        } catch (pe) {}
+      }
       if (dataPatch.group !== undefined || dataPatch.customer_group !== undefined) {
         updateData.customer_group = dataPatch.group || dataPatch.customer_group;
       }
@@ -793,10 +806,12 @@ async validateLocationCode(tokenOrCode, code) {
       const { error } = await sb().from('reservations').update(updateData).eq('id', id);
       if (error) throw new Error(error.message);
 
+      const changeSpecs = [updateData.model, updateData.capacity, updateData.color].filter(Boolean).join(' ');
+      const priceText = updateData.price_at_booking != null ? ' (฿' + Number(updateData.price_at_booking).toLocaleString('th-TH') + ')' : '';
       await sb().from('notes').insert({
         reservation_id: id,
         author: 'Staff',
-        message: 'แก้ไขข้อมูลการจอง',
+        message: 'แก้ไขข้อมูลการจอง' + (changeSpecs ? ': ' + changeSpecs + priceText : ''),
         source: 'manual',
         created_at: new Date().toISOString()
       });
@@ -874,7 +889,15 @@ async validateLocationCode(tokenOrCode, code) {
         updated_at: new Date().toISOString()
       }).eq('id', id);
 
-      const label = (res === 'busy' ? 'ติดต่อไม่ได้' : (res === 'ok' ? 'ยืนยันนัดรับตามเดิม' : (res || 'ติดต่อสำเร็จ')));
+      const callLabels = {
+        'busy': 'ติดต่อไม่ได้',
+        'no_answer': 'ลูกค้าไม่รับสาย',
+        'notified': 'แจ้งลูกค้าแล้ว',
+        'ok': 'ยืนยันนัดรับตามเดิม',
+        'other': 'อื่นๆ',
+        'อื่นๆ': 'อื่นๆ'
+      };
+      const label = callLabels[res] || res || 'ติดต่อสำเร็จ';
       const msg = 'บันทึกผลการโทร (ครั้งที่ ' + calls + '): ' + label + (ntext ? ' — ' + ntext : '');
       await sb().from('notes').insert({
         reservation_id: id,

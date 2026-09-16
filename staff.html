@@ -506,6 +506,41 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
     <div class="ui-modal-actions"><button class="btn2" id="approveAllPendingCancel" type="button">ยกเลิก</button><button class="btn" id="approveAllPendingOk" type="button">ตกลง · เข้าคิวทั้งหมด</button></div>
   </div>
 </div>
+<div class="ui-modal-backdrop" id="editConfirmModal" role="dialog" aria-modal="true" aria-labelledby="editConfirmTitle">
+  <div class="ui-modal" style="width:min(100%,450px)">
+    <div class="section-top" style="margin-bottom:12px">
+      <div>
+        <h3 id="editConfirmTitle" style="margin:0 0 2px">ยืนยันการแก้ไขข้อมูล</h3>
+        <p style="margin:0;font-size:12px;color:var(--t2)">โปรดตรวจสอบความถูกต้องของข้อมูลก่อนบันทึก</p>
+      </div>
+      <button class="iconbtn" id="editConfirmClose" type="button" aria-label="ปิด">×</button>
+    </div>
+    <div id="editConfirmBody"></div>
+    <div class="ui-modal-actions" style="margin-top:16px">
+      <button class="btn2" id="editConfirmCancel" type="button">แก้ไขต่อ</button>
+      <button class="btn" id="editConfirmSave" type="button">ยืนยันบันทึกการแก้ไข</button>
+    </div>
+  </div>
+</div>
+<div class="ui-modal-backdrop" id="callOtherModal" role="dialog" aria-modal="true" aria-labelledby="callOtherTitle">
+  <div class="ui-modal" style="width:min(100%,420px)">
+    <div class="section-top" style="margin-bottom:12px">
+      <div>
+        <h3 id="callOtherTitle" style="margin:0 0 2px">บันทึกการโทร · อื่นๆ</h3>
+        <p style="margin:0;font-size:12px;color:var(--t2)">ระบุเหตุผลหรือรายละเอียดการติดต่อลูกค้า</p>
+      </div>
+      <button class="iconbtn" id="callOtherClose" type="button" aria-label="ปิด">×</button>
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label>รายละเอียด / เหตุผลการติดต่อ <span style="color:var(--danger)">*</span></label>
+      <textarea id="callOtherNote" placeholder="เช่น ลูกค้าขอเลื่อนวันรับ, ขอให้ติดต่อทาง LINE แทน, หรือติดต่อญาติ..." style="min-height:84px"></textarea>
+    </div>
+    <div class="ui-modal-actions">
+      <button class="btn2" id="callOtherCancel" type="button">ยกเลิก</button>
+      <button class="btn" id="callOtherSave" type="button">บันทึกผลการโทร</button>
+    </div>
+  </div>
+</div>
 <div class="ui-modal-backdrop workflow-modal" id="workflowModal" role="dialog" aria-modal="true" aria-labelledby="workflowTitle">
   <div class="ui-modal">
     <div class="section-top" style="margin-bottom:12px">
@@ -1623,8 +1658,13 @@ function openDetail(id, editMode){
       var prod=STATE.boot.products.filter(function(p){return p.model===r.model;})[0]||STATE.boot.products[0];
       h+='<div class="card"><h2 style="margin-top:0">แก้ไขข้อมูล</h2>';
       h+='<label>รุ่น</label><select id="e-model" style="margin-bottom:9px">'+STATE.boot.products.map(function(p){return '<option'+(p.model===r.model?' selected':'')+'>'+esc(p.model)+'</option>';}).join('')+'</select>';
+      var initPrice = prodPrice(r.model, r.capacity) || r.price;
       h+='<div class="row" style="margin-bottom:9px"><div><label>ความจุ</label><select id="e-cap">'+prod.capacities.map(function(c){return '<option'+(c===r.capacity?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></div>'+
          '<div><label>สี</label><select id="e-color">'+prod.colors.map(function(c){return '<option'+(c===r.color?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></div></div>';
+      h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;padding:9px 12px;border-radius:10px;background:var(--cv);border:0.5px solid var(--bd2)">'+
+         '<span style="font-size:12px;color:var(--t2)">ราคาจำหน่าย (ประมาณ)</span>'+
+         '<span class="mono" style="font-size:16px;font-weight:700;color:var(--selT)">฿<span id="e-price">'+(initPrice!=null?Number(initPrice).toLocaleString('th-TH'):'-')+'</span> บาท</span>'+
+         '</div>';
       h+='<label>กลุ่มลูกค้า</label><select id="e-group" style="margin-bottom:9px">'+STATE.boot.groups.map(function(g){return '<option'+(g.name===r.group?' selected':'')+'>'+esc(g.name)+'</option>';}).join('')+'</select>';
       h+='<div id="e-preorder-wrap" style="display:'+(r.group==='Pre-Order'?'block':'none')+'"><label>เลข Pre-Order <span style="color:var(--danger)">*</span></label><input id="e-preorder" value="'+esc(r.preOrder||'')+'" placeholder="จำเป็นสำหรับกลุ่ม Pre-Order" style="margin-bottom:9px"></div>';
       if(STATE.boot.supplierLockEnabled&&STATE.boot.alternativeOptionsEnabled){
@@ -1666,6 +1706,27 @@ function openDetail(id, editMode){
       }else{
         h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button class="btn2 btn-danger" id="btnUrgent" style="flex:1"><svg class="ic"><use href="#i-warn"></use></svg> ทำเป็นเคสเร่งด่วน</button><button class="guide-info" id="urgentInfo" type="button" title="ใช้กรณีไหน" aria-label="อธิบายเคสเร่งด่วน">i</button></div>';if((r.dueRemainingDays!=null&&r.dueRemainingDays<0)){h+='<div class="card" style="border:1.5px solid var(--danger);background:var(--dangerBg);border-radius:12px;padding:13px;margin:2px 0 12px"><div style="display:flex;gap:9px;align-items:flex-start"><svg class="ic" style="color:var(--danger);width:20px;height:20px;flex:none;margin-top:1px"><use href="#i-warn"></use></svg><div><b style="color:var(--danger);font-size:14px">ลูกค้าถูกยกเลิกคิวจากระบบ</b><p style="margin:3px 0 0;font-size:12.5px;color:var(--t2);line-height:1.5">เนื่องจาก <b style="color:var(--danger)">เกินกำหนดรับ</b> — เลยวันครบกำหนดรับสินค้าและยังไม่มารับภายในระยะเวลาที่กำหนด</p></div></div><button class="btn ui-modal-danger" id="btnAutoCancel" style="width:100%;margin-top:12px">ยกเลิกสิทธิ์ลูกค้านี้ และนำเครื่องออกจากระบบคิว</button></div>';}
       }
+
+      // ---- บันทึกการโทร (แสดงผลตลอดทุกสถานะที่ยังไม่ปิดคิว) ----
+      h+='<h2>บันทึกการโทร</h2><div class="card" style="padding:13px 14px;border:0.5px solid var(--bd);border-radius:14px;background:var(--bg);box-shadow:var(--shadow);margin-bottom:12px">'+
+        '<a href="tel:'+esc(r.phone)+'" class="btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;margin-bottom:11px;padding:10px 14px">'+
+          '<svg class="ic" style="width:16px;height:16px"><use href="#i-phone"></use></svg>'+
+          '<span>โทรหาลูกค้า: <b class="mono">'+esc(r.phone)+'</b></span>'+
+        '</a>'+
+        '<div style="font-size:12px;color:var(--t2);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center">'+
+          '<span>บันทึกผลการโทร</span>'+
+          '<span style="color:var(--t3)">ครั้งที่ '+(Number(r.callCount||0)+1)+'</span>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
+          '<button class="btn2" data-call="no_answer" style="padding:9px 6px;font-size:12px;font-weight:500">ลูกค้าไม่รับสาย</button>'+
+          '<button class="btn2" data-call="busy" style="padding:9px 6px;font-size:12px;font-weight:500">ติดต่อไม่ได้</button>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
+          '<button class="btn2" data-call="notified" style="padding:9px 6px;font-size:12px;font-weight:500">แจ้งลูกค้าแล้ว</button>'+
+          (r.status==='นัดรับแล้ว'?'<button class="btn2" data-call="ok" style="padding:9px 6px;font-size:12px;font-weight:500">ยืนยันนัดรับ</button>':'')+
+          '<button class="btn2" id="btnCallOther" style="padding:9px 6px;font-size:12px;font-weight:500">อื่นๆ (โปรดระบุ)</button>'+
+        '</div>'+
+      '</div>';
       if(r.status==='รอตรวจสอบ'){
         h+='<h2>ตรวจสอบและเข้าคิว</h2><div class="field"><select id="apGroup">'+STATE.boot.groups.map(function(g){return '<option'+(g.name===r.group?' selected':'')+'>'+esc(g.name)+'</option>';}).join('')+'</select></div><div class="field" id="apPreOrderWrap" style="display:'+(r.group==='Pre-Order'?'block':'none')+'"><label>เลข Pre-Order <span style="color:var(--danger)">*</span></label><input id="apPreOrder" value="'+esc(r.preOrder||'')+'" placeholder="จำเป็นสำหรับกลุ่ม Pre-Order"></div>'+ 
           '<button class="btn2" id="btnApprove" style="margin-bottom:10px">ยืนยันเข้าคิว</button>';
@@ -1685,10 +1746,6 @@ function openDetail(id, editMode){
             '<label>ระบุวันและเวลานัดรับ</label><input type="datetime-local" id="apptDt" min="" style="margin-bottom:8px"><button class="btn" id="btnAppt" style="margin-bottom:10px">บันทึกวันนัด</button>';
         }
         if(r.status==='นัดรับแล้ว'){
-          h+='<h2>บันทึกการโทร</h2><div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">'+
-            '<button class="btn2" data-call="busy">ติดต่อไม่ได้</button>'+
-            '<button class="btn2" data-call="ok">ยืนยันนัดรับตามเดิม</button>'+
-            '<button class="btn2" id="btnCallOther">อื่นๆ · ระบุรายละเอียด</button></div>';
           h+='<button class="btn" id="btnDone" style="margin-bottom:8px"><svg class="ic"><use href="#i-check"></use></svg> รับสินค้าแล้ว</button>';
         }
         h+='<h2>พิมพ์เอกสาร</h2><div class="row" style="margin:8px 0 6px"><button class="btn2" id="btnPrintLabel"><svg class="ic"><use href="#i-print"></use></svg> ใบแปะเครื่อง</button><button class="btn2" id="btnPrintBooking"><svg class="ic"><use href="#i-print"></use></svg> ใบจองสินค้า</button></div>';h+='<p class="sub" style="margin:2px 0 6px">Thermal 80mm · เครื่องพิมพ์ใบเสร็จ</p><div class="row" style="margin:0 0 8px"><button class="btn2" id="btnPrintLabel80"><svg class="ic"><use href="#i-print"></use></svg> ใบแปะ 80mm</button><button class="btn2" id="btnPrintBooking80"><svg class="ic"><use href="#i-print"></use></svg> ใบจอง 80mm</button></div>';
@@ -1714,15 +1771,24 @@ function openDetail(id, editMode){
 // ผูกอีเวนต์ในโหมดแก้ไขข้อมูลหลัก
 function bindEditMode(id,r){
   var lock=r.supplierLock, promo=r.promo;
-  var em=$('e-model');
-  var eg=$('e-group');
+  var em=$('e-model'), ec=$('e-cap'), eg=$('e-group');
+  function syncEditPrice(){
+    var m=em.value, c=ec.value;
+    var pr=prodPrice(m, c);
+    var el=$('e-price');
+    if(el) el.textContent=pr!=null?Number(pr).toLocaleString('th-TH'):'-';
+    return pr;
+  }
   eg.onchange=function(){var wrap=$('e-preorder-wrap');if(wrap)wrap.style.display=eg.value==='Pre-Order'?'block':'none';};
   em.onchange=function(){
     var p=STATE.boot.products.filter(function(x){return x.model===em.value;})[0];
-    $('e-cap').innerHTML=p.capacities.map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
-    $('e-color').innerHTML=p.colors.map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
+    if(p){
+      ec.innerHTML=p.capacities.map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
+      $('e-color').innerHTML=p.colors.map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
+    }
+    syncEditPrice();
   };
-  var lockEl=null;
+  ec.onchange=syncEditPrice;
   // สลับโหมด เครื่องทั่วไป / เครื่อง AIS
   document.querySelectorAll('[data-emode]').forEach(function(el){el.onclick=function(){
     lock=el.dataset.emode==='ais';
@@ -1738,10 +1804,73 @@ function bindEditMode(id,r){
   $('e-save').onclick=function(){
     var group=$('e-group').value,preOrder=group==='Pre-Order'?$('e-preorder').value.trim():'';
     if(group==='Pre-Order'&&!preOrder){toast('กรุณาระบุเลข Pre-Order');$('e-preorder').focus();return;}
-    var patch={model:$('e-model').value,capacity:$('e-cap').value,color:$('e-color').value,group:group,preOrder:preOrder,supplierLock:lock,promo:promo};
+    var newPrice=prodPrice($('e-model').value, $('e-cap').value);
+    var patch={
+      model:$('e-model').value,
+      capacity:$('e-cap').value,
+      color:$('e-color').value,
+      price:newPrice,
+      group:group,
+      preOrder:preOrder,
+      supplierLock:lock,
+      promo:promo
+    };
     if($('e-deposit'))patch.deposit=$('e-deposit').value;
     if($('e-bill'))patch.billNo=$('e-bill').value;
-    callApi('editReservation',id,patch).then(function(){toast('บันทึกการแก้ไขแล้ว');openDetail(id);markQueueViewsStale();loadList();}).catch(function(e){toast(e.message);});
+    openEditConfirmDialog(id, r, patch);
+  };
+}
+
+function openEditConfirmDialog(id, r, patch){
+  var modal=$('editConfirmModal');
+  if(!modal) return;
+  var supBadge = patch.supplierLock
+    ? '<span class="pill" style="background:#FDECEC;color:#991B1B;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px">🟢 ซัพ AIS' + (patch.promo ? ' · ' + esc(patch.promo) : '') + '</span>'
+    : '<span class="pill" style="background:var(--neuBg);color:var(--neu);font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px">เครื่องเปล่า</span>';
+
+  var bodyHtml = '<div class="card" style="padding:12px 14px;border-radius:13px;background:var(--cv);margin-bottom:10px;font-size:13px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<b>ข้อมูลลูกค้า</b>' +
+      '<span class="badge" style="background:var(--sel);color:var(--selT)">' + esc(patch.group) + '</span>' +
+    '</div>' +
+    '<div class="kv"><span class="k">ชื่อลูกค้า</span><span><b>' + esc(r.name) + '</b></span></div>' +
+    '<div class="kv"><span class="k">เบอร์โทรศัพท์</span><span class="mono">' + esc(r.phone) + '</span></div>' +
+    (r.id ? '<div class="kv"><span class="k">รหัสคิว</span><span class="mono" style="color:var(--selT)">' + esc(r.id) + '</span></div>' : '') +
+  '</div>' +
+  '<div class="card" style="padding:12px 14px;border-radius:13px;background:var(--bg);border:0.5px solid var(--bd);margin-bottom:10px;font-size:13px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<b>รายละเอียดสินค้า (ข้อมูลใหม่)</b>' +
+      supBadge +
+    '</div>' +
+    '<div class="kv"><span class="k">รุ่น</span><span><b style="color:var(--selT)">' + esc(patch.model) + '</b></span></div>' +
+    '<div class="kv"><span class="k">ความจุ</span><span><b>' + esc(patch.capacity) + '</b></span></div>' +
+    '<div class="kv"><span class="k">สี</span><span><b>' + esc(patch.color) + '</b></span></div>' +
+    '<div class="kv"><span class="k">ราคา (ประมาณ)</span><span><b class="mono" style="color:var(--selT)">' + (patch.price != null ? '฿' + Number(patch.price).toLocaleString('th-TH') + ' บาท' : '-') + '</b></span></div>' +
+    (patch.preOrder ? '<div class="kv"><span class="k">เลข Pre-Order</span><span class="ref-value">' + esc(patch.preOrder) + '</span></div>' : '') +
+    (patch.billNo || patch.deposit ? '<div class="kv"><span class="k">มัดจำ</span><span class="ref-value">' + (patch.billNo ? 'บิล ' + esc(patch.billNo) : '') + (patch.deposit ? ' · ฿' + Number(patch.deposit).toLocaleString() : '') + '</span></div>' : '') +
+  '</div>';
+
+  $('editConfirmBody').innerHTML = bodyHtml;
+  modal.classList.add('on');
+
+  $('editConfirmClose').onclick = $('editConfirmCancel').onclick = function(){
+    modal.classList.remove('on');
+  };
+
+  $('editConfirmSave').onclick = function(){
+    var btn = this;
+    btn.disabled = true;
+    callApi('editReservation', id, patch).then(function(){
+      modal.classList.remove('on');
+      toast('บันทึกการแก้ไขเรียบร้อยแล้ว');
+      openDetail(id);
+      markQueueViewsStale();
+      loadList();
+    }).catch(function(e){
+      toast(e.message);
+    }).finally(function(){
+      btn.disabled = false;
+    });
   };
 }
 
@@ -2108,18 +2237,38 @@ function openAutoCancelDialog(id) {
   }).catch(function(e) { toast(e.message); });
 }
 
-/** บันทึกผลการโทรอื่น ๆ พร้อมข้อความที่พนักงานระบุ และเก็บใน timeline */
+/** บันทึกผลการโทรอื่น ๆ พร้อมข้อความที่พนักงานระบุ ผ่าน popup modal */
 function openCallOtherDialog(id) {
-  openPanel('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
-    '<h2 style="margin:0">บันทึกการโทร</h2><button class="iconbtn" onclick="closePanel()">×</button></div>' +
-    '<label>รายละเอียดการติดต่อ</label><textarea id="callOtherNote" placeholder="เช่น ลูกค้าขอเลื่อนเพราะเดินทางต่างจังหวัด"></textarea>' +
-    '<button class="btn" id="saveCallOther" style="margin-top:8px">บันทึกผลการโทร</button>');
-  $('saveCallOther').onclick = function() {
+  var modal = $('callOtherModal');
+  if(!modal) return;
+  $('callOtherNote').value = '';
+  modal.classList.add('on');
+  $('callOtherNote').focus();
+
+  $('callOtherClose').onclick = $('callOtherCancel').onclick = function(){
+    modal.classList.remove('on');
+  };
+
+  $('callOtherSave').onclick = function(){
     var note = $('callOtherNote').value.trim();
-    if (!note) { toast('กรอกรายละเอียดก่อนบันทึก'); return; }
-    callApi('logCallResult', id, 'อื่นๆ', note).then(function() {
-      toast('บันทึกผลการโทรแล้ว'); openDetail(id); loadList();
-    }).catch(function(e) { toast(e.message); });
+    if(!note){
+      toast('กรุณาระบุรายละเอียดหรือเหตุผลการติดต่อ');
+      $('callOtherNote').focus();
+      return;
+    }
+    var btn = this;
+    btn.disabled = true;
+    callApi('logCallResult', id, 'other', note).then(function(){
+      modal.classList.remove('on');
+      toast('บันทึกผลการโทรแล้ว');
+      openDetail(id);
+      markQueueViewsStale();
+      loadList();
+    }).catch(function(e){
+      toast(e.message);
+    }).finally(function(){
+      btn.disabled = false;
+    });
   };
 }
 
