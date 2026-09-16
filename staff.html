@@ -1262,14 +1262,134 @@ $('f-phone').addEventListener('input',function(){
   },450);
 });
 
-function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;return x;})};}
+function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.price=prodPrice(d.model,d.capacity)||0;x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;return x;})};}
 function validateBooking(p){if(!p.name.trim())return 'กรุณาระบุชื่อ-นามสกุล';if(p.phone.replace(/\D/g,'').length<9)return 'กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง';if(p.contactId.trim()&&!$('f-channel').value)return 'กรุณาเลือกช่องทางติดต่อ (เช่น LINE, WhatsApp หรือ E-Mail)';if(!p.devices.length||p.devices.some(function(d){return !d.model||!d.capacity||!d.color;}))return 'กรุณาระบุรุ่น ความจุ และสีของเครื่องให้ครบ';if(p.group==='Pre-Order'&&!String(p.preOrder||'').trim())return 'กรุณาระบุเลข Pre-Order';if(p.preBooking&&p.devices.some(function(d){return !d.supplierLock||d.supplier!=='AIS';}))return 'Pre-Booking AIS ต้องใช้เครื่องจากซัพ AIS เท่านั้น';if(Number(p.depositTotal||0)>0&&!p.billNo)return 'กรุณาระบุเลขบิลมัดจำ';if((p.depositAllocations||[]).reduce(function(a,b){return a+Number(b||0);},0)!==Number(p.depositTotal||0))return 'ยอดมัดจำที่แบ่งให้แต่ละรายการไม่ตรงกับยอดรวม';return '';}
 $('btnSave').onclick=function(){var p=bookingPayload(),err=validateBooking(p);if(err){toast(err);return;}openBookingConfirm(p);};
 function openBookingConfirm(p){
-  var devices=p.devices.map(function(d,i){var alt=((d.altColors||[]).length?'สีอื่น: '+esc(d.altColors.join(', ')):'')+((d.altColors||[]).length&&(d.altCaps||[]).length?' · ':'')+((d.altCaps||[]).length?'ความจุอื่น: '+esc(d.altCaps.join(', ')):''),altLine=alt?'<div style="font-size:12px;color:var(--selT);margin-top:3px">รับสเปกสำรอง — '+alt+'</div>':'';return '<div style="border-top:0.5px solid var(--bd2);padding:9px 0"><div style="font-weight:600;margin-bottom:4px">เครื่องที่ '+(i+1)+'</div><div style="font-size:13px">'+esc(d.model)+' · '+esc(d.capacity)+' · '+esc(d.color)+'</div><div style="font-size:12px;color:var(--t2);margin-top:3px">'+(d.supplierLock?'ซัพ AIS'+(d.promo?' · '+esc(d.promo):''):'เครื่องเปล่า')+'</div>'+(d.deposit?'<div style="font-size:12px;color:var(--selT);margin-top:3px">มัดจำของรายการนี้ '+Number(d.deposit).toLocaleString()+' บาท</div>':'')+altLine+'</div>';}).join('');
-  var refs=(p.preOrder?'<div class="line"><span class="key">เลข Pre-Order</span><span class="ref-value">'+esc(p.preOrder)+'</span></div>':'')+(p.preBooking?'<div class="line"><span class="key">Pre-Booking AIS</span><span class="ref-value">'+esc(p.preBooking)+'</span></div>':'')+(p.billNo?'<div class="line"><span class="key">บิลมัดจำ</span><span class="ref-value">เลขที่ '+esc(p.billNo)+' · ยอดรวม '+Number(p.depositTotal||0).toLocaleString()+' บาท · '+p.devices.length+' รายการ</span></div>':'');
-  var noteLine=p.note?'<div class="line"><span class="key">ข้อมูลเพิ่มเติม</span><span>'+esc(p.note)+'</span></div>':'';
-  openPanel('<div class="section-top"><h2>ยืนยันข้อมูลการจอง</h2><button class="iconbtn" onclick="closePanel()">×</button></div><div class="confirmation"><div class="line"><span class="key">ลูกค้า</span><span>'+esc(p.name)+'</span></div><div class="line"><span class="key">กลุ่มลูกค้า</span><span>'+esc(p.group)+'</span></div><div class="line"><span class="key">เบอร์โทรศัพท์</span><span>'+esc(p.phone)+'</span></div><div class="line"><span class="key">ช่องทางติดต่อ</span><span>'+esc(p.channel)+(p.contactId?' · '+esc(p.contactId):'')+'</span></div>'+refs+devices+noteLine+'</div><div class="row" style="margin-top:16px"><button class="btn2" id="confirm-edit">แก้ไข</button><button class="btn" id="confirm-save">ยืนยันการจอง</button></div>');$('confirm-edit').onclick=closePanel;$('confirm-save').onclick=function(){saveBooking(p);};}
+  var totalEstPrice = 0;
+  var hasAnyPrice = false;
+
+  var devicesHtml = p.devices.map(function(d, i){
+    var pr = prodPrice(d.model, d.capacity);
+    if(pr != null) {
+      totalEstPrice += pr;
+      hasAnyPrice = true;
+    }
+
+    var alt = ((d.altColors||[]).length ? 'สีอื่น: ' + esc(d.altColors.join(', ')) : '') +
+              (((d.altColors||[]).length && (d.altCaps||[]).length) ? ' · ' : '') +
+              ((d.altCaps||[]).length ? 'ความจุอื่น: ' + esc(d.altCaps.join(', ')) : '');
+    var altLine = alt ? '<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:var(--sel);color:var(--selT);font-size:11.5px;line-height:1.4"><span style="font-weight:600">รับสเปกสำรอง:</span> ' + alt + '</div>' : '';
+
+    var supBadge = d.supplierLock
+      ? '<span class="pill" style="background:#FDECEC;color:#991B1B;font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px">🟢 ซัพ AIS' + (d.promo ? ' · ' + esc(d.promo) : '') + '</span>'
+      : '<span class="pill" style="background:var(--neuBg);color:var(--neu);font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px">เครื่องเปล่า</span>';
+
+    var priceRow = (pr != null)
+      ? '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:8px;border-top:0.5px dashed var(--bd2)">' +
+          '<span style="font-size:12px;color:var(--t2)">ราคาจำหน่าย (ประมาณ)</span>' +
+          '<span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--selT)">฿' + pr.toLocaleString('th-TH') + '</span>' +
+        '</div>'
+      : '';
+
+    var depositRow = d.deposit
+      ? '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:12px;color:var(--ok)">' +
+          '<span>มัดจำของรายการนี้</span>' +
+          '<b style="font-family:'IBM Plex Mono',monospace;font-size:13px">฿' + Number(d.deposit).toLocaleString('th-TH') + '</b>' +
+        '</div>'
+      : '';
+
+    return '<div class="card" style="margin-bottom:10px;padding:13px 14px;border-radius:14px;border:0.5px solid var(--bd);background:var(--bg);box-shadow:var(--shadow)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">' +
+        '<span style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:0.3px">เครื่องที่ ' + (i+1) + '</span>' +
+        supBadge +
+      '</div>' +
+      '<div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:3px">' + esc(d.model) + '</div>' +
+      '<div style="font-size:13px;color:var(--t2);display:flex;align-items:center;gap:6px">' +
+        '<span>ความจุ: <b style="color:var(--tx)">' + esc(d.capacity) + '</b></span>' +
+        '<span>·</span>' +
+        '<span>สี: <b style="color:var(--tx)">' + esc(d.color) + '</b></span>' +
+      '</div>' +
+      priceRow +
+      depositRow +
+      altLine +
+    '</div>';
+  }).join('');
+
+  var refsHtml = '';
+  if (p.preOrder || p.preBooking || p.billNo) {
+    refsHtml = '<div style="margin-top:10px;padding:10px 12px;border-radius:11px;background:var(--cv);border:0.5px solid var(--bd2);font-size:12.5px">' +
+      (p.preOrder ? '<div class="line" style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:var(--t2)">เลข Pre-Order</span><b style="color:var(--accent)">' + esc(p.preOrder) + '</b></div>' : '') +
+      (p.preBooking ? '<div class="line" style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:var(--t2)">Pre-Booking AIS</span><b style="color:var(--accent)">' + esc(p.preBooking) + '</b></div>' : '') +
+      (p.billNo ? '<div class="line" style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:var(--t2)">บิลมัดจำ</span><b style="color:var(--ok)">' + esc(p.billNo) + ' (฿' + Number(p.depositTotal||0).toLocaleString() + ')</b></div>' : '') +
+    '</div>';
+  }
+
+  var noteHtml = p.note
+    ? '<div style="margin-top:10px;padding:10px 12px;border-radius:11px;background:var(--cv);border:0.5px solid var(--bd2);font-size:12px;line-height:1.5">' +
+        '<span style="color:var(--t3);display:block;margin-bottom:2px">หมายเหตุเพิ่มเติม</span>' +
+        '<span style="color:var(--tx)">' + esc(p.note) + '</span>' +
+      '</div>'
+    : '';
+
+  var summaryBar = '';
+  if (hasAnyPrice || Number(p.depositTotal || 0) > 0) {
+    summaryBar = '<div style="margin:14px 0 10px;padding:12px 14px;border-radius:13px;background:linear-gradient(135deg,color-mix(in srgb,var(--sel) 42%,var(--bg)),var(--bg));border:0.5px solid color-mix(in srgb,var(--selT) 22%,var(--bd));box-shadow:var(--shadow)">' +
+      (hasAnyPrice ? '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+        '<div><span style="font-size:13px;color:var(--t2)">ราคารวมโดยประมาณ</span><small style="display:block;color:var(--t3);font-size:10.5px">(' + p.devices.length + ' เครื่อง)</small></div>' +
+        '<b style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:var(--selT)">฿' + totalEstPrice.toLocaleString('th-TH') + '</b>' +
+      '</div>' : '') +
+      (Number(p.depositTotal || 0) > 0 ? '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:0.5px dashed var(--bd2)">' +
+        '<span style="font-size:12px;color:var(--ok)">ยอดมัดจำรวม</span>' +
+        '<b style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ok)">฿' + Number(p.depositTotal).toLocaleString('th-TH') + '</b>' +
+      '</div>' : '') +
+    '</div>';
+  }
+
+  var content = '<div class="section-top" style="margin-bottom:14px;padding-bottom:10px;border-bottom:0.5px solid var(--bd2)">' +
+    '<div>' +
+      '<h2 style="font-size:18px;font-weight:700;margin:0 0 2px">ยืนยันข้อมูลการจอง</h2>' +
+      '<p style="margin:0;font-size:12px;color:var(--t2)">โปรดตรวจสอบความถูกต้องก่อนบันทึกเข้าระบบ</p>' +
+    '</div>' +
+    '<button class="iconbtn" onclick="closePanel()" style="font-size:18px;width:32px;height:32px;border-radius:8px;background:var(--btn)" aria-label="ปิด">×</button>' +
+  '</div>' +
+
+  '<div class="card" style="margin-bottom:12px;padding:14px;border-radius:14px;border:0.5px solid var(--bd);background:var(--bg);box-shadow:var(--shadow)">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+      '<span style="font-size:13px;font-weight:700;color:var(--tx);display:flex;align-items:center;gap:6px">' +
+        '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--brand)"></span>' +
+        'ข้อมูลผู้จอง' +
+      '</span>' +
+      '<span class="badge" style="background:var(--sel);color:var(--selT);font-weight:600;padding:3px 9px;border-radius:7px">' + esc(p.group) + '</span>' +
+    '</div>' +
+    '<div style="display:grid;gap:6px;font-size:13px">' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">ชื่อลูกค้า</span><b style="color:var(--tx)">' + esc(p.name) + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">เบอร์โทรศัพท์</span><b style="font-family:'IBM Plex Mono',monospace;color:var(--tx)">' + esc(p.phone) + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">ช่องทางติดต่อ</span><span style="color:var(--tx)">' + esc(p.channel) + (p.contactId ? ' · ' + esc(p.contactId) : '') + '</span></div>' +
+    '</div>' +
+    refsHtml +
+    noteHtml +
+  '</div>' +
+
+  '<div style="margin:14px 0 7px;display:flex;justify-content:space-between;align-items:center">' +
+    '<span style="font-size:13px;font-weight:700;color:var(--tx);display:flex;align-items:center;gap:6px">' +
+      '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tone-violet)"></span>' +
+      'รายการสินค้า (' + p.devices.length + ' เครื่อง)' +
+    '</span>' +
+  '</div>' +
+
+  devicesHtml +
+  summaryBar +
+
+  '<div style="display:grid;grid-template-columns:1fr 1.35fr;gap:9px;margin-top:18px">' +
+    '<button class="btn2" id="confirm-edit" style="padding:12px;border-radius:11px;font-weight:600">แก้ไขข้อมูล</button>' +
+    '<button class="btn" id="confirm-save" style="padding:12px;border-radius:11px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px"><svg class="ic" style="width:16px;height:16px"><use href="#i-check"></use></svg> ยืนยันการจอง</button>' +
+  '</div>';
+
+  openPanel(content);
+  $('confirm-edit').onclick = closePanel;
+  $('confirm-save').onclick = function(){ saveBooking(p); };
+}
 function saveBooking(p){$('confirm-save').disabled=true;$('confirm-save').textContent='กำลังบันทึก…';callApi('saveReservation',p).then(function(r){showSavedReservation(r);resetBookingForm();markQueueViewsStale();loadList();}).catch(function(e){$('confirm-save').disabled=false;$('confirm-save').textContent='ยืนยันการจอง';toast(e.message);});}
 function showSavedReservation(r){showSavedPrintChoice(r.devices[0].id,r.count);}
 function showSavedPrintChoice(id,count){
