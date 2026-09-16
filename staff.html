@@ -413,6 +413,19 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
     <div class="ui-modal-actions"><button class="btn2" id="settingsConfirmCancel">ยกเลิก</button><button class="btn ui-modal-danger" id="settingsConfirmOk">นำออก</button></div>
   </div>
 </div>
+<div class="ui-modal-backdrop" id="logoutModal" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
+  <div class="ui-modal">
+    <div class="ui-modal-icon" style="background:var(--dangerBg);color:var(--danger)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </div>
+    <h3 id="logoutModalTitle">ออกจากระบบพนักงาน</h3>
+    <p id="logoutModalMessage" style="margin:0 0 20px;color:var(--t2);font-size:13.5px;line-height:1.65">คุณต้องการออกจากระบบหรือไม่?<br><span style="font-size:12px;color:var(--t3)">เมื่อออกจากระบบแล้ว จะต้องใช้รหัส Location เพื่อเข้าใช้งานใหม่อีกครั้ง</span></p>
+    <div class="ui-modal-actions">
+      <button class="btn2" id="logoutCancel" type="button">ยกเลิก</button>
+      <button class="btn ui-modal-danger" id="logoutOk" type="button">ออกจากระบบ</button>
+    </div>
+  </div>
+</div>
 <div class="ui-modal-backdrop" id="approveAllPendingModal" role="dialog" aria-modal="true" aria-labelledby="approveAllPendingTitle">
   <div class="ui-modal">
     <div class="ui-modal-icon" style="background:var(--okBg);color:var(--ok)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.6l4.8 4.8L19.6 6.7"></path></svg></div>
@@ -885,13 +898,37 @@ $('btnRelogin').onclick = function() {
 
 if ($('btnLogout')) {
   $('btnLogout').onclick = function() {
-    if (confirm('ต้องการออกจากระบบหลังบ้านหรือไม่?')) {
-      clearStaffToken();
-      localStorage.removeItem(LAST_ACTIVE_KEY);
-      location.reload();
+    var m = $('logoutModal');
+    if (m) m.classList.add('on');
+  };
+}
+if ($('logoutCancel')) {
+  $('logoutCancel').onclick = function() {
+    var m = $('logoutModal');
+    if (m) m.classList.remove('on');
+  };
+}
+if ($('logoutModal')) {
+  $('logoutModal').onclick = function(e) {
+    if (e.target === $('logoutModal')) {
+      $('logoutModal').classList.remove('on');
     }
   };
 }
+if ($('logoutOk')) {
+  $('logoutOk').onclick = function() {
+    var m = $('logoutModal');
+    if (m) m.classList.remove('on');
+    clearStaffToken();
+    localStorage.removeItem(LAST_ACTIVE_KEY);
+    location.reload();
+  };
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && $('logoutModal') && $('logoutModal').classList.contains('on')) {
+    $('logoutModal').classList.remove('on');
+  }
+});
 
 $('btnInstall').onclick=function(){
   $('installOverlay').style.display='none';$('locationOverlay').style.display='flex';
