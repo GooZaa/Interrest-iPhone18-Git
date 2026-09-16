@@ -129,6 +129,20 @@
       else if (d === 0) dueLabel = 'ครบกำหนดวันนี้';
       else dueLabel = 'อีก ' + d + ' วัน';
     }
+    const updateRaw = r.updated_at || r.booked_at || r.created_at;
+    let updatedAt = '';
+    if (updateRaw) {
+      updatedAt = fmtDate(updateRaw);
+    } else if (bookedDate && !isNaN(bookedDate.getTime())) {
+      updatedAt = fmtDay(bookedDate);
+    }
+    const createdRaw = r.booked_at || r.created_at;
+    let createdAt = '';
+    if (createdRaw) {
+      createdAt = fmtDate(createdRaw);
+    } else if (bookedDate && !isNaN(bookedDate.getTime())) {
+      createdAt = fmtDay(bookedDate);
+    }
     return {
       id: r.id,
       name: r.customer_name,
@@ -152,7 +166,10 @@
       deposit: r.deposit,
       billNo: r.bill_no,
       token: r.token,
-      checkUrl: getCheckUrl(r.token)
+      checkUrl: getCheckUrl(r.token),
+      updatedAt: updatedAt,
+      createdAt: createdAt,
+      bookedAt: createdAt
     };
   }
 
@@ -382,7 +399,7 @@
           promo: data.campaign,
           preOrder: data.pre_order_no,
           preBooking: data.pre_booking_no,
-          updatedAt: fmtDate(data.updated_at),
+          updatedAt: fmtDate(data.updated_at || data.booked_at || data.created_at || parseBookingDate(data)),
           dueRemainingDays: dueRemainingDays,
           aheadCount: aheadCount,
           avgWaitDays: 5,

@@ -1517,7 +1517,7 @@ function rowHtml(r){
     '</div>'+
     '<div class="col-call '+callClass+'">'+callText+'</div>'+
     '<div class="col-status" style="text-align:center">'+((r.dueRemainingDays!=null&&r.dueRemainingDays<0)?'<span class="pill p-เลยกำหนดวันนัด">ยกเลิกอัตโนมัติ</span><div class="sub" style="color:var(--danger);font-weight:600">เลยกำหนดวันนัด</div>':pill(shownStatus)+'<div class="sub">'+esc(r.dueLabel||(r.appt?('นัด '+r.appt):''))+'</div>')+'</div>'+
-    '<div class="col-updated sub">'+esc(r.updatedAt||'-')+(waitText?'<div style="margin-top:2px;color:var(--t3)">'+esc(waitText)+'</div>':'')+'</div>'+
+    '<div class="col-updated sub">'+esc(r.updatedAt||r.createdAt||r.bookedAt||'-')+(waitText?'<div style="margin-top:2px;color:var(--t3)">'+esc(waitText)+'</div>':'')+'</div>'+
     '<svg class="ic" style="color:var(--t3)"><use href="#i-chev"></use></svg></div>';
 }
 function loadList(silent){
