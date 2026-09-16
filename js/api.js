@@ -1286,33 +1286,36 @@ async validateLocationCode(tokenOrCode, code) {
         .order('booked_at', { ascending: true })
         .limit(input.qty || 50);
 
+      const calcWaitDays = (d) => {
+        if (!d) return 0;
+        const t = new Date(d).getTime();
+        if (isNaN(t)) return 0;
+        return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+      };
+
+      const mapMatchedRes = (r, matchType) => ({
+        id: r.id,
+        name: r.customer_name || r.name || '',
+        phone: r.phone || '',
+        group: r.customer_group || r.group || 'Walk-in',
+        model: r.model || '',
+        capacity: r.capacity || '',
+        color: r.color || '',
+        supplierLock: !!r.supplier_lock,
+        supplier: r.supplier || (r.supplier_lock ? 'AIS' : ''),
+        promo: r.promo || '',
+        urgent: !!r.is_urgent,
+        isUrgent: !!r.is_urgent,
+        waitDays: calcWaitDays(r.booked_at || r.created_at),
+        createdAt: fmtDate(r.booked_at || r.created_at),
+        bookedAt: fmtDate(r.booked_at || r.created_at),
+        matchType: matchType,
+        altReason: matchType === 'รับสีสำรองได้' ? 'รับสีสำรองได้' : ''
+      });
+
       return {
-        exact: (exact || []).map(r => ({
-          id: r.id,
-          name: r.customer_name,
-          phone: r.phone,
-          group: r.customer_group,
-          model: r.model,
-          capacity: r.capacity,
-          color: r.color,
-          urgent: !!r.is_urgent,
-          isUrgent: !!r.is_urgent,
-          bookedAt: fmtDate(r.booked_at),
-          matchType: 'ตรงตามที่ต้องการ'
-        })),
-        alt: (alt || []).map(r => ({
-          id: r.id,
-          name: r.customer_name,
-          phone: r.phone,
-          group: r.customer_group,
-          model: r.model,
-          capacity: r.capacity,
-          color: r.color,
-          urgent: !!r.is_urgent,
-          isUrgent: !!r.is_urgent,
-          bookedAt: fmtDate(r.booked_at),
-          matchType: 'รับสีสำรองได้'
-        }))
+        exact: (exact || []).map(r => mapMatchedRes(r, 'ตรงตามที่ต้องการ')),
+        alt: (alt || []).map(r => mapMatchedRes(r, 'รับสีสำรองได้'))
       };
     },
 
@@ -1707,6 +1710,31 @@ async validateLocationCode(tokenOrCode, code) {
       const start = f.start || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
       const end = f.end || new Date().toISOString().slice(0, 10);
 
+      // Build daily trend points for the period
+      const dayMap = {};
+      let cur = new Date(start + 'T00:00:00');
+      const endD = new Date(end + 'T23:59:59');
+      while (cur <= endD) {
+        const dStr = cur.toISOString().slice(0, 10);
+        dayMap[dStr] = { date: dStr, created: 0, done: 0 };
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      rows.forEach(r => {
+        const cDate = (r.booked_at || r.created_at || '').slice(0, 10);
+        if (dayMap[cDate]) {
+          dayMap[cDate].created++;
+        }
+        if (r.status === 'รับของแล้ว') {
+          const dDate = (r.updated_at || r.booked_at || r.created_at || '').slice(0, 10);
+          if (dayMap[dDate]) {
+            dayMap[dDate].done++;
+          }
+        }
+      });
+
+      const trend = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date));
+
       return {
         generatedAt: fmtDate(new Date()),
         appliedFilter: {
@@ -1737,9 +1765,9 @@ async validateLocationCode(tokenOrCode, code) {
         },
         period: {
           newCount: rows.length,
-          doneCount: counts['รับของแล้ว'],
-          cancelCount: counts['ยกเลิก'],
-          trend: []
+          doneCount: counts['รับของแล้ว'] || 0,
+          cancelCount: counts['ยกเลิก'] || 0,
+          trend: trend
         }
       };
     },
