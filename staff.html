@@ -215,6 +215,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
   <div style="display:flex;align-items:center;gap:10px">
     <span id="who" style="font-size:11.5px;color:var(--t3)"></span>
     <button class="hbtn" id="darkToggle" type="button" aria-label="เปิดโหมดมืด" title="เปิดโหมดมืด"></button>
+    <button class="hbtn" id="btnLogout" type="button" aria-label="ออกจากระบบ" title="ออกจากระบบ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
   </div>
 </header>
 
@@ -377,6 +378,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
     <input id="locationCode" type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="" aria-describedby="locationError">
     <div class="access-error" id="locationError" role="alert"></div>
     <button class="btn" id="btnLocation">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<div class="access-overlay" id="sessionExpiredOverlay" style="display:none">
+  <div class="access-card">
+    <div class="access-mark" style="background:#FFF2D8;color:#A15C05;box-shadow:0 10px 24px rgba(161,92,5,.15)">
+      <svg viewBox="0 0 24 24" aria-hidden="true" style="stroke:#A15C05;width:32px;height:32px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+    <h1 style="font-size:24px;margin-bottom:8px">Session หมดอายุ</h1>
+    <p style="font-size:14.5px;color:var(--t2);line-height:1.65;margin:0 0 24px">ไม่ได้ใช้งานระบบนานเกิน 3 ชั่วโมง เพื่อความปลอดภัยของข้อมูล กรุณา Login ใหม่อีกครั้ง</p>
+    <button class="btn" id="btnRelogin" style="background:var(--brand);display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg class="ic" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+      Login ระบบจองหลังบ้านอีกครั้ง
+    </button>
   </div>
 </div>
 
@@ -685,6 +700,7 @@ function hideBusy(isError,successTitle,successSub){
   });
 }
 function callApi(name){
+  if(typeof recordStaffActivity==='function') recordStaffActivity();
   var args=[].slice.call(arguments,1),busy=ACTION_BUSY[name];
   if(busy)showBusy(busy);
   if(!window.api||!window.api[name]){
@@ -734,29 +750,148 @@ document.querySelectorAll('#tabs button').forEach(function(b){
 // ---- ติดตั้งครั้งแรก + bootstrap ----
 var SESSION_TOKEN_KEY='queue_staff_session';
 var APP_INSTALLED=true;
+var INACTIVITY_TIMEOUT_MS = 3 * 60 * 60 * 1000; // 3 ชั่วโมง (10,800,000 ms)
+var LAST_ACTIVE_KEY = 'queue_staff_last_active';
+var SESSION_EXPIRED_KEY = 'queue_staff_session_expired';
+var LOCATION_LOCK_KEY = 'location_login_locked_until';
+
 function staffToken(){return localStorage.getItem(SESSION_TOKEN_KEY)||'';}
 function setStaffToken(t){if(t)localStorage.setItem(SESSION_TOKEN_KEY,t);}
 function clearStaffToken(){localStorage.removeItem(SESSION_TOKEN_KEY);}
-// token พก "เวลาหมดอายุ" ไว้ในตัว (ส่วนหน้า) จึงเช็คหมดอายุฝั่ง client ได้โดยไม่ต้องเรียก server
+
+var _lastActiveRecorded = 0;
+function recordStaffActivity() {
+  var now = Date.now();
+  if (now - _lastActiveRecorded > 15000) {
+    _lastActiveRecorded = now;
+    localStorage.setItem(LAST_ACTIVE_KEY, String(now));
+  }
+}
+['mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function(evt) {
+  window.addEventListener(evt, recordStaffActivity, { passive: true });
+});
+
 function hasLocationAccess(){
-  var t=staffToken();
-  if(!t)return false;
-  if(t==='staff_session_valid'||t.indexOf('logged_in')>-1||t.indexOf('staff_')>-1){
-    var validExp=(Date.now()+30*86400000)+'.staff_authenticated';
+  var t = staffToken();
+  if (!t) return false;
+  var lastActive = Number(localStorage.getItem(LAST_ACTIVE_KEY) || 0);
+  if (lastActive && (Date.now() - lastActive) > INACTIVITY_TIMEOUT_MS) {
+    clearStaffToken();
+    localStorage.removeItem(LAST_ACTIVE_KEY);
+    localStorage.setItem(SESSION_EXPIRED_KEY, '1');
+    return false;
+  }
+  if (t === 'staff_session_valid' || t.indexOf('logged_in') > -1 || t.indexOf('staff_') > -1) {
+    var validExp = (Date.now() + 30 * 86400000) + '.staff_authenticated';
     setStaffToken(validExp);
+    recordStaffActivity();
     return true;
   }
-  var exp=Number(String(t).split('.')[0]);
-  return isFinite(exp)&&exp>Date.now();
+  var exp = Number(String(t).split('.')[0]);
+  if (isFinite(exp) && exp > Date.now()) {
+    recordStaffActivity();
+    return true;
+  }
+  return false;
+}
+
+function handleSessionExpired() {
+  clearStaffToken();
+  localStorage.removeItem(LAST_ACTIVE_KEY);
+  localStorage.setItem(SESSION_EXPIRED_KEY, '1');
+  closePanel();
+  if ($('appLoadingOverlay')) $('appLoadingOverlay').style.display = 'none';
+  if ($('busyOverlay')) $('busyOverlay').classList.remove('on');
+  $('locationOverlay').style.display = 'none';
+  $('sessionExpiredOverlay').style.display = 'flex';
+}
+
+function checkInactivitySession() {
+  if (!staffToken()) return;
+  var lastActive = Number(localStorage.getItem(LAST_ACTIVE_KEY) || 0);
+  if (lastActive && (Date.now() - lastActive) > INACTIVITY_TIMEOUT_MS) {
+    handleSessionExpired();
+  }
+}
+setInterval(checkInactivitySession, 30000);
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') checkInactivitySession();
+});
+
+var locationLockTimer = null;
+function startLocationLock(sec) {
+  if (locationLockTimer) { clearInterval(locationLockTimer); locationLockTimer = null; }
+  var input = $('locationCode'), btn = $('btnLocation'), err = $('locationError');
+  if (input) input.disabled = true;
+  if (btn) btn.disabled = true;
+  var now = Date.now();
+  var until = Number(localStorage.getItem(LOCATION_LOCK_KEY) || 0);
+  if (!until || until <= now) {
+    until = now + Math.max(1, Number(sec) || 60) * 1000;
+    localStorage.setItem(LOCATION_LOCK_KEY, String(until));
+  }
+
+  function tick() {
+    var left = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+    var m = Math.floor(left / 60), s = left % 60;
+    var timeStr = '<b>' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s + '</b>';
+    if (err) {
+      err.innerHTML = 'รหัส Location ไม่ถูกต้อง ระบบล็อกชั่วคราว 1 นาที · ลองใหม่ได้ในอีก ' + timeStr;
+      err.classList.add('on');
+    }
+    if (left <= 0) {
+      clearInterval(locationLockTimer);
+      locationLockTimer = null;
+      localStorage.removeItem(LOCATION_LOCK_KEY);
+      if (input) { input.disabled = false; input.value = ''; input.focus(); }
+      if (btn) btn.disabled = false;
+      if (err) { err.textContent = ''; err.classList.remove('on'); }
+    }
+  }
+  tick();
+  locationLockTimer = setInterval(tick, 1000);
+}
+
+function checkLocationLock() {
+  var until = Number(localStorage.getItem(LOCATION_LOCK_KEY) || 0);
+  if (until > Date.now()) {
+    startLocationLock(Math.ceil((until - Date.now()) / 1000));
+    return true;
+  }
+  return false;
 }
 
 callApi('isInstalled').then(function(ok){
-  APP_INSTALLED=!!ok;
-  // Apps Script สร้าง iframe ใหม่หลัง refresh ทำให้ sessionStorage หายได้ จึงเก็บเฉพาะสถานะยืนยันไว้ 8 ชั่วโมง
-  if(hasLocationAccess()){ensureInstalledAndLoad();return;}
-  if(!APP_INSTALLED)$('locationError').textContent='ยืนยันรหัส Location เพื่อสร้างโครงสร้างระบบครั้งแรก';
-  $('locationOverlay').style.display='flex';
-}).catch(function(e){toast('เชื่อมต่อไม่สำเร็จ: '+e.message);});
+  APP_INSTALLED = !!ok;
+  if (hasLocationAccess()) { ensureInstalledAndLoad(); return; }
+  if (localStorage.getItem(SESSION_EXPIRED_KEY) === '1') {
+    localStorage.removeItem(SESSION_EXPIRED_KEY);
+    $('sessionExpiredOverlay').style.display = 'flex';
+    return;
+  }
+  if (!APP_INSTALLED) $('locationError').textContent = 'ยืนยันรหัส Location เพื่อสร้างโครงสร้างระบบครั้งแรก';
+  $('locationOverlay').style.display = 'flex';
+  checkLocationLock();
+}).catch(function(e){ toast('เชื่อมต่อไม่สำเร็จ: ' + e.message); });
+
+$('btnRelogin').onclick = function() {
+  $('sessionExpiredOverlay').style.display = 'none';
+  $('locationOverlay').style.display = 'flex';
+  $('locationCode').value = '';
+  $('locationError').textContent = '';
+  checkLocationLock();
+  $('locationCode').focus();
+};
+
+if ($('btnLogout')) {
+  $('btnLogout').onclick = function() {
+    if (confirm('ต้องการออกจากระบบหลังบ้านหรือไม่?')) {
+      clearStaffToken();
+      localStorage.removeItem(LAST_ACTIVE_KEY);
+      location.reload();
+    }
+  };
+}
 
 $('btnInstall').onclick=function(){
   $('installOverlay').style.display='none';$('locationOverlay').style.display='flex';
@@ -811,15 +946,27 @@ function refreshStaffDataAfterSettings(){
   });
 }
 function beginLocationAccess(){
-  var code=$('locationCode').value.trim(),err=$('locationError');err.textContent='';
+  var code=$('locationCode').value.trim(),err=$('locationError');
+  var lockedUntil=Number(localStorage.getItem(LOCATION_LOCK_KEY)||0);
+  if(Date.now()<lockedUntil){
+    startLocationLock(Math.ceil((lockedUntil-Date.now())/1000));
+    return;
+  }
+  if(!code){
+    err.textContent='กรุณากรอกรหัส Location';
+    err.classList.remove('on');void err.offsetWidth;err.classList.add('on');
+    return;
+  }
+  err.textContent='';
   $('btnLocation').disabled=true;
   callApi('validateLocationCode',code).then(function(result){
     if(!result.ok){
-      err.textContent=result.locked?'กรอกผิดหลายครั้ง กรุณารอประมาณ '+Math.max(1,Math.ceil(Number(result.retryAfterSec||0)/60))+' นาที':'รหัส Location ไม่ถูกต้อง · เหลือ '+Number(result.remaining||0)+' ครั้งก่อนพักการเข้าสู่ระบบ';
-      err.classList.remove('on');void err.offsetWidth;err.classList.add('on');
-      $('locationCode').focus();$('btnLocation').disabled=false;return;
+      $('locationCode').value='';
+      startLocationLock(result.retryAfterSec||60);
+      return;
     }
     setStaffToken(result.token);
+    recordStaffActivity();
     return ensureInstalledAndLoad();
   }).catch(function(e){
     $('appLoadingOverlay').style.display='none';$('locationOverlay').style.display='flex';

@@ -61,11 +61,11 @@ function call(name){var args=[].slice.call(arguments,1);if(!window.api||!window.
 
 /* ===== i18n (5 ภาษา · แชร์ localStorage กับหน้า Welcome/Signup) ===== */
 var I18N={
-  th:{title:'ตรวจสอบสถานะการลงชื่อแสดงความสนใจ',loading:'กำลังโหลด…',badLink:'ลิงก์ไม่ถูกต้อง',maskedHint:'ข้อมูลอื่นๆ ถูกซ่อนไว้เพื่อความปลอดภัยของข้อมูลส่วนบุคคล',verifyBtn:'ยืนยันตัวตนเพื่อดูข้อมูล',notInfo:'ระบบนี้ไม่ใช่ระบบจองสินค้า แต่เป็นระบบตรวจสอบลำดับคิวของผู้ที่ลงชื่อแสดงความสนใจไว้ตามลำดับก่อน-หลัง การลงชื่อไม่ได้เป็นการรับประกันว่าจะได้รับสินค้า และเนื่องจากสินค้ามีจำนวนจำกัด ระยะเวลาที่จะได้รับอาจเร็วหรือช้าแตกต่างกันไป',phonePrompt:'กรอกเบอร์โทรที่ใช้ตอนลงทะเบียนแสดงความสนใจ',confirm:'ยืนยัน',checking:'กำลังตรวจสอบข้อมูล…',hintRemain:'กรอกผิดเกิน 5 ครั้งระบบจะล็อกชั่วคราว · เหลืออีก {n} ครั้ง',phoneWrong:'เบอร์โทรไม่ตรงกับข้อมูลที่บันทึกไว้',genericErr:'เกิดข้อผิดพลาด',lockedMsg:'คุณใส่ข้อมูลผิดเกินจำนวนที่กำหนด กรุณาทำรายการใหม่',lockCountdown:'ระบบล็อกชั่วคราว · ลองใหม่ได้ในอีก {t}',verified:'ยืนยันตัวตนแล้ว',condition:'เงื่อนไข',aisOnly:'เครื่อง AIS เท่านั้น',preOrder:'เลข Pre-Order',preBooking:'Pre-Booking AIS',depositBill:'มัดจำของรายการนี้',depositVal:'บิล {no} · {amt} บาท',dueDate:'ครบกำหนดรับ',appt:'นัดรับ',moreInfo:'ข้อมูลเพิ่มเติม',statusTitle:'การอัปเดตสถานะ',lastUpdate:'อัปเดตล่าสุด {t}',st_appt_pre:'ท่านมีวันนัดรับสินค้าแล้ว โปรดมาตามวันที่นัดหมาย ภายใน {n} วัน',st_appt_over:'เลยวันรับสินค้าที่กำหนดแล้ว ทางร้านขออนุญาตยกเลิกคิวของท่าน เพื่อส่งต่อสิทธิ์ให้ลูกค้าลำดับถัดไป',st_appt_ok:'ท่านมีวันนัดรับสินค้าแล้ว โปรดมาตามวันที่นัดหมาย ถึงวันที่ {date} ({n} วัน)',st_wait:'ระบบได้รับการลงชื่อแสดงความสนใจของท่านแล้ว ขณะนี้อยู่ระหว่างรอสินค้าเข้า',st_arrived:'สินค้าเข้าร้านแล้ว พนักงานกำลังติดต่อเพื่อนัดรับสินค้า',st_done:'รายการนี้รับสินค้าเรียบร้อยแล้ว',st_generic:'สถานะการลงชื่อของท่านได้รับการอัปเดตแล้ว',remarkChangeLabel:'สินค้ามีจำนวนจำกัด',remarkChange:'เนื่องจากสินค้ามีจำนวนจำกัด จึงไม่สามารถเปลี่ยนแปลงรุ่น สี หรือความจุที่ท่านลงทะเบียนไว้ได้',remarkOntimeLabel:'กรุณามารับตรงเวลา',remarkOntime:'กรุณามารับสินค้าตามวันและเวลาที่นัดหมาย ภายในระยะเวลาที่กำหนด หากเลยกำหนด ทางร้านขออนุญาตยกเลิกคิวของท่านโดยอัตโนมัติ เพื่อส่งมอบสิทธิ์ให้ลูกค้าท่านถัดไป ต้องขออภัยในความไม่สะดวกมา ณ ที่นี้',aheadQueue:'คิวก่อนหน้า (สเปกเดียวกัน)',people:'{n} ราย',avgWait:'ค่าเฉลี่ยรอ (คนก่อนหน้า)',days:'{n} วัน'},
-  en:{title:'Check Interest Registration Status',loading:'Loading…',badLink:'Invalid link',maskedHint:'Other details are hidden to protect your personal information.',verifyBtn:'Verify to view details',notInfo:'This is not a product reservation system. It only shows your position in the interest-registration queue, in the order people signed up. Registering does not guarantee that you will receive the item, and because stock is limited, the waiting time may be shorter or longer.',phonePrompt:'Enter the phone number used when registering your interest',confirm:'Confirm',checking:'Verifying…',hintRemain:'After 5 wrong attempts the system locks temporarily · {n} attempts left',phoneWrong:'The phone number does not match our records',genericErr:'An error occurred',lockedMsg:'You have entered incorrect information too many times. Please try again.',lockCountdown:'Temporarily locked · try again in {t}',verified:'Identity verified',condition:'Condition',aisOnly:'AIS network only',preOrder:'Pre-Order No.',preBooking:'AIS Pre-Booking',depositBill:'Deposit receipt',depositVal:'No. {no} · {amt} THB',dueDate:'Pickup deadline',appt:'Pickup appointment',moreInfo:'Additional info',statusTitle:'Status update',lastUpdate:'Last updated {t}',st_appt_pre:'Your pickup appointment is set. Please come on the appointed date, within {n} day(s).',st_appt_over:'The pickup deadline has passed. We may cancel your place in the queue and offer it to the next customer.',st_appt_ok:'Your pickup appointment is set. Please come by {date} ({n} day(s) left).',st_wait:'We have received your interest registration. It is currently awaiting stock.',st_arrived:'Your item has arrived. Our staff will contact you to arrange pickup.',st_done:'This item has been picked up.',st_generic:'Your registration status has been updated.',remarkChangeLabel:'Limited stock',remarkChange:'Because stock is limited, the model, colour, or capacity you registered cannot be changed.',remarkOntimeLabel:'Please arrive on time',remarkOntime:'Please collect your item on the appointed date and time, within the specified period. If the deadline passes, your place in the queue will be cancelled automatically and offered to the next customer. We apologise for any inconvenience.',aheadQueue:'Queue ahead (same spec)',people:'{n}',avgWait:'Avg. wait (previous customers)',days:'{n} day(s)'},
-  zh:{title:'查询意向登记状态',loading:'加载中…',badLink:'链接无效',maskedHint:'为保护您的个人信息，其他资料已隐藏。',verifyBtn:'验证身份以查看信息',notInfo:'本系统并非商品预订系统，仅用于查询您在意向登记中的排队顺序（按登记先后排列）。登记并不保证您能获得商品；由于数量有限，到货时间可能有快有慢。',phonePrompt:'请输入登记意向时使用的电话号码',confirm:'确认',checking:'正在核对…',hintRemain:'错误超过 5 次将暂时锁定 · 还剩 {n} 次',phoneWrong:'电话号码与记录不符',genericErr:'发生错误',lockedMsg:'您输入的信息错误次数过多，请重新操作。',lockCountdown:'暂时锁定 · {t} 后可重试',verified:'已验证身份',condition:'条件',aisOnly:'仅限 AIS 网络',preOrder:'预购编号',preBooking:'AIS Pre-Booking',depositBill:'订金单',depositVal:'单号 {no} · {amt} 泰铢',dueDate:'取货截止',appt:'取货预约',moreInfo:'补充信息',statusTitle:'状态更新',lastUpdate:'最后更新 {t}',st_appt_pre:'已为您安排取货预约，请在预约日期起 {n} 天内到店取货。',st_appt_over:'已超过取货期限，我们可能取消您的排队名额并转给下一位顾客。',st_appt_ok:'已为您安排取货预约，请在 {date} 前（剩 {n} 天）到店取货。',st_wait:'已收到您的意向登记，正在等待到货。',st_arrived:'商品已到店，店员将联系您安排取货。',st_done:'此订单已完成取货。',st_generic:'您的登记状态已更新。',remarkChangeLabel:'商品数量有限',remarkChange:'由于商品数量有限，您登记的型号、颜色或容量将无法更改。',remarkOntimeLabel:'请准时取货',remarkOntime:'请在预约的日期和时间、于规定期限内取货。若超过期限，您的排队名额将自动取消并转给下一位顾客，敬请谅解。',aheadQueue:'前面排队（相同规格）',people:'{n} 位',avgWait:'平均等待（前面顾客）',days:'{n} 天'},
-  ko:{title:'관심 등록 상태 확인',loading:'불러오는 중…',badLink:'잘못된 링크',maskedHint:'개인정보 보호를 위해 나머지 정보는 숨겨져 있습니다.',verifyBtn:'본인 확인 후 정보 보기',notInfo:'이 시스템은 상품 예약 시스템이 아니라, 관심 등록 순서(등록 선후 순)를 확인하는 시스템입니다. 등록이 상품 수령을 보장하지 않으며, 수량이 한정되어 있어 수령 시점은 빠르거나 늦을 수 있습니다.',phonePrompt:'관심 등록 시 사용한 전화번호를 입력하세요',confirm:'확인',checking:'확인 중…',hintRemain:'5회 이상 틀리면 일시적으로 잠깁니다 · {n}회 남음',phoneWrong:'전화번호가 등록된 정보와 일치하지 않습니다',genericErr:'오류가 발생했습니다',lockedMsg:'정보를 규정 횟수 이상 잘못 입력하셨습니다. 다시 시도해 주세요.',lockCountdown:'일시 잠금 · {t} 후 다시 시도',verified:'본인 확인 완료',condition:'조건',aisOnly:'AIS 전용',preOrder:'프리오더 번호',preBooking:'AIS 프리부킹',depositBill:'예약금 영수증',depositVal:'번호 {no} · {amt} THB',dueDate:'수령 기한',appt:'수령 예약',moreInfo:'추가 정보',statusTitle:'상태 업데이트',lastUpdate:'마지막 업데이트 {t}',st_appt_pre:'수령 예약이 완료되었습니다. 예약일로부터 {n}일 이내에 방문해 주세요.',st_appt_over:'수령 기한이 지났습니다. 대기 순번을 취소하고 다음 고객에게 넘길 수 있습니다.',st_appt_ok:'수령 예약이 완료되었습니다. {date}까지 ({n}일 남음) 방문해 주세요.',st_wait:'관심 등록이 접수되었습니다. 현재 입고 대기 중입니다.',st_arrived:'상품이 입고되었습니다. 직원이 수령 안내를 위해 연락드립니다.',st_done:'이 건은 수령이 완료되었습니다.',st_generic:'등록 상태가 업데이트되었습니다.',remarkChangeLabel:'수량 한정',remarkChange:'수량이 한정되어 있어 등록하신 모델·색상·용량은 변경하실 수 없습니다.',remarkOntimeLabel:'시간을 지켜 방문해 주세요',remarkOntime:'지정된 기간 내 예약하신 날짜와 시간에 상품을 수령해 주세요. 기한이 지나면 대기 순번이 자동으로 취소되어 다음 고객에게 넘어갑니다. 불편을 드려 죄송합니다.',aheadQueue:'앞선 대기 (동일 사양)',people:'{n}명',avgWait:'평균 대기 (이전 고객)',days:'{n}일'},
-  ja:{title:'関心登録の状況確認',loading:'読み込み中…',badLink:'リンクが無効です',maskedHint:'個人情報保護のため、その他の情報は非表示です。',verifyBtn:'本人確認して情報を見る',notInfo:'これは商品予約システムではなく、関心登録の順番（登録の先着順）を確認するためのシステムです。登録は商品のお受け取りを保証するものではなく、数量が限られているため、受け取り時期は早い場合も遅い場合もあります。',phonePrompt:'関心登録の際に使用した電話番号を入力してください',confirm:'確認',checking:'確認中…',hintRemain:'5回間違えると一時的にロックされます · 残り {n} 回',phoneWrong:'電話番号が登録情報と一致しません',genericErr:'エラーが発生しました',lockedMsg:'情報の入力を規定回数以上間違えました。もう一度お試しください。',lockCountdown:'一時ロック中 · {t} 後に再試行できます',verified:'本人確認済み',condition:'条件',aisOnly:'AIS 専用',preOrder:'予約番号（Pre-Order）',preBooking:'AIS プリブッキング',depositBill:'手付金伝票',depositVal:'番号 {no} · {amt} バーツ',dueDate:'受取期限',appt:'受取予約',moreInfo:'追加情報',statusTitle:'ステータス更新',lastUpdate:'最終更新 {t}',st_appt_pre:'受取予約が確定しました。予約日から {n} 日以内にご来店ください。',st_appt_over:'受取期限を過ぎました。お客様の順番をキャンセルし、次のお客様にご案内する場合があります。',st_appt_ok:'受取予約が確定しました。{date} まで（残り {n} 日）にご来店ください。',st_wait:'関心登録を受け付けました。現在入荷待ちです。',st_arrived:'商品が入荷しました。スタッフが受取のご案内でご連絡します。',st_done:'この注文は受取が完了しました。',st_generic:'登録状況が更新されました。',remarkChangeLabel:'数量限定',remarkChange:'数量が限られているため、ご登録の機種・カラー・容量の変更はできません。',remarkOntimeLabel:'時間どおりにご来店ください',remarkOntime:'指定期間内の予約日時に商品をお受け取りください。期限を過ぎるとお客様の順番は自動的にキャンセルされ、次のお客様にご案内いたします。ご不便をおかけし申し訳ございません。',aheadQueue:'前の待ち（同一仕様）',people:'{n} 件',avgWait:'平均待ち（前のお客様）',days:'{n} 日'}
+  th:{title:'ตรวจสอบสถานะการลงชื่อแสดงความสนใจ',loading:'กำลังโหลด…',badLink:'ลิงก์ไม่ถูกต้อง',maskedHint:'ข้อมูลอื่นๆ ถูกซ่อนไว้เพื่อความปลอดภัยของข้อมูลส่วนบุคคล',verifyBtn:'ยืนยันตัวตนเพื่อดูข้อมูล',notInfo:'ระบบนี้ไม่ใช่ระบบจองสินค้า แต่เป็นระบบตรวจสอบลำดับคิวของผู้ที่ลงชื่อแสดงความสนใจไว้ตามลำดับก่อน-หลัง การลงชื่อไม่ได้เป็นการรับประกันว่าจะได้รับสินค้า และเนื่องจากสินค้ามีจำนวนจำกัด ระยะเวลาที่จะได้รับอาจเร็วหรือช้าแตกต่างกันไป',phonePrompt:'กรอกเบอร์โทรที่ใช้ตอนลงทะเบียนแสดงความสนใจ',confirm:'ยืนยัน',checking:'กำลังตรวจสอบข้อมูล…',hintRemain:'กรอกผิดเกิน 5 ครั้งระบบจะล็อกชั่วคราว 1 นาที · เหลืออีก {n} ครั้ง',phoneWrong:'เบอร์โทรไม่ตรงกับข้อมูลที่บันทึกไว้',genericErr:'เกิดข้อผิดพลาด',lockedMsg:'คุณใส่ข้อมูลผิดเกินจำนวนที่กำหนด ระบบล็อกชั่วคราว 1 นาที กรุณารอสักครู่',lockCountdown:'ระบบล็อกชั่วคราว 1 นาที · ลองใหม่ได้ในอีก {t}',verified:'ยืนยันตัวตนแล้ว',condition:'เงื่อนไข',aisOnly:'เครื่อง AIS เท่านั้น',preOrder:'เลข Pre-Order',preBooking:'Pre-Booking AIS',depositBill:'มัดจำของรายการนี้',depositVal:'บิล {no} · {amt} บาท',dueDate:'ครบกำหนดรับ',appt:'นัดรับ',moreInfo:'ข้อมูลเพิ่มเติม',statusTitle:'การอัปเดตสถานะ',lastUpdate:'อัปเดตล่าสุด {t}',st_appt_pre:'ท่านมีวันนัดรับสินค้าแล้ว โปรดมาตามวันที่นัดหมาย ภายใน {n} วัน',st_appt_over:'เลยวันรับสินค้าที่กำหนดแล้ว ทางร้านขออนุญาตยกเลิกคิวของท่าน เพื่อส่งต่อสิทธิ์ให้ลูกค้าลำดับถัดไป',st_appt_ok:'ท่านมีวันนัดรับสินค้าแล้ว โปรดมาตามวันที่นัดหมาย ถึงวันที่ {date} ({n} วัน)',st_wait:'ระบบได้รับการลงชื่อแสดงความสนใจของท่านแล้ว ขณะนี้อยู่ระหว่างรอสินค้าเข้า',st_arrived:'สินค้าเข้าร้านแล้ว พนักงานกำลังติดต่อเพื่อนัดรับสินค้า',st_done:'รายการนี้รับสินค้าเรียบร้อยแล้ว',st_generic:'สถานะการลงชื่อของท่านได้รับการอัปเดตแล้ว',remarkChangeLabel:'สินค้ามีจำนวนจำกัด',remarkChange:'เนื่องจากสินค้ามีจำนวนจำกัด จึงไม่สามารถเปลี่ยนแปลงรุ่น สี หรือความจุที่ท่านลงทะเบียนไว้ได้',remarkOntimeLabel:'กรุณามารับตรงเวลา',remarkOntime:'กรุณามารับสินค้าตามวันและเวลาที่นัดหมาย ภายในระยะเวลาที่กำหนด หากเลยกำหนด ทางร้านขออนุญาตยกเลิกคิวของท่านโดยอัตโนมัติ เพื่อส่งมอบสิทธิ์ให้ลูกค้าท่านถัดไป ต้องขออภัยในความไม่สะดวกมา ณ ที่นี้',aheadQueue:'คิวก่อนหน้า (สเปกเดียวกัน)',people:'{n} ราย',avgWait:'ค่าเฉลี่ยรอ (คนก่อนหน้า)',days:'{n} วัน'},
+  en:{title:'Check Interest Registration Status',loading:'Loading…',badLink:'Invalid link',maskedHint:'Other details are hidden to protect your personal information.',verifyBtn:'Verify to view details',notInfo:'This is not a product reservation system. It only shows your position in the interest-registration queue, in the order people signed up. Registering does not guarantee that you will receive the item, and because stock is limited, the waiting time may be shorter or longer.',phonePrompt:'Enter the phone number used when registering your interest',confirm:'Confirm',checking:'Verifying…',hintRemain:'After 5 wrong attempts the system locks for 1 minute · {n} attempts left',phoneWrong:'The phone number does not match our records',genericErr:'An error occurred',lockedMsg:'Too many incorrect attempts. System temporarily locked for 1 minute.',lockCountdown:'Temporarily locked for 1 min · try again in {t}',verified:'Identity verified',condition:'Condition',aisOnly:'AIS network only',preOrder:'Pre-Order No.',preBooking:'AIS Pre-Booking',depositBill:'Deposit receipt',depositVal:'No. {no} · {amt} THB',dueDate:'Pickup deadline',appt:'Pickup appointment',moreInfo:'Additional info',statusTitle:'Status update',lastUpdate:'Last updated {t}',st_appt_pre:'Your pickup appointment is set. Please come on the appointed date, within {n} day(s).',st_appt_over:'The pickup deadline has passed. We may cancel your place in the queue and offer it to the next customer.',st_appt_ok:'Your pickup appointment is set. Please come by {date} ({n} day(s) left).',st_wait:'We have received your interest registration. It is currently awaiting stock.',st_arrived:'Your item has arrived. Our staff will contact you to arrange pickup.',st_done:'This item has been picked up.',st_generic:'Your registration status has been updated.',remarkChangeLabel:'Limited stock',remarkChange:'Because stock is limited, the model, colour, or capacity you registered cannot be changed.',remarkOntimeLabel:'Please arrive on time',remarkOntime:'Please collect your item on the appointed date and time, within the specified period. If the deadline passes, your place in the queue will be cancelled automatically and offered to the next customer. We apologise for any inconvenience.',aheadQueue:'Queue ahead (same spec)',people:'{n}',avgWait:'Avg. wait (previous customers)',days:'{n} day(s)'},
+  zh:{title:'查询意向登记状态',loading:'加载中…',badLink:'链接无效',maskedHint:'为保护您的个人信息，其他资料已隐藏。',verifyBtn:'验证身份以查看信息',notInfo:'本系统并非商品预订系统，仅用于查询您在意向登记中的排队顺序（按登记先后排列）。登记并不保证您能获得商品；由于数量有限，到货时间可能有快有慢。',phonePrompt:'请输入登记意向时使用的电话号码',confirm:'确认',checking:'正在核对…',hintRemain:'错误超过 5 次将锁定 1 分钟 · 还剩 {n} 次',phoneWrong:'电话号码与记录不符',genericErr:'发生错误',lockedMsg:'输入错误次数过多，系统已锁定 1 分钟。',lockCountdown:'系统锁定 1 分钟 · {t} 后可重试',verified:'已验证身份',condition:'条件',aisOnly:'仅限 AIS 网络',preOrder:'预购编号',preBooking:'AIS Pre-Booking',depositBill:'订金单',depositVal:'单号 {no} · {amt} 泰铢',dueDate:'取货截止',appt:'取货预约',moreInfo:'补充信息',statusTitle:'状态更新',lastUpdate:'最后更新 {t}',st_appt_pre:'已为您安排取货预约，请在预约日期起 {n} 天内到店取货。',st_appt_over:'已超过取货期限，我们可能取消您的排队名额并转给下一位顾客。',st_appt_ok:'已为您安排取货预约，请在 {date} 前（剩 {n} 天）到店取货。',st_wait:'已收到您的意向登记，正在等待到货。',st_arrived:'商品已到店，店员将联系您安排取货。',st_done:'此订单已完成取货。',st_generic:'您的登记状态已更新。',remarkChangeLabel:'商品数量有限',remarkChange:'由于商品数量有限，您登记的型号、颜色或容量将无法更改。',remarkOntimeLabel:'请准时取货',remarkOntime:'请在预约的日期和时间、于规定期限内取货。若超过期限，您的排队名额将自动取消并转给下一位顾客，敬请谅解。',aheadQueue:'前面排队（相同规格）',people:'{n} 位',avgWait:'平均等待（前面顾客）',days:'{n} 天'},
+  ko:{title:'관심 등록 상태 확인',loading:'불러오는 중…',badLink:'잘못된 링크',maskedHint:'개인정보 보호를 위해 나머지 정보는 숨겨져 있습니다.',verifyBtn:'본인 확인 후 정보 보기',notInfo:'이 시스템은 상품 예약 시스템이 아니라, 관심 등록 순서(등록 선후 순)를 확인하는 시스템입니다. 등록이 상품 수령을 보장하지 않으며, 수량이 한정되어 있어 수령 시점은 빠르거나 늦을 수 있습니다.',phonePrompt:'관심 등록 시 사용한 전화번호를 입력하세요',confirm:'확인',checking:'확인 중…',hintRemain:'5회 이상 틀리면 1분간 잠깁니다 · {n}회 남음',phoneWrong:'전화번호가 등록된 정보와 일치하지 않습니다',genericErr:'오류가 발생했습니다',lockedMsg:'정보를 규정 횟수 이상 잘못 입력하셨습니다. 다시 시도해 주세요.',lockCountdown:'1분간 일시 잠금 · {t} 후 다시 시도',verified:'본인 확인 완료',condition:'조건',aisOnly:'AIS 전용',preOrder:'프리오더 번호',preBooking:'AIS 프리부킹',depositBill:'예약금 영수증',depositVal:'번호 {no} · {amt} THB',dueDate:'수령 기한',appt:'수령 예약',moreInfo:'추가 정보',statusTitle:'상태 업데이트',lastUpdate:'마지막 업데이트 {t}',st_appt_pre:'수령 예약이 완료되었습니다. 예약일로부터 {n}일 이내에 방문해 주세요.',st_appt_over:'수령 기한이 지났습니다. 대기 순번을 취소하고 다음 고객에게 넘길 수 있습니다.',st_appt_ok:'수령 예약이 완료되었습니다. {date}까지 ({n}일 남음) 방문해 주세요.',st_wait:'관심 등록이 접수되었습니다. 현재 입고 대기 중입니다.',st_arrived:'상품이 입고되었습니다. 직원이 수령 안내를 위해 연락드립니다.',st_done:'이 건은 수령이 완료되었습니다.',st_generic:'등록 상태가 업데이트되었습니다.',remarkChangeLabel:'수량 한정',remarkChange:'수량이 한정되어 있어 등록하신 모델·색상·용량은 변경하실 수 없습니다.',remarkOntimeLabel:'시간을 지켜 방문해 주세요',remarkOntime:'지정된 기간 내 예약하신 날짜와 시간에 상품을 수령해 주세요. 기한이 지나면 대기 순번이 자동으로 취소되어 다음 고객에게 넘어갑니다. 불편을 드려 죄송합니다.',aheadQueue:'앞선 대기 (동일 사양)',people:'{n}명',avgWait:'평균 대기 (이전 고객)',days:'{n}일'},
+  ja:{title:'関心登録の状況確認',loading:'読み込み中…',badLink:'リンクが無効です',maskedHint:'個人情報保護のため、その他の情報は非表示です。',verifyBtn:'本人確認して情報を見る',notInfo:'これは商品予約システムではなく、関心登録の順番（登録の先着順）を確認するためのシステムです。登録は商品のお受け取りを保証するものではなく、数量が限られているため、受け取り時期は早い場合も遅い場合もあります。',phonePrompt:'関心登録の際に使用した電話番号を入力してください',confirm:'確認',checking:'確認中…',hintRemain:'5回間違えると1分間ロックされます · 残り {n} 回',phoneWrong:'電話番号が登録情報と一致しません',genericErr:'エラーが発生しました',lockedMsg:'入力規定回数を超えたため、1分間ロックされます。',lockCountdown:'1分間ロック中 · {t} 後に再試行できます',verified:'本人確認済み',condition:'条件',aisOnly:'AIS 専用',preOrder:'予約番号（Pre-Order）',preBooking:'AIS プリブッキング',depositBill:'手付金伝票',depositVal:'番号 {no} · {amt} バーツ',dueDate:'受取期限',appt:'受取予約',moreInfo:'追加情報',statusTitle:'ステータス更新',lastUpdate:'最終更新 {t}',st_appt_pre:'受取予約が確定しました。予約日から {n} 日以内にご来店ください。',st_appt_over:'受取期限を過ぎました。お客様の順番をキャンセルし、次のお客様にご案内する場合があります。',st_appt_ok:'受取予約が確定しました。{date} まで（残り {n} 日）にご来店ください。',st_wait:'関心登録を受け付けました。現在入荷待ちです。',st_arrived:'商品が入荷しました。スタッフが受取のご案内でご連絡します。',st_done:'この注文は受取が完了しました。',st_generic:'登録状況が更新されました。',remarkChangeLabel:'数量限定',remarkChange:'数量が限られているため、ご登録の機種・カラー・容量の変更はできません。',remarkOntimeLabel:'時間どおりにご来店ください',remarkOntime:'指定期間内の予約日時に商品をお受け取りください。期限を過ぎるとお客様の順番は自動的にキャンセルされ、次のお客様にご案内いたします。ご不便をおかけし申し訳ございません。',aheadQueue:'前の待ち（同一仕様）',people:'{n} 件',avgWait:'平均待ち（前のお客様）',days:'{n} 日'}
 };
 I18N.th.price='ราคา';I18N.th.priceUnit='บาท';
 I18N.en.price='Price';I18N.en.priceUnit='THB';
@@ -92,6 +92,12 @@ function rerender(){
 
 function renderMasked(d){
   VIEW='masked'; DATA=d;
+  var lockKey='cust_lock_until_'+token;
+  var lockedUntil=Number(localStorage.getItem(lockKey)||0);
+  if(lockedUntil>Date.now()){
+    showVerifyForm();
+    return;
+  }
   var h='<div class="order">'+esc(d.id)+'</div>';
   h+='<p style="margin:10px 0 0;font-size:16px;font-weight:600">'+esc(d.maskedName)+'</p>';
   h+='<p style="margin:3px 0 0;font-size:13px;color:var(--t2)">'+esc(d.maskedPhone)+'</p>';
@@ -108,21 +114,38 @@ var lockTimer=null;
 function showVerifyForm(){
   VIEW='verify';
   if(lockTimer){clearInterval(lockTimer);lockTimer=null;}
-  $('box').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--t2)">'+t('phonePrompt')+'</p>'+
-    '<input id="vphone" type="tel" inputmode="tel" placeholder="0812345678">'+
-    '<button class="btn" id="btnGo">'+t('confirm')+'</button>'+
-    '<p class="err" id="verr" style="display:none"></p>'+
-    '<p class="hint" id="vhint">'+tt('hintRemain',{n:'<b id="vremain">5</b>'})+'</p>';
+  var lockKey='cust_lock_until_'+token;
+  var lockedUntil=Number(localStorage.getItem(lockKey)||0);
+  var isLocked=(lockedUntil>Date.now());
+  var failKey='cust_fails_'+token;
+  var fails=Number(localStorage.getItem(failKey)||0);
+  var remain=Math.max(1,5-fails);
+
+  $('box').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--t2)">'+t('phonePrompt')+'</p>'+\
+    '<input id="vphone" type="tel" inputmode="tel" placeholder="0812345678">'+\
+    '<button class="btn" id="btnGo">'+t('confirm')+'</button>'+\
+    '<p class="err" id="verr" style="display:none"></p>'+\
+    '<p class="hint" id="vhint">'+tt('hintRemain',{n:'<b id="vremain">'+remain+'</b>'})+'</p>';
   $('btnGo').onclick=submitVerify;
   $('vphone').addEventListener('keydown',function(e){if(e.key==='Enter')submitVerify();});
+
+  if(isLocked){
+    startLock(Math.ceil((lockedUntil-Date.now())/1000));
+  }
 }
 function submitVerify(){
   var btn=$('btnGo'); if(btn.disabled) return;
+  var lockKey='cust_lock_until_'+token;
+  var lockedUntil=Number(localStorage.getItem(lockKey)||0);
+  if(Date.now()<lockedUntil){
+    startLock(Math.ceil((lockedUntil-Date.now())/1000));
+    return;
+  }
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>'+t('checking');
   call('verifyAndReveal',token,$('vphone').value).then(function(res){
     if(res&&res.ok){renderFull(res.data);return;}
     btn.disabled=false; btn.textContent=t('confirm');
-    if(res&&res.locked){startLock(res.lockedSec);return;}
+    if(res&&res.locked){startLock(res.lockedSec||60);return;}
     var v=$('verr'); v.style.display='block'; v.textContent=t('phoneWrong');
     if($('vremain'))$('vremain').textContent=(res&&res.remaining!=null)?res.remaining:'';
     $('box').classList.remove('shake');void $('box').offsetWidth;$('box').classList.add('shake');$('vphone').focus();
@@ -137,18 +160,27 @@ function startLock(sec){
   if(btn){btn.disabled=true; btn.textContent=t('confirm');}
   if(input)input.disabled=true;
   if(err){err.style.display='block'; err.textContent=t('lockedMsg');}
-  var left=Math.max(1,Number(sec)||180);
+  var lockKey='cust_lock_until_'+token;
+  var now=Date.now();
+  var until=Number(localStorage.getItem(lockKey)||0);
+  if(!until||until<=now){
+    until=now+Math.max(1,Number(sec)||60)*1000;
+    localStorage.setItem(lockKey,String(until));
+  }
   function tick(){
+    var left=Math.max(0,Math.ceil((until-Date.now())/1000));
     var m=Math.floor(left/60), s=left%60;
-    if(hint)hint.innerHTML=tt('lockCountdown',{t:'<b>'+m+':'+(s<10?'0':'')+s+'</b>'});
+    var timeStr='<b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+'</b>';
+    if(hint)hint.innerHTML=tt('lockCountdown',{t:timeStr});
     if(left<=0){
       clearInterval(lockTimer);lockTimer=null;
-      if(input)input.disabled=false;
+      localStorage.removeItem(lockKey);
+      localStorage.removeItem('cust_fails_'+token);
+      if(input){input.disabled=false;input.value='';input.focus();}
       if(btn)btn.disabled=false;
       if(err)err.style.display='none';
       if(hint)hint.innerHTML=tt('hintRemain',{n:'<b id="vremain">5</b>'});
     }
-    left--;
   }
   tick(); lockTimer=setInterval(tick,1000);
 }

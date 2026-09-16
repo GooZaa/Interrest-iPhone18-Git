@@ -297,13 +297,39 @@
       const { data, error } = await sb().from('reservations').select('*').eq('token', token).single();
       if (error || !data) throw new Error('ไม่พบข้อมูล');
 
+      const LOCK_KEY = 'cust_lock_until_' + token;
+      const FAIL_KEY = 'cust_fails_' + token;
+      const lockedUntil = Number(localStorage.getItem(LOCK_KEY) || 0);
+      const now = Date.now();
+
+      // 1. If currently locked, refuse ANY input (even if correct phone is entered)
+      if (now < lockedUntil) {
+        const secLeft = Math.max(1, Math.ceil((lockedUntil - now) / 1000));
+        return { ok: false, locked: true, lockedSec: secLeft };
+      }
+
+      // If previous lock time has passed, remove expired keys
+      if (lockedUntil && now >= lockedUntil) {
+        localStorage.removeItem(LOCK_KEY);
+        localStorage.removeItem(FAIL_KEY);
+      }
+
       const expectedPhone = normPhone(data.phone);
       if (cleanInput !== expectedPhone) {
-        let fails = Number(sessionStorage.getItem('verify_fails_' + token) || 0) + 1;
-        sessionStorage.setItem('verify_fails_' + token, String(fails));
-        if (fails >= 5) return { ok: false, locked: true, lockedSec: 180 };
+        let fails = Number(localStorage.getItem(FAIL_KEY) || 0) + 1;
+        localStorage.setItem(FAIL_KEY, String(fails));
+        if (fails >= 5) {
+          const newLockUntil = Date.now() + 60 * 1000; // ล็อก 1 นาที (60 วินาที)
+          localStorage.setItem(LOCK_KEY, String(newLockUntil));
+          localStorage.removeItem(FAIL_KEY);
+          return { ok: false, locked: true, lockedSec: 60 };
+        }
         return { ok: false, locked: false, remaining: 5 - fails };
       }
+
+      // Phone is correct and not locked: clear state
+      localStorage.removeItem(LOCK_KEY);
+      localStorage.removeItem(FAIL_KEY);
 
       let dueRemainingDays = 0;
       if (data.due_date) {
@@ -384,13 +410,30 @@ async validateLocationCode(tokenOrCode, code) {
         console.warn('Fallback location code check');
       }
 
+      const LOCK_KEY = 'location_login_locked_until';
+      const lockedUntil = Number(localStorage.getItem(LOCK_KEY) || 0);
+      const now = Date.now();
+
+      // If currently locked, refuse
+      if (now < lockedUntil) {
+        const retryAfterSec = Math.max(1, Math.ceil((lockedUntil - now) / 1000));
+        return { ok: false, locked: true, retryAfterSec: retryAfterSec };
+      }
+
       if (validCodes.includes(c)) {
+        localStorage.removeItem(LOCK_KEY);
         const expTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
         const token = expTime + '.staff_authenticated';
         sessionStorage.setItem('staff_auth_token', token);
+        localStorage.setItem('queue_staff_last_active', String(Date.now()));
+        localStorage.removeItem('queue_staff_session_expired');
         return { ok: true, token: token };
       }
-      return { ok: false, locked: false, remaining: 3 };
+
+      // If incorrect -> Lock for 1 minute (60 seconds)
+      const lockSec = 60;
+      localStorage.setItem(LOCK_KEY, String(now + lockSec * 1000));
+      return { ok: false, locked: true, retryAfterSec: lockSec };
     },
 
     async getBootstrap(tokenOrForce, force) {

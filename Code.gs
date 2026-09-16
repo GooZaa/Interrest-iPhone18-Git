@@ -259,9 +259,9 @@ function isInstalled(_tok) {
  * รหัสถูกต้อง → ออก token เซ็นด้วย secret + เวลาหมดอายุ; ทุกฟังก์ชันพนักงาน
  * เรียก assertStaff_(token) ก่อน จึงเรียกจาก console โดยไม่รู้รหัสไม่ได้
  * ==========================================================*/
-const SESSION_TTL_MS = 8 * 60 * 60 * 1000;       // อายุเซสชัน 8 ชั่วโมง
-const LOCATION_MAX_FAILS = 5;
-const LOCATION_LOCK_SEC = 180;
+const SESSION_TTL_MS = 3 * 60 * 60 * 1000;       // อายุเซสชัน 8 ชั่วโมง
+const LOCATION_MAX_FAILS = 1;
+const LOCATION_LOCK_SEC = 60;
 
 function scriptProps_() { return PropertiesService.getScriptProperties(); }
 
@@ -2151,7 +2151,7 @@ function verifyAndReveal(token, phone) {
   if (!token) throw new Error('ไม่พบข้อมูลการจอง');
   const cache = CacheService.getScriptCache();
   const failKey = 'fail_' + token, lockKey = 'lock_' + token;
-  const MAX_FAILS = 5, LOCK_SEC = 180;   // ล็อก 3 นาทีหลังผิดครบ 5 ครั้ง
+  const MAX_FAILS = 5, LOCK_SEC = 60;   // ล็อก 3 นาทีหลังผิดครบ 5 ครั้ง
   const now = Date.now();
   const verifyLock = LockService.getScriptLock(); verifyLock.waitLock(5000);
   try {
