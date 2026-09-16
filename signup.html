@@ -238,7 +238,7 @@ document.querySelectorAll('[data-ais]').forEach(function(el){el.onclick=function
 function renderPromo(){
   var box=$('promoBox'), section=$('aisSection');
   var thaiOnly = BOOT && (BOOT.aisThaiOnly !== undefined ? BOOT.aisThaiOnly : BOOT.aisPromoThaiOnly);
-  if(!BOOT||!BOOT.supplierLockEnabled||!BOOT.alternativeOptionsEnabled||(thaiOnly&&LANG!=='th')){wantAIS=false;selectedPromo='';section.style.display='none';box.style.display='none';return;}
+  if(!BOOT||!BOOT.supplierLockEnabled||(thaiOnly&&LANG!=='th')){wantAIS=false;selectedPromo='';section.style.display='none';box.style.display='none';return;}
   section.style.display='block';
   if(!wantAIS||!BOOT){box.style.display='none';return;}
   box.style.display='block';
