@@ -1505,6 +1505,8 @@ function rowHtml(r){
   var callClass=(r.status==='ของมาแล้ว'&&!r.callCount)?'call-alert warn':'call-alert';
   var waitText=r.status==='รอสินค้า'?(r.waitDays===0?'รอสินค้า วันนี้':'รอสินค้า '+r.waitDays+' วัน'):'';
   var shownStatus=r.status==='ของมาแล้ว'&&r.dueLabel&&r.dueLabel.indexOf('เลย')===0?'เลยกำหนด':(r.displayStatus||r.status);
+  var updateText=(r.updatedAt||r.createdAt||r.bookedAt||'-');
+  if(updateText&&updateText!=='-') updateText=updateText.split(' ')[0];
   return '<div class="row-item" data-id="'+r.id+'">'+
     '<div class="booking-id">'+esc(r.id)+'</div>'+
     '<div style="min-width:0">'+
@@ -1517,7 +1519,7 @@ function rowHtml(r){
     '</div>'+
     '<div class="col-call '+callClass+'">'+callText+'</div>'+
     '<div class="col-status" style="text-align:center">'+((r.dueRemainingDays!=null&&r.dueRemainingDays<0)?'<span class="pill p-เลยกำหนดวันนัด">ยกเลิกอัตโนมัติ</span><div class="sub" style="color:var(--danger);font-weight:600">เลยกำหนดวันนัด</div>':pill(shownStatus)+'<div class="sub">'+esc(r.dueLabel||(r.appt?('นัด '+r.appt):''))+'</div>')+'</div>'+
-    '<div class="col-updated sub">'+esc(r.updatedAt||r.createdAt||r.bookedAt||'-')+(waitText?'<div style="margin-top:2px;color:var(--t3)">'+esc(waitText)+'</div>':'')+'</div>'+
+    '<div class="col-updated sub">'+esc(updateText)+(waitText?'<div style="margin-top:2px;color:var(--t3)">'+esc(waitText)+'</div>':'')+'</div>'+
     '<svg class="ic" style="color:var(--t3)"><use href="#i-chev"></use></svg></div>';
 }
 function loadList(silent){

@@ -132,7 +132,7 @@
     const updateRaw = r.updated_at || r.booked_at || r.created_at;
     let updatedAt = '';
     if (updateRaw) {
-      updatedAt = fmtDate(updateRaw);
+      updatedAt = fmtDay(updateRaw);
     } else if (bookedDate && !isNaN(bookedDate.getTime())) {
       updatedAt = fmtDay(bookedDate);
     }
