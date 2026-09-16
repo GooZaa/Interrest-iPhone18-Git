@@ -189,35 +189,55 @@ Object.assign(I18N.th,{
   confirmCustTitle:'ข้อมูลผู้ลงทะเบียน',confirmDevTitle:'รายการสินค้าที่สนใจ',
   btnEdit:'แก้ไขข้อมูล',btnConfirm:'ยืนยันการส่งข้อมูล',
   captchaBadge:'ยืนยันตัวตน (ป้องกันโปรแกรมอัตโนมัติ)',capqReview:'กรุณาตอบคำถามบวกเลขด้านล่างเพื่อยืนยันการส่งข้อมูล',
-  enterAnswer:'กรุณาใส่คำตอบบวกเลข',successTitle:'ลงทะเบียนสำเร็จเรียบร้อยแล้ว',ok:'ตกลง'
+  enterAnswer:'กรุณาใส่คำตอบบวกเลข',successTitle:'ลงทะเบียนสำเร็จเรียบร้อยแล้ว',ok:'ตกลง',
+  successGreeting:'ขอขอบพระคุณ <b>คุณ{name}</b> ที่ให้ความสนใจสินค้ากับเรา',
+  successReceived:'ทางเราได้รับข้อมูลการลงทะเบียนแสดงความสนใจเรียบร้อยแล้ว',
+  successNotice:'เจ้าหน้าที่จะทำการตรวจสอบข้อมูล และจะติดต่อกลับไปที่หมายเลข <b class="mono" style="color:var(--tx)">{phone}</b> หรือช่องทางติดต่อที่ท่านระบุตามลำดับคิวโดยเร็วที่สุดครับ',
+  deviceNum:'เครื่องที่',unitDevice:'เครื่อง'
 });
 Object.assign(I18N.en,{
   reviewTitle:'Review and Confirm',reviewSub:'Please review your contact details and selected products before submitting.',
   confirmCustTitle:'Customer Information',confirmDevTitle:'Selected Products',
   btnEdit:'Edit Details',btnConfirm:'Confirm and Submit',
   captchaBadge:'Verification (Anti-Bot)',capqReview:'Please answer the math question below to confirm submission',
-  enterAnswer:'Please enter your answer',successTitle:'Registration Successful',ok:'OK'
+  enterAnswer:'Please enter your answer',successTitle:'Registration Successful',ok:'OK',
+  successGreeting:'Thank you, <b>{name}</b>, for your interest in our products.',
+  successReceived:'We have successfully received your registration details.',
+  successNotice:'Our staff will review your information and contact you at <b class="mono" style="color:var(--tx)">{phone}</b> or your specified contact channel in queue order as soon as possible.',
+  deviceNum:'Device',unitDevice:'device(s)'
 });
 Object.assign(I18N.zh,{
   reviewTitle:'确认登记信息',reviewSub:'请在提交前核对您的联系方式和所选产品。',
   confirmCustTitle:'客户信息',confirmDevTitle:'所选产品',
   btnEdit:'返回修改',btnConfirm:'确认提交',
   captchaBadge:'安全验证（防止机器人）',capqReview:'请回答下列计算题以确认提交',
-  enterAnswer:'请输入计算答案',successTitle:'登记成功',ok:'确定'
+  enterAnswer:'请输入计算答案',successTitle:'登记成功',ok:'确定',
+  successGreeting:'感谢 <b>{name}</b> 关注我们的产品。',
+  successReceived:'我们已成功接收您的意向登记信息。',
+  successNotice:'工作人员将核对您的登记信息，并尽快按排队顺序通过电话 <b class="mono" style="color:var(--tx)">{phone}</b> 或您指定的联系方式与您联系。',
+  deviceNum:'设备',unitDevice:'台'
 });
 Object.assign(I18N.ko,{
   reviewTitle:'정보 확인 및 제출',reviewSub:'제출 전 연락처와 선택한 제품을 확인해 주세요.',
   confirmCustTitle:'고객 정보',confirmDevTitle:'선택 상품',
   btnEdit:'수정하기',btnConfirm:'확인 및 제출',
   captchaBadge:'보안 확인 (자동 제출 방지)',capqReview:'제출을 확인하기 위해 아래 덧셈 문제에 답해 주세요',
-  enterAnswer:'답을 입력해 주세요',successTitle:'등록 완료',ok:'확인'
+  enterAnswer:'답을 입력해 주세요',successTitle:'등록 완료',ok:'확인',
+  successGreeting:'<b>{name}</b> 님, 저희 제품에 관심을 가져주셔서 진심으로 감사드립니다.',
+  successReceived:'관심 등록 정보가 성공적으로 접수되었습니다.',
+  successNotice:'직원이 등록 정보를 확인한 후 전화번호 <b class="mono" style="color:var(--tx)">{phone}</b> 또는 지정하신 연락처로 대기 순서에 따라 신속히 연락드리겠습니다.',
+  deviceNum:'기기',unitDevice:'대'
 });
 Object.assign(I18N.ja,{
   reviewTitle:'登録内容の確認',reviewSub:'送信前にご連絡先とご希望の商品をご確認ください。',
   confirmCustTitle:'お客様情報',confirmDevTitle:'ご希望の商品',
   btnEdit:'修正する',btnConfirm:'確認して送信',
   captchaBadge:'本人確認（ボット防止）',capqReview:'送信を確認するため、下記の計算問題にお答えください',
-  enterAnswer:'答えを入力してください',successTitle:'登録が完了しました',ok:'OK'
+  enterAnswer:'答えを入力してください',successTitle:'登録が完了しました',ok:'OK',
+  successGreeting:'<b>{name}</b> 様、ご関心をお寄せいただき誠にありがとうございます。',
+  successReceived:'購入希望の登録内容を受け付けいたしました。',
+  successNotice:'スタッフが登録情報を確認の上、お電話番号 <b class="mono" style="color:var(--tx)">{phone}</b> またはご指定の連絡先へ順番にできる限り早くご連絡いたします。',
+  deviceNum:'端末',unitDevice:'台'
 });
 Object.assign(I18N.en,{savingTitle:'Saving your information',savingMessage:'Please wait and keep this page open.'});
 Object.assign(I18N.zh,{savingTitle:'正在保存信息',savingMessage:'请稍候，不要关闭此页面。'});
@@ -536,17 +556,57 @@ $('btnConfirmSubmit').onclick = function(){
   submitForm();
 };
 
-function showSuccessModal(name, phone, count){
-  var devSummary = (DEVICES[0] ? DEVICES[0].model : 'iPhone') + (count > 1 ? ' และรุ่นอื่นๆ รวม ' + count + ' เครื่อง' : ' (' + count + ' เครื่อง)');
+function showSuccessModal(p){
+  var name = (p && p.name) ? p.name : $('f-name').value.trim();
+  var phone = (p && p.phone) ? p.phone : $('f-phone').value.trim();
+  var devices = (p && p.devices && p.devices.length) ? p.devices : DEVICES;
+
+  var devCardsHtml = devices.map(function(d, i){
+    var typeBadge = (d.supplierLock || (wantAIS && BOOT.supplierLockEnabled))
+      ? '<span class="pill" style="background:#FDECEC;color:#991B1B;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px">🟢 ' + esc(t('aisyes')) + (d.promo ? ' · ' + esc(d.promo) : '') + '</span>'
+      : '<span class="pill" style="background:var(--btn);color:var(--t2);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px">' + esc(t('aisno')) + '</span>';
+
+    return '<div style="background:var(--bg);border:0.5px solid var(--bd2);border-radius:12px;padding:11px 13px;margin-bottom:8px;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.02)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<span style="font-size:11.5px;font-weight:700;color:var(--t3)">' + esc(t('deviceNum')) + ' ' + (i+1) + '</span>' +
+        typeBadge +
+      '</div>' +
+      '<div style="font-size:15.5px;font-weight:700;color:var(--tx);margin-bottom:4px">' + esc(d.model) + '</div>' +
+      '<div style="font-size:13px;color:var(--t2);display:flex;align-items:center;gap:7px;flex-wrap:wrap">' +
+        '<span>' + esc(t('cap')) + ': <b style="color:var(--tx)">' + esc(d.capacity) + '</b></span>' +
+        '<span>·</span>' +
+        '<span>' + esc(t('color')) + ': <b style="color:var(--selT);background:var(--sel);padding:2px 7px;border-radius:6px;font-weight:600">' + esc(d.color) + '</b></span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var greetingTpl = t('successGreeting') || 'ขอขอบพระคุณ <b>คุณ{name}</b> ที่ให้ความสนใจสินค้ากับเรา';
+  var greetingHtml = greetingTpl.replace('{name}', esc(name));
+
+  var noticeTpl = t('successNotice') || 'เจ้าหน้าที่จะทำการตรวจสอบข้อมูล และจะติดต่อกลับไปที่หมายเลข <b class="mono" style="color:var(--tx)">{phone}</b> หรือช่องทางติดต่อที่ท่านระบุตามลำดับคิวโดยเร็วที่สุดครับ';
+  var noticeHtml = noticeTpl.replace('{phone}', esc(formatPhone(phone)));
+
   var msg = 
-    '<p style="margin:0 0 10px;font-size:15px">ขอขอบพระคุณ <b>คุณ' + esc(name) + '</b> ที่ให้ความสนใจสินค้ากับเรา</p>' +
-    '<p style="margin:0 0 10px;line-height:1.6">ทางเราได้รับข้อมูลการลงทะเบียน <b>' + esc(devSummary) + '</b> เรียบร้อยแล้ว</p>' +
-    '<p style="margin:0;font-size:13px;color:var(--t2);line-height:1.55">เจ้าหน้าที่จะทำการตรวจสอบสต็อกและติดต่อกลับไปที่หมายเลข <b class="mono" style="color:var(--tx)">' + esc(formatPhone(phone)) + '</b> หรือช่องทางติดต่อที่ท่านระบุตามลำดับคิวโดยเร็วที่สุดครับ</p>';
-  
+    '<div style="text-align:center;margin-bottom:14px;padding:10px 12px;background:var(--cv);border-radius:13px;border:0.5px solid var(--bd2)">' +
+      '<p style="margin:0;font-size:14px;color:var(--t2);line-height:1.55">' + greetingHtml + '</p>' +
+      '<p style="margin:4px 0 0;font-size:12px;color:var(--t3)">' + esc(t('successReceived')) + '</p>' +
+    '</div>' +
+    '<div style="margin-bottom:12px">' +
+      '<div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;padding:0 2px">' +
+        '<span>' + esc(t('confirmDevTitle')) + '</span>' +
+        '<span>' + devices.length + ' ' + esc(t('unitDevice')) + '</span>' +
+      '</div>' +
+      devCardsHtml +
+    '</div>' +
+    '<div style="padding:12px 14px;border-radius:13px;background:var(--cv);border:0.5px solid var(--bd2);font-size:13px;line-height:1.6;color:var(--t2);text-align:left">' +
+      noticeHtml +
+    '</div>';
+
+  $('successTitle').textContent = t('successTitle');
+  $('successOk').textContent = t('ok');
   $('successMessage').innerHTML = msg;
   $('successModal').style.display = 'flex';
 }
-
 $('successOk').onclick = function(){
   location.href = 'index.html';
 };
@@ -624,7 +684,7 @@ function submitForm(confirmDuplicate){
   call('submitSignup', p).then(function(){
     hideSaving();
     $('confirmView').style.display = 'none';
-    showSuccessModal(p.name, p.phone, p.devices.length);
+    showSuccessModal(p);
   }).catch(function(e){
     hideSaving();
     $('btnConfirmSubmit').disabled = false;
