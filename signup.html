@@ -7,8 +7,8 @@
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>.ic{display:inline-block;font-style:normal;line-height:1}</style>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>.ic{display:inline-block;font-style:normal;line-height:1}.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}</style>
 <style>
 :root{--bg:#fff;--cv:#F5F4F1;--tx:#1A1A19;--t2:#63625D;--t3:#8B8A84;--bd:rgba(0,0,0,.15);--btn:#EDECE7;--btnh:#E3E2DC;--sel:#EEEDFE;--selT:#3C3489;--ink:#262624;--inkT:#fff;--r:14px}
 *{box-sizing:border-box} body{margin:0;font-family:'IBM Plex Sans Thai',-apple-system,sans-serif;background:var(--cv);color:var(--tx);font-size:16px;-webkit-font-smoothing:antialiased} button{font:inherit;cursor:pointer;font-family:inherit}
@@ -69,15 +69,66 @@ main{max-width:1180px;margin:0 auto;padding:32px calc(24px + env(safe-area-inset
       <div class="sub" id="promoBox" style="display:none"></div>
     </section>
 
-    <section class="signup-card full" id="capBox" style="display:none">
-      <div class="section-title"><h2 id="t-confirmTitle">ยืนยันการส่งข้อมูล</h2><span id="t-confirmHint">ป้องกันการส่งข้อมูลอัตโนมัติ</span></div>
-      <p id="t-capq" style="font-size:13px;color:var(--t2);margin:16px 0 10px">กรุณาตอบคำถามก่อนส่งข้อมูล</p>
-      <p class="capnum" id="capQuestion"></p>
-      <input id="capAnswer" inputmode="numeric" style="max-width:140px;margin:0 auto 6px;display:block;text-align:center">
-      <p class="err" id="capErr" style="display:none;text-align:center"></p>
+    <div class="form-actions"><button type="button" class="btn" id="btnNext" style="display:flex;align-items:center;justify-content:center;gap:8px"><span>ถัดไป</span> <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button></div>
+  </div>
+
+  <!-- ===== หน้าตรวจสอบและยืนยันข้อมูล (Step 2) ===== -->
+  <div id="confirmView" style="display:none;max-width:700px;margin:0 auto">
+    <div class="signup-hero" style="text-align:center;margin-bottom:20px">
+      <h1 id="t-reviewTitle" style="font-size:24px;font-weight:700;margin:0 0 6px">ตรวจสอบและยืนยันข้อมูล</h1>
+      <p id="t-reviewSub" style="font-size:14px;color:var(--t2);margin:0">โปรดตรวจสอบรายละเอียดการติดต่อและรายการสินค้า ก่อนยืนยันการส่งข้อมูล</p>
+    </div>
+
+    <!-- ข้อมูลผู้ลงทะเบียน -->
+    <section class="signup-card" style="margin-bottom:14px;border-radius:16px;padding:18px">
+      <div class="section-title" style="margin-bottom:12px">
+        <h2 style="font-size:16px;font-weight:600;display:flex;align-items:center;gap:7px">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2563EB"></span>
+          <span id="t-confirmCustTitle">ข้อมูลผู้ลงทะเบียน</span>
+        </h2>
+      </div>
+      <div id="reviewCustDetails" style="display:grid;gap:6px;font-size:14px"></div>
     </section>
 
-    <div class="form-actions"><button class="btn" id="btnNext">ถัดไป</button></div>
+    <!-- รายการสินค้าที่เลือก -->
+    <section class="signup-card" style="margin-bottom:14px;border-radius:16px;padding:18px">
+      <div class="section-title" style="margin-bottom:12px">
+        <h2 style="font-size:16px;font-weight:600;display:flex;align-items:center;gap:7px">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6753C7"></span>
+          <span id="t-confirmDevTitle">สินค้าที่สนใจ</span>
+        </h2>
+      </div>
+      <div id="reviewDevicesList"></div>
+      <div id="reviewTotalBar" style="margin-top:10px"></div>
+    </section>
+
+    <!-- ป้องกันโปรแกรมอัตโนมัติ (Captcha) -->
+    <section class="signup-card" style="margin-bottom:20px;border-radius:16px;padding:20px;text-align:center;background:linear-gradient(180deg,var(--bg),var(--cv))">
+      <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--sel);color:var(--selT);font-size:12px;font-weight:600;margin-bottom:8px">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span id="t-captchaBadge">ยืนยันตัวตน (ป้องกันโปรแกรมอัตโนมัติ)</span>
+      </div>
+      <p id="t-capq2" style="font-size:13.5px;color:var(--t2);margin:0 0 10px">กรุณาตอบคำถามบวกเลขด้านล่างเพื่อยืนยันการส่งข้อมูล</p>
+      
+      <div style="display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px">
+        <div class="capnum mono" id="capQuestionReview" style="font-size:28px;font-weight:700;color:var(--selT);margin:0"></div>
+        <button type="button" id="btnRefreshCaptcha" class="btn2" style="width:36px;height:36px;padding:0;border-radius:9px;display:inline-flex;align-items:center;justify-content:center" title="เปลี่ยนโจทย์ใหม่" aria-label="เปลี่ยนโจทย์ใหม่">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+
+      <input id="capAnswerReview" inputmode="numeric" style="max-width:160px;margin:0 auto 8px;display:block;text-align:center;font-size:22px;font-weight:700;padding:8px 12px;border-radius:10px" placeholder="คำตอบ" autocomplete="off">
+      <p class="err" id="capErrReview" style="display:none;text-align:center;font-size:13px"></p>
+    </section>
+
+    <!-- ปุ่ม Action -->
+    <div style="display:grid;grid-template-columns:1fr 1.35fr;gap:12px;margin-top:16px">
+      <button type="button" class="btn2" id="btnBackToEdit" style="padding:14px;border-radius:12px;font-size:15px;font-weight:600">แก้ไขข้อมูล</button>
+      <button type="button" class="btn" id="btnConfirmSubmit" style="padding:14px;border-radius:12px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span id="t-btnConfirm">ยืนยันการส่งข้อมูล</span>
+      </button>
+    </div>
   </div>
 
   <div id="doneView" style="display:none" class="done">
@@ -87,6 +138,18 @@ main{max-width:1180px;margin:0 auto;padding:32px calc(24px + env(safe-area-inset
     <a class="btn home-btn" id="t-home" href="index.html">กลับเมนูหลัก</a>
   </div>
 </main>
+
+<!-- Success Popup Modal -->
+<div class="modal-backdrop" id="successModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+  <div class="modal" style="width:min(100%,460px);text-align:center;padding:30px 24px;border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.2)">
+    <div style="width:62px;height:62px;border-radius:50%;background:#ECFDF5;color:#059669;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 10px 24px rgba(5,150,105,.18)">
+      <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <h2 id="successTitle" style="font-size:21px;font-weight:700;margin:0 0 10px;color:var(--tx)">ลงทะเบียนสำเร็จเรียบร้อยแล้ว</h2>
+    <div id="successMessage" style="font-size:14px;color:var(--t2);line-height:1.65;margin:0 0 22px;text-align:left;background:var(--cv);padding:14px 16px;border-radius:14px;border:0.5px solid var(--bd2)"></div>
+    <button type="button" class="btn" id="successOk" style="width:100%;padding:13px;font-size:16px;font-weight:600;border-radius:12px">ตกลง</button>
+  </div>
+</div>
 <div class="modal-backdrop" id="errorModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal"><div class="modal-icon">!</div><h2 id="modalTitle">ตรวจสอบข้อมูลอีกครั้ง</h2><p id="modalMessage"></p><button class="btn" id="modalClose">เข้าใจแล้ว</button></div>
 </div>
@@ -120,7 +183,42 @@ Object.assign(I18N.en,{phoneChecking:'Checking this phone number…',phoneNew:'T
 Object.assign(I18N.zh,{phoneChecking:'正在检查电话号码…',phoneNew:'此号码尚未登记，可以继续填写。',phoneKnown:'已找到原有客户资料，可以登记其他商品。',phoneActive:'此号码有正在处理的登记，仍可添加其他设备。',duplicateTitle:'发现相同商品登记',duplicateMessage:'此号码已有相同型号、容量和颜色的处理中登记。是否再登记一台？',duplicateBack:'返回检查',duplicateConfirm:'确认添加设备'});
 Object.assign(I18N.ko,{phoneChecking:'전화번호를 확인하는 중…',phoneNew:'등록 이력이 없는 번호입니다. 계속 진행할 수 있습니다.',phoneKnown:'기존 고객 정보가 있습니다. 다른 상품을 등록할 수 있습니다.',phoneActive:'진행 중인 등록이 있습니다. 기기를 추가로 등록할 수 있습니다.',duplicateTitle:'동일 상품 등록 발견',duplicateMessage:'같은 모델, 용량, 색상의 진행 중인 등록이 있습니다. 기기를 한 대 더 등록하시겠습니까?',duplicateBack:'다시 확인',duplicateConfirm:'추가 기기 확인'});
 Object.assign(I18N.ja,{phoneChecking:'電話番号を確認しています…',phoneNew:'この番号の登録履歴はありません。続けて入力できます。',phoneKnown:'既存のお客様情報が見つかりました。別の商品を登録できます。',phoneActive:'処理中の登録があります。端末を追加登録することもできます。',duplicateTitle:'同じ商品の登録があります',duplicateMessage:'同じモデル・容量・カラーの処理中の登録があります。もう1台追加しますか？',duplicateBack:'内容を確認',duplicateConfirm:'追加端末として確認'});
-Object.assign(I18N.th,{savingTitle:'กำลังบันทึกข้อมูล',savingMessage:'กรุณารอสักครู่ และอย่าปิดหน้านี้'});
+Object.assign(I18N.th,{
+  savingTitle:'กำลังบันทึกข้อมูล',savingMessage:'กรุณารอสักครู่ และอย่าปิดหน้านี้',
+  reviewTitle:'ตรวจสอบและยืนยันข้อมูล',reviewSub:'โปรดตรวจสอบข้อมูลการติดต่อและรายการสินค้า ก่อนยืนยันการส่งข้อมูล',
+  confirmCustTitle:'ข้อมูลผู้ลงทะเบียน',confirmDevTitle:'รายการสินค้าที่สนใจ',
+  btnEdit:'แก้ไขข้อมูล',btnConfirm:'ยืนยันการส่งข้อมูล',
+  captchaBadge:'ยืนยันตัวตน (ป้องกันโปรแกรมอัตโนมัติ)',capqReview:'กรุณาตอบคำถามบวกเลขด้านล่างเพื่อยืนยันการส่งข้อมูล',
+  enterAnswer:'กรุณาใส่คำตอบบวกเลข',successTitle:'ลงทะเบียนสำเร็จเรียบร้อยแล้ว',ok:'ตกลง'
+});
+Object.assign(I18N.en,{
+  reviewTitle:'Review and Confirm',reviewSub:'Please review your contact details and selected products before submitting.',
+  confirmCustTitle:'Customer Information',confirmDevTitle:'Selected Products',
+  btnEdit:'Edit Details',btnConfirm:'Confirm and Submit',
+  captchaBadge:'Verification (Anti-Bot)',capqReview:'Please answer the math question below to confirm submission',
+  enterAnswer:'Please enter your answer',successTitle:'Registration Successful',ok:'OK'
+});
+Object.assign(I18N.zh,{
+  reviewTitle:'确认登记信息',reviewSub:'请在提交前核对您的联系方式和所选产品。',
+  confirmCustTitle:'客户信息',confirmDevTitle:'所选产品',
+  btnEdit:'返回修改',btnConfirm:'确认提交',
+  captchaBadge:'安全验证（防止机器人）',capqReview:'请回答下列计算题以确认提交',
+  enterAnswer:'请输入计算答案',successTitle:'登记成功',ok:'确定'
+});
+Object.assign(I18N.ko,{
+  reviewTitle:'정보 확인 및 제출',reviewSub:'제출 전 연락처와 선택한 제품을 확인해 주세요.',
+  confirmCustTitle:'고객 정보',confirmDevTitle:'선택 상품',
+  btnEdit:'수정하기',btnConfirm:'확인 및 제출',
+  captchaBadge:'보안 확인 (자동 제출 방지)',capqReview:'제출을 확인하기 위해 아래 덧셈 문제에 답해 주세요',
+  enterAnswer:'답을 입력해 주세요',successTitle:'등록 완료',ok:'확인'
+});
+Object.assign(I18N.ja,{
+  reviewTitle:'登録内容の確認',reviewSub:'送信前にご連絡先とご希望の商品をご確認ください。',
+  confirmCustTitle:'お客様情報',confirmDevTitle:'ご希望の商品',
+  btnEdit:'修正する',btnConfirm:'確認して送信',
+  captchaBadge:'本人確認（ボット防止）',capqReview:'送信を確認するため、下記の計算問題にお答えください',
+  enterAnswer:'答えを入力してください',successTitle:'登録が完了しました',ok:'OK'
+});
 Object.assign(I18N.en,{savingTitle:'Saving your information',savingMessage:'Please wait and keep this page open.'});
 Object.assign(I18N.zh,{savingTitle:'正在保存信息',savingMessage:'请稍候，不要关闭此页面。'});
 Object.assign(I18N.ko,{savingTitle:'정보를 저장하는 중',savingMessage:'잠시 기다려 주시고 이 페이지를 닫지 마세요.'});
@@ -182,15 +280,47 @@ function contactChannelValue(){var f=filledContacts_();var fc=f.filter(function(
 function contactIdValue(){var f=filledContacts_();if(f.length<=1)return f.length?String(f[0].id).trim():'';return f.map(function(c){return c.channel+': '+String(c.id).trim();}).join(' · ');}
 function applyI18n(){
   var ls=$('langSel');if(ls)ls.value=LANG;
-  $('t-brand').textContent=t('brand');$('t-heroDesc').textContent=t('heroDesc');$('t-contactTitle').textContent=t('contactTitle');$('t-contactHint').textContent=t('contactHint');$('t-productTitle').textContent=t('productTitle');$('t-productHint').textContent=t('productHint');$('t-confirmTitle').textContent=t('confirmTitle');$('t-confirmHint').textContent=t('confirmHint');
-  $('t-name').textContent=t('name');$('t-phone').textContent=t('phone');$('t-note').textContent=t('note');$('f-note').placeholder=t('notePlaceholder');$('t-add').textContent=t('add');renderContactRows();
-  $('t-ais').textContent=t('aisq');$('t-capq').textContent=t('capq');$('t-donetitle').textContent=t('donetitle');$('t-donemsg').textContent=t('donemsg');$('t-home').textContent=t('home');
-  document.querySelectorAll('[data-ais="1"]')[0].textContent=t('aisyes');document.querySelectorAll('[data-ais="0"]')[0].textContent=t('aisno');
-  $('btnNext').textContent=captchaShown?t('submit'):t('next');setPhoneStatus(PHONE_STATUS);
-  $('duplicateTitle').textContent=t('duplicateTitle');$('duplicateMessage').textContent=t('duplicateMessage');$('duplicateBack').textContent=t('duplicateBack');$('duplicateConfirm').textContent=t('duplicateConfirm');
+  if($('t-brand')) $('t-brand').textContent=t('brand');
+  if($('t-heroDesc')) $('t-heroDesc').textContent=t('heroDesc');
+  if($('t-contactTitle')) $('t-contactTitle').textContent=t('contactTitle');
+  if($('t-contactHint')) $('t-contactHint').textContent=t('contactHint');
+  if($('t-productTitle')) $('t-productTitle').textContent=t('productTitle');
+  if($('t-productHint')) $('t-productHint').textContent=t('productHint');
+  if($('t-reviewTitle')) $('t-reviewTitle').textContent=t('reviewTitle');
+  if($('t-reviewSub')) $('t-reviewSub').textContent=t('reviewSub');
+  if($('t-confirmCustTitle')) $('t-confirmCustTitle').textContent=t('confirmCustTitle');
+  if($('t-confirmDevTitle')) $('t-confirmDevTitle').textContent=t('confirmDevTitle');
+  if($('t-btnConfirm')) $('t-btnConfirm').textContent=t('btnConfirm');
+  if($('btnBackToEdit')) $('btnBackToEdit').textContent=t('btnEdit');
+  if($('t-captchaBadge')) $('t-captchaBadge').textContent=t('captchaBadge');
+  if($('t-capq2')) $('t-capq2').textContent=t('capqReview');
+  if($('successTitle')) $('successTitle').textContent=t('successTitle');
+  if($('successOk')) $('successOk').textContent=t('ok');
+  if($('t-name')) $('t-name').textContent=t('name');
+  if($('t-phone')) $('t-phone').textContent=t('phone');
+  if($('t-note')) $('t-note').textContent=t('note');
+  if($('f-note')) $('f-note').placeholder=t('notePlaceholder');
+  if($('t-add')) $('t-add').textContent=t('add');
+  renderContactRows();
+  if($('t-ais')) $('t-ais').textContent=t('aisq');
+  if($('t-donetitle')) $('t-donetitle').textContent=t('donetitle');
+  if($('t-donemsg')) $('t-donemsg').textContent=t('donemsg');
+  if($('t-home')) $('t-home').textContent=t('home');
+  var ais1=document.querySelectorAll('[data-ais="1"]')[0];
+  var ais0=document.querySelectorAll('[data-ais="0"]')[0];
+  if(ais1) ais1.textContent=t('aisyes');
+  if(ais0) ais0.textContent=t('aisno');
+  if($('btnNext')) $('btnNext').innerHTML='<span>'+esc(t('next'))+'</span> <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+  setPhoneStatus(PHONE_STATUS);
+  if($('duplicateTitle')) $('duplicateTitle').textContent=t('duplicateTitle');
+  if($('duplicateMessage')) $('duplicateMessage').textContent=t('duplicateMessage');
+  if($('duplicateBack')) $('duplicateBack').textContent=t('duplicateBack');
+  if($('duplicateConfirm')) $('duplicateConfirm').textContent=t('duplicateConfirm');
   renderPromo();
+  if($('confirmView') && $('confirmView').style.display !== 'none') {
+    renderReviewView();
+  }
 }
-
 call('getSignupBootstrap').then(function(b){BOOT=b;captcha=b.captcha;DEVICES=[freshDevice()];renderDevices();applyI18n();schedulePhoneCheck();}).catch(function(e){showError(e.message);});
 
 $('f-name').oninput=function(){this.value=this.value.replace(/[0-9๐-๙]/g,'');};
@@ -247,46 +377,269 @@ function renderPromo(){
   box.querySelectorAll('[data-promo]').forEach(function(el){el.onclick=function(){selectedPromo=selectedPromo===el.dataset.promo?'':el.dataset.promo;renderPromo();};});
 }
 
-var captchaShown=false;
-function devicesComplete(){return DEVICES.length>0&&!DEVICES.some(function(d){return !d.model||!d.capacity||!d.color;});}
-$('duplicateBack').onclick=function(){$('duplicateModal').style.display='none';$('btnNext').disabled=false;};
-$('duplicateConfirm').onclick=function(){$('duplicateModal').style.display='none';submitForm(true);};
-$('duplicateModal').onclick=function(e){if(e.target===$('duplicateModal')){$('duplicateModal').style.display='none';$('btnNext').disabled=false;}};
-function showDuplicateConfirm(){$('duplicateTitle').textContent=t('duplicateTitle');$('duplicateMessage').textContent=t('duplicateMessage');$('duplicateBack').textContent=t('duplicateBack');$('duplicateConfirm').textContent=t('duplicateConfirm');$('duplicateModal').style.display='flex';}
-function showSaving(){$('savingTitle').textContent=t('savingTitle');$('savingMessage').textContent=t('savingMessage');$('savingOverlay').setAttribute('aria-label',t('savingTitle'));$('savingOverlay').style.display='flex';}
-function hideSaving(){$('savingOverlay').style.display='none';}
-function refreshSignupCaptcha(){return call('getSignupBootstrap').then(function(b){captcha=b.captcha;$('capQuestion').textContent=captcha.a+' + '+captcha.b+' = ?';$('capAnswer').value='';schedulePhoneCheck();});}
-$('btnNext').onclick=function(){
-  if(!captchaShown){
-    if(!$('f-name').value.trim()||$('f-phone').value.replace(/\D/g,'').length<9){showError(t('need'));return;}
-    if(!devicesComplete()){showError(t('needProduct'));return;}
-    captchaShown=true;$('capBox').style.display='block';$('capQuestion').textContent=captcha.a+' + '+captcha.b+' = ?';
-    $('btnNext').textContent=t('submit');window.scrollTo(0,document.body.scrollHeight);
+function formatPhone(p){
+  var s = String(p||'').replace(/\D/g, '');
+  if (s.length === 10) return s.slice(0,3) + '-' + s.slice(3,6) + '-' + s.slice(6);
+  if (s.length === 9) return s.slice(0,2) + '-' + s.slice(2,5) + '-' + s.slice(5);
+  return p || '-';
+}
+
+function ensureValidCaptcha(){
+  if (!captcha || typeof captcha.a !== 'number' || typeof captcha.b !== 'number' || isNaN(captcha.a) || isNaN(captcha.b)) {
+    var ca = Math.floor(Math.random() * 12) + 2;
+    var cb = Math.floor(Math.random() * 9) + 1;
+    captcha = { a: ca, b: cb, ans: ca + cb, sid: 'cap_' + Date.now() };
+  }
+}
+
+function refreshSignupCaptcha(){
+  return call('getSignupBootstrap').then(function(b){
+    captcha = b.captcha;
+    ensureValidCaptcha();
+    if ($('capQuestionReview')) $('capQuestionReview').textContent = captcha.a + ' + ' + captcha.b + ' = ?';
+    if ($('capAnswerReview')) $('capAnswerReview').value = '';
+    if ($('capErrReview')) $('capErrReview').style.display = 'none';
+    schedulePhoneCheck();
+  }).catch(function(){
+    var ca = Math.floor(Math.random() * 12) + 2;
+    var cb = Math.floor(Math.random() * 9) + 1;
+    captcha = { a: ca, b: cb, ans: ca + cb, sid: 'cap_' + Date.now() };
+    if ($('capQuestionReview')) $('capQuestionReview').textContent = captcha.a + ' + ' + captcha.b + ' = ?';
+    if ($('capAnswerReview')) $('capAnswerReview').value = '';
+  });
+}
+
+function renderReviewView(){
+  var name = $('f-name').value.trim();
+  var phone = $('f-phone').value.trim();
+  var channel = contactChannelValue();
+  var contactId = contactIdValue();
+  var note = $('f-note').value.trim();
+
+  // 1. Customer details
+  var contactSummary = channel + (contactId ? ' · ' + contactId : '');
+  var custHtml = 
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:0.5px solid var(--bd2)"><span style="color:var(--t2);font-size:13px">' + esc(t('name')) + '</span><b style="color:var(--tx);font-size:14.5px">' + esc(name) + '</b></div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:0.5px solid var(--bd2)"><span style="color:var(--t2);font-size:13px">' + esc(t('phone')) + '</span><b class="mono" style="color:var(--tx);font-size:14.5px">' + esc(formatPhone(phone)) + '</b></div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;' + (note ? 'border-bottom:0.5px solid var(--bd2)' : '') + '"><span style="color:var(--t2);font-size:13px">' + esc(t('channel')) + '</span><span style="color:var(--tx);font-size:13.5px">' + esc(contactSummary) + '</span></div>' +
+    (note ? '<div style="padding-top:8px"><span style="color:var(--t2);font-size:12.5px;display:block;margin-bottom:3px">' + esc(t('note')) + '</span><div style="font-size:13px;color:var(--tx);background:var(--cv);padding:8px 11px;border-radius:9px;border:0.5px solid var(--bd2)">' + esc(note) + '</div></div>' : '');
+  $('reviewCustDetails').innerHTML = custHtml;
+
+  // 2. Devices list
+  var totalPrice = 0;
+  var hasPriced = false;
+  var devHtml = DEVICES.map(function(d, i){
+    var pr = sgPrice(d.model, d.capacity);
+    if(pr != null){ totalPrice += pr; hasPriced = true; }
+    
+    var alt = ((d.altColors||[]).length ? 'สีอื่น: ' + esc(d.altColors.join(', ')) : '') +
+              (((d.altColors||[]).length && (d.altCaps||[]).length) ? ' · ' : '') +
+              ((d.altCaps||[]).length ? 'ความจุอื่น: ' + esc(d.altCaps.join(', ')) : '');
+    var altLine = (BOOT.alternativeOptionsEnabled && d.acceptAlt && alt)
+      ? '<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:var(--sel);color:var(--selT);font-size:11.5px;line-height:1.4"><span style="font-weight:600">รับสเปกสำรอง:</span> ' + alt + '</div>'
+      : '';
+
+    var supBadge = wantAIS
+      ? '<span class="pill" style="background:#FDECEC;color:#991B1B;font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px">🟢 เครื่องโครงการ AIS' + (selectedPromo ? ' · ' + esc(selectedPromo) : '') + '</span>'
+      : '<span class="pill" style="background:var(--btn);color:var(--t2);font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px">เครื่องเปล่า</span>';
+
+    var priceRow = (pr != null)
+      ? '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:8px;border-top:0.5px dashed var(--bd)">' +
+          '<span style="font-size:12.5px;color:var(--t2)">' + esc(t('price')) + ' (' + esc(t('priceNote')) + ')</span>' +
+          '<span class="mono" style="font-size:16px;font-weight:700;color:var(--selT)">฿' + pr.toLocaleString('th-TH') + '</span>' +
+        '</div>'
+      : '';
+
+    return '<div class="card" style="margin-bottom:10px;padding:13px 14px;border-radius:14px;border:0.5px solid var(--bd);background:var(--bg);box-shadow:0 1px 2px rgba(0,0,0,.02)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">' +
+        '<span style="font-size:12px;font-weight:700;color:var(--t2)">เครื่องที่ ' + (i+1) + '</span>' +
+        supBadge +
+      '</div>' +
+      '<div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:3px">' + esc(d.model) + '</div>' +
+      '<div style="font-size:13.5px;color:var(--t2);display:flex;align-items:center;gap:6px">' +
+        '<span>' + esc(t('cap')) + ': <b style="color:var(--tx)">' + esc(d.capacity) + '</b></span>' +
+        '<span>·</span>' +
+        '<span>' + esc(t('color')) + ': <b style="color:var(--tx)">' + esc(d.color) + '</b></span>' +
+      '</div>' +
+      priceRow +
+      altLine +
+    '</div>';
+  }).join('');
+  $('reviewDevicesList').innerHTML = devHtml;
+
+  // 3. Summary total bar
+  if (hasPriced) {
+    $('reviewTotalBar').innerHTML = 
+      '<div style="padding:12px 15px;border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--sel) 45%,var(--bg)),var(--bg));border:0.5px solid color-mix(in srgb,var(--selT) 25%,var(--bd));box-shadow:0 2px 6px rgba(0,0,0,.03)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+          '<div><span style="font-size:13.5px;color:var(--t2);font-weight:600">' + esc(t('estTotal')) + '</span><small style="display:block;color:var(--t3);font-size:11px">(' + DEVICES.length + ' เครื่อง)</small></div>' +
+          '<b class="mono" style="font-size:19px;color:var(--selT)">฿' + totalPrice.toLocaleString('th-TH') + '</b>' +
+        '</div>' +
+        '<div style="margin-top:4px;font-size:10.5px;color:var(--t3)">* ราคาอาจมีการเปลี่ยนแปลงตามโปรโมชั่นหรือรอบจำหน่ายจริง</div>' +
+      '</div>';
+  } else {
+    $('reviewTotalBar').innerHTML = '';
+  }
+
+  // 4. Setup Captcha
+  ensureValidCaptcha();
+  $('capQuestionReview').textContent = captcha.a + ' + ' + captcha.b + ' = ?';
+  $('capAnswerReview').value = '';
+  $('capErrReview').style.display = 'none';
+}
+
+function devicesComplete(){
+  return DEVICES.length > 0 && !DEVICES.some(function(d){ return !d.model || !d.capacity || !d.color; });
+}
+
+$('btnNext').onclick = function(){
+  if (!$('f-name').value.trim() || $('f-phone').value.replace(/\D/g, '').length < 9) {
+    showError(t('need'));
+    return;
+  }
+  if (!devicesComplete()) {
+    showError(t('needProduct'));
+    return;
+  }
+  renderReviewView();
+  $('formView').style.display = 'none';
+  $('confirmView').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+$('btnBackToEdit').onclick = function(){
+  $('confirmView').style.display = 'none';
+  $('formView').style.display = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+$('btnRefreshCaptcha').onclick = function(){
+  refreshSignupCaptcha();
+};
+
+$('btnConfirmSubmit').onclick = function(){
+  var ans = $('capAnswerReview').value.trim();
+  if (!ans) {
+    $('capErrReview').style.display = 'block';
+    $('capErrReview').textContent = t('enterAnswer') || 'กรุณาใส่คำตอบบวกเลข';
+    $('capAnswerReview').focus();
+    return;
+  }
+  ensureValidCaptcha();
+  if (Number(ans) !== (captcha.a + captcha.b)) {
+    $('capErrReview').style.display = 'block';
+    $('capErrReview').textContent = t('err') || 'คำตอบไม่ถูกต้อง กรุณาลองใหม่';
+    $('capAnswerReview').focus();
+    refreshSignupCaptcha();
     return;
   }
   submitForm();
 };
 
+function showSuccessModal(name, phone, count){
+  var devSummary = (DEVICES[0] ? DEVICES[0].model : 'iPhone') + (count > 1 ? ' และรุ่นอื่นๆ รวม ' + count + ' เครื่อง' : ' (' + count + ' เครื่อง)');
+  var msg = 
+    '<p style="margin:0 0 10px;font-size:15px">ขอขอบพระคุณ <b>คุณ' + esc(name) + '</b> ที่ให้ความสนใจสินค้ากับเรา</p>' +
+    '<p style="margin:0 0 10px;line-height:1.6">ทางเราได้รับข้อมูลการลงทะเบียน <b>' + esc(devSummary) + '</b> เรียบร้อยแล้ว</p>' +
+    '<p style="margin:0;font-size:13px;color:var(--t2);line-height:1.55">เจ้าหน้าที่จะทำการตรวจสอบสต็อกและติดต่อกลับไปที่หมายเลข <b class="mono" style="color:var(--tx)">' + esc(formatPhone(phone)) + '</b> หรือช่องทางติดต่อที่ท่านระบุตามลำดับคิวโดยเร็วที่สุดครับ</p>';
+  
+  $('successMessage').innerHTML = msg;
+  $('successModal').style.display = 'flex';
+}
+
+$('successOk').onclick = function(){
+  location.href = 'index.html';
+};
+
+$('duplicateBack').onclick = function(){
+  $('duplicateModal').style.display = 'none';
+  $('btnConfirmSubmit').disabled = false;
+};
+$('duplicateConfirm').onclick = function(){
+  $('duplicateModal').style.display = 'none';
+  submitForm(true);
+};
+$('duplicateModal').onclick = function(e){
+  if (e.target === $('duplicateModal')) {
+    $('duplicateModal').style.display = 'none';
+    $('btnConfirmSubmit').disabled = false;
+  }
+};
+function showDuplicateConfirm(){
+  $('duplicateTitle').textContent = t('duplicateTitle');
+  $('duplicateMessage').textContent = t('duplicateMessage');
+  $('duplicateBack').textContent = t('duplicateBack');
+  $('duplicateConfirm').textContent = t('duplicateConfirm');
+  $('duplicateModal').style.display = 'flex';
+}
+
+function showSaving(){
+  $('savingTitle').textContent = t('savingTitle');
+  $('savingMessage').textContent = t('savingMessage');
+  $('savingOverlay').setAttribute('aria-label', t('savingTitle'));
+  $('savingOverlay').style.display = 'flex';
+}
+function hideSaving(){
+  $('savingOverlay').style.display = 'none';
+}
+
 function submitForm(confirmDuplicate){
-  if(!devicesComplete()){showError(t('needProduct'));return;}
-  $('btnNext').disabled=true;$('capErr').style.display='none';
-  var p={
-    name:$('f-name').value.trim(),phone:$('f-phone').value.trim(),channel:contactChannelValue(),contactId:contactIdValue(),
-    lang:{th:'ไทย',en:'English',zh:'中文',ko:'한국어',ja:'日本語'}[LANG],note:$('f-note').value.trim(),
-    devices:DEVICES.map(function(d){return {model:d.model,capacity:d.capacity,color:d.color,altColors:BOOT.alternativeOptionsEnabled&&d.acceptAlt?d.altColors:[],altCaps:BOOT.alternativeOptionsEnabled&&d.acceptAlt?d.altCaps:[],supplierLock:BOOT.supplierLockEnabled&&BOOT.alternativeOptionsEnabled&&wantAIS,promo:BOOT.supplierLockEnabled&&BOOT.alternativeOptionsEnabled?selectedPromo:'',deposit:0,billNo:''};}),
-    captchaSid:captcha.sid,captchaAnswer:$('capAnswer').value,confirmDuplicate:confirmDuplicate===true
+  if (!devicesComplete()) {
+    showError(t('needProduct'));
+    return;
+  }
+  $('btnConfirmSubmit').disabled = true;
+  $('capErrReview').style.display = 'none';
+
+  var p = {
+    name: $('f-name').value.trim(),
+    phone: $('f-phone').value.trim(),
+    channel: contactChannelValue(),
+    contactId: contactIdValue(),
+    contactChannel: contactChannelValue(),
+    lang: {th:'ไทย',en:'English',zh:'中文',ko:'한국어',ja:'日本語'}[LANG],
+    note: $('f-note').value.trim(),
+    wantAIS: wantAIS,
+    selectedPromo: selectedPromo,
+    devices: DEVICES.map(function(d){
+      return {
+        model: d.model,
+        capacity: d.capacity,
+        color: d.color,
+        altColors: BOOT.alternativeOptionsEnabled && d.acceptAlt ? d.altColors : [],
+        altCaps: BOOT.alternativeOptionsEnabled && d.acceptAlt ? d.altCaps : [],
+        supplierLock: BOOT.supplierLockEnabled && BOOT.alternativeOptionsEnabled && wantAIS,
+        promo: BOOT.supplierLockEnabled && BOOT.alternativeOptionsEnabled ? selectedPromo : '',
+        deposit: 0,
+        billNo: '',
+        price: sgPrice(d.model, d.capacity) || 0
+      };
+    }),
+    captchaSid: captcha ? captcha.sid : '',
+    captchaAnswer: $('capAnswerReview').value.trim(),
+    confirmDuplicate: confirmDuplicate === true
   };
+
   showSaving();
-  call('submitSignup',p).then(function(){
+  call('submitSignup', p).then(function(){
     hideSaving();
-    $('formView').style.display='none';$('doneView').style.display='block';
+    $('confirmView').style.display = 'none';
+    showSuccessModal(p.name, p.phone, p.devices.length);
   }).catch(function(e){
     hideSaving();
-    $('btnNext').disabled=false;
-    var message=String(e&&e.message||e||'').replace(/^Exception:\s*/,'');
-    if(message.indexOf('DUPLICATE_CONFIRM_REQUIRED')>-1){showDuplicateConfirm();return;}
-    if(message.indexOf('คำตอบไม่ถูกต้อง')>-1){$('capErr').style.display='block';$('capErr').textContent=t('err');}
-    else showError(message||t('err'));
+    $('btnConfirmSubmit').disabled = false;
+    var message = String(e && e.message || e || '').replace(/^Exception:\s*/, '');
+    if (message.indexOf('DUPLICATE_CONFIRM_REQUIRED') > -1) {
+      showDuplicateConfirm();
+      return;
+    }
+    if (message.indexOf('คำตอบไม่ถูกต้อง') > -1) {
+      $('capErrReview').style.display = 'block';
+      $('capErrReview').textContent = t('err');
+      $('capAnswerReview').focus();
+    } else {
+      showError(message || t('err'));
+    }
     refreshSignupCaptcha().catch(function(){});
   });
 }

@@ -177,8 +177,9 @@
       const configs = {};
       (cfgRes.data || []).forEach(c => { configs[c.key] = c.value; });
 
-      const n1 = Math.floor(Math.random() * 9) + 1;
+      const n1 = Math.floor(Math.random() * 12) + 2;
       const n2 = Math.floor(Math.random() * 9) + 1;
+      window._currentSignupCaptcha = { sid: 'cap_' + Date.now(), a: n1, b: n2, ans: n1 + n2 };
       return {
         products: products,
         promos: (promosRes.data || []).map(pr => ({ name: pr.name, description: pr.description })),
@@ -186,7 +187,7 @@
         aisThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], false),
         aisPromoThaiOnly: isSettingEnabled(configs['โครงการ AIS เฉพาะภาษาไทย'], false),
         alternativeOptionsEnabled: isSettingEnabled(configs['เปิดใช้ตัวเลือกเครื่องทางเลือก'], true),
-        captcha: { sid: 'cap_' + Date.now(), q: `${n1} + ${n2} = ?`, a: n1 + n2 }
+        captcha: { sid: window._currentSignupCaptcha.sid, a: n1, b: n2, q: `${n1} + ${n2} = ?`, ans: n1 + n2, answer: n1 + n2 }
       };
     },
 
@@ -211,6 +212,13 @@
 
     async submitSignup(data) {
       if (!data || !data.name || !data.phone || !data.devices || !data.devices.length) throw new Error('ข้อมูลไม่ครบถ้วน');
+      if (window._currentSignupCaptcha) {
+        const expected = String(window._currentSignupCaptcha.ans);
+        const given = String(data.captchaAnswer || '').trim();
+        if (given !== expected) {
+          throw new Error('คำตอบไม่ถูกต้อง กรุณาลองใหม่');
+        }
+      }
       const cleanPhone = normPhone(data.phone);
       const name = String(data.name).trim();
 
