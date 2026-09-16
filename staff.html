@@ -1116,8 +1116,27 @@ function syncContactField(){
   var c=$('f-channel').value, labels={'':'ไอดี / ข้อมูลติดต่อ',LINE:'LINE ID',WhatsApp:'หมายเลข WhatsApp',อีเมล:'E-Mail',โทรอย่างเดียว:'รายละเอียดเพิ่มเติม (ถ้ามี)'};
   $('contactLabel').textContent=labels[c]||'ไอดี / ข้อมูลติดต่อ';
   $('f-contact').placeholder=c==='อีเมล'?'name@example.com':c==='WhatsApp'?'เช่น +66 81 234 5678':c==='LINE'?'ระบุ LINE ID':c==='โทรอย่างเดียว'?'ระบุข้อมูลเพิ่มเติม (ถ้ามี)':'ระบุข้อมูลติดต่อ';
+  if(c==='โทรอย่างเดียว'){
+    var ph=$('f-phone').value.trim();
+    if(ph && (!$('f-contact').value.trim() || $('f-contact').dataset.autofilled==='phone')){
+      $('f-contact').value=ph;
+      $('f-contact').dataset.autofilled='phone';
+    }
+  } else if($('f-contact').dataset.autofilled==='phone'){
+    $('f-contact').value='';
+    delete $('f-contact').dataset.autofilled;
+  }
 }
 $('f-channel').onchange=syncContactField;
+$('f-contact').addEventListener('input',function(){
+  if($('f-channel').value==='โทรอย่างเดียว'){
+    if(this.value.trim()!==$('f-phone').value.trim()){
+      delete this.dataset.autofilled;
+    } else {
+      this.dataset.autofilled='phone';
+    }
+  }
+});
 
 function renderReferences(){
   var groups=STATE.boot.groups||[], hasGroup=function(name){return groups.some(function(g){return g.name===name;});}, refs=[];
@@ -1251,6 +1270,10 @@ $('f-phone').addEventListener('input',function(){
   var raw=$('f-phone').value.replace(/[^0-9+]/g,'');
   var plus=raw.indexOf('+');if(plus>0)raw=raw.replace(/\+/g,'');else if(plus===0)raw='+'+raw.slice(1).replace(/\+/g,'');
   $('f-phone').value=raw;
+  if($('f-channel').value==='โทรอย่างเดียว' && (!$('f-contact').value.trim() || $('f-contact').dataset.autofilled==='phone')){
+    $('f-contact').value=raw.trim();
+    $('f-contact').dataset.autofilled='phone';
+  }
   clearTimeout(phoneTimer);var v=raw.replace(/\D/g,'');
   if(v.length<9){$('dupBox').innerHTML='';return;}
   phoneTimer=setTimeout(function(){
@@ -1403,7 +1426,7 @@ function showSavedPrintChoice(id,count){
   $('saved-thermal').onclick=function(){previewDoc(id,'slip80',back);};
   $('saved-ok').onclick=closePanel;
 }
-function resetBookingForm(){['f-phone','f-name','f-contact','f-note','f-channel'].forEach(function(id){$(id).value='';});syncContactField();$('dupBox').innerHTML='';STATE.refs={preOrder:'',preBooking:'',deposit:'',billNo:'',depositAllocations:[]};STATE.devices=[];addDeviceRow();selectDefaultBookingGroup();renderReferences();}
+function resetBookingForm(){['f-phone','f-name','f-contact','f-note','f-channel'].forEach(function(id){$(id).value='';});delete $('f-contact').dataset.autofilled;syncContactField();$('dupBox').innerHTML='';STATE.refs={preOrder:'',preBooking:'',deposit:'',billNo:'',depositAllocations:[]};STATE.devices=[];addDeviceRow();selectDefaultBookingGroup();renderReferences();}
 
 // ---- list ----
 var qTimer,listRequestSeq=0;

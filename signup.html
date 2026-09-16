@@ -193,7 +193,8 @@ Object.assign(I18N.th,{
   successGreeting:'ขอขอบพระคุณ <b>คุณ{name}</b> ที่ให้ความสนใจสินค้ากับเรา',
   successReceived:'ทางเราได้รับข้อมูลการลงทะเบียนแสดงความสนใจเรียบร้อยแล้ว',
   successNotice:'เจ้าหน้าที่จะทำการตรวจสอบข้อมูล และจะติดต่อกลับไปที่หมายเลข <b class="mono" style="color:var(--tx)">{phone}</b> หรือช่องทางติดต่อที่ท่านระบุตามลำดับคิวโดยเร็วที่สุดครับ',
-  deviceNum:'เครื่องที่',unitDevice:'เครื่อง'
+  deviceNum:'เครื่องที่',unitDevice:'เครื่อง',
+  phoneOnly:'โทรอย่างเดียว',extraDetail:'รายละเอียดเพิ่มเติม (ถ้ามี)',extraDetailPlaceholder:'ระบุข้อมูลเพิ่มเติม (ถ้ามี)'
 });
 Object.assign(I18N.en,{
   reviewTitle:'Review and Confirm',reviewSub:'Please review your contact details and selected products before submitting.',
@@ -204,7 +205,8 @@ Object.assign(I18N.en,{
   successGreeting:'Thank you, <b>{name}</b>, for your interest in our products.',
   successReceived:'We have successfully received your registration details.',
   successNotice:'Our staff will review your information and contact you at <b class="mono" style="color:var(--tx)">{phone}</b> or your specified contact channel in queue order as soon as possible.',
-  deviceNum:'Device',unitDevice:'device(s)'
+  deviceNum:'Device',unitDevice:'device(s)',
+  phoneOnly:'Phone call only',extraDetail:'Additional details (optional)',extraDetailPlaceholder:'Specify additional details (optional)'
 });
 Object.assign(I18N.zh,{
   reviewTitle:'确认登记信息',reviewSub:'请在提交前核对您的联系方式和所选产品。',
@@ -215,7 +217,8 @@ Object.assign(I18N.zh,{
   successGreeting:'感谢 <b>{name}</b> 关注我们的产品。',
   successReceived:'我们已成功接收您的意向登记信息。',
   successNotice:'工作人员将核对您的登记信息，并尽快按排队顺序通过电话 <b class="mono" style="color:var(--tx)">{phone}</b> 或您指定的联系方式与您联系。',
-  deviceNum:'设备',unitDevice:'台'
+  deviceNum:'设备',unitDevice:'台',
+  phoneOnly:'仅限电话',extraDetail:'补充信息（可选）',extraDetailPlaceholder:'填写补充信息（可选）'
 });
 Object.assign(I18N.ko,{
   reviewTitle:'정보 확인 및 제출',reviewSub:'제출 전 연락처와 선택한 제품을 확인해 주세요.',
@@ -226,7 +229,8 @@ Object.assign(I18N.ko,{
   successGreeting:'<b>{name}</b> 님, 저희 제품에 관심을 가져주셔서 진심으로 감사드립니다.',
   successReceived:'관심 등록 정보가 성공적으로 접수되었습니다.',
   successNotice:'직원이 등록 정보를 확인한 후 전화번호 <b class="mono" style="color:var(--tx)">{phone}</b> 또는 지정하신 연락처로 대기 순서에 따라 신속히 연락드리겠습니다.',
-  deviceNum:'기기',unitDevice:'대'
+  deviceNum:'기기',unitDevice:'대',
+  phoneOnly:'전화 통화만',extraDetail:'추가 정보 (선택)',extraDetailPlaceholder:'추가 정보 입력 (선택)'
 });
 Object.assign(I18N.ja,{
   reviewTitle:'登録内容の確認',reviewSub:'送信前にご連絡先とご希望の商品をご確認ください。',
@@ -237,7 +241,8 @@ Object.assign(I18N.ja,{
   successGreeting:'<b>{name}</b> 様、ご関心をお寄せいただき誠にありがとうございます。',
   successReceived:'購入希望の登録内容を受け付けいたしました。',
   successNotice:'スタッフが登録情報を確認の上、お電話番号 <b class="mono" style="color:var(--tx)">{phone}</b> またはご指定の連絡先へ順番にできる限り早くご連絡いたします。',
-  deviceNum:'端末',unitDevice:'台'
+  deviceNum:'端末',unitDevice:'台',
+  phoneOnly:'電話のみ',extraDetail:'補足情報（任意）',extraDetailPlaceholder:'補足情報を入力（任意）'
 });
 Object.assign(I18N.en,{savingTitle:'Saving your information',savingMessage:'Please wait and keep this page open.'});
 Object.assign(I18N.zh,{savingTitle:'正在保存信息',savingMessage:'请稍候，不要关闭此页面。'});
@@ -281,16 +286,50 @@ $('langSel')&&($('langSel').onchange=function(){LANG=$('langSel').value;try{loca
 var contacts=[{channel:'',id:''}];
 function renderContactRows(){
   var wrap=$('contactRows');if(!wrap)return;
-  var chOpts=[['',t('chooseChannel')||'โปรดระบุ'],['LINE','LINE'],['WhatsApp','WhatsApp'],['Email',t('email')]];
+  var chOpts=[
+    ['',t('chooseChannel')||'โปรดระบุ'],
+    ['LINE','LINE'],
+    ['WhatsApp','WhatsApp'],
+    ['Email',t('email')||'E-Mail'],
+    ['โทรอย่างเดียว',t('phoneOnly')||'โทรอย่างเดียว']
+  ];
   wrap.innerHTML=contacts.map(function(c,i){
     var opts=chOpts.map(function(o){return '<option value="'+o[0]+'"'+(c.channel===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join('');
-    return '<div class="row contact-row" style="margin-bottom:12px">'+
-      '<div class="field" style="margin-bottom:0"><label>'+esc(t('channel'))+'</label><select data-cch="'+i+'">'+opts+'</select></div>'+
-      '<div class="field" style="margin-bottom:0"><label>'+esc(t('contact'))+'</label><div style="display:flex;gap:6px"><input data-cid="'+i+'" value="'+esc(c.id)+'">'+(i>0?'<button type="button" class="chip" data-crm="'+i+'" style="flex:none;width:auto;padding:0 13px" aria-label="'+esc(t('remove'))+'">×</button>':'')+'</div></div>'+
-    '</div>';
+    var isPhoneOnly = c.channel === 'โทรอย่างเดียว';
+    var lbl = isPhoneOnly ? (t('extraDetail')||'รายละเอียดเพิ่มเติม (ถ้ามี)') : esc(t('contact'));
+    var ph = isPhoneOnly ? (t('extraDetailPlaceholder')||'ระบุข้อมูลเพิ่มเติม (ถ้ามี)') : '';
+    return '<div class="row contact-row" style="margin-bottom:12px">'+      '<div class="field" style="margin-bottom:0"><label>'+esc(t('channel'))+'</label><select data-cch="'+i+'">'+opts+'</select></div>'+      '<div class="field" style="margin-bottom:0"><label>'+lbl+'</label><div style="display:flex;gap:6px"><input data-cid="'+i+'" value="'+esc(c.id)+'" placeholder="'+esc(ph)+'">'+(i>0?'<button type="button" class="chip" data-crm="'+i+'" style="flex:none;width:auto;padding:0 13px" aria-label="'+esc(t('remove'))+'">×</button>':'')+'</div></div>'+    '</div>';
   }).join('')+(contacts.length<4?'<button type="button" class="btn2" id="addContact" style="margin-bottom:4px">+ '+esc(t('addContact'))+'</button>':'');
-  wrap.querySelectorAll('[data-cch]').forEach(function(el){el.onchange=function(){contacts[+el.dataset.cch].channel=el.value;};});
-  wrap.querySelectorAll('[data-cid]').forEach(function(el){el.oninput=function(){contacts[+el.dataset.cid].id=el.value;};});
+  wrap.querySelectorAll('[data-cch]').forEach(function(el){
+    el.onchange=function(){
+      var idx=+el.dataset.cch, val=el.value;
+      contacts[idx].channel=val;
+      if(val==='โทรอย่างเดียว'){
+        var ph=$('f-phone').value.trim();
+        if(ph && (!contacts[idx].id.trim() || contacts[idx].autofilled==='phone')){
+          contacts[idx].id=ph;
+          contacts[idx].autofilled='phone';
+        }
+      } else if(contacts[idx].autofilled==='phone'){
+        contacts[idx].id='';
+        delete contacts[idx].autofilled;
+      }
+      renderContactRows();
+    };
+  });
+  wrap.querySelectorAll('[data-cid]').forEach(function(el){
+    el.oninput=function(){
+      var idx=+el.dataset.cid;
+      contacts[idx].id=el.value;
+      if(contacts[idx].channel==='โทรอย่างเดียว'){
+        if(el.value.trim()!==$('f-phone').value.trim()){
+          delete contacts[idx].autofilled;
+        } else {
+          contacts[idx].autofilled='phone';
+        }
+      }
+    };
+  });
   wrap.querySelectorAll('[data-crm]').forEach(function(el){el.onclick=function(){contacts.splice(+el.dataset.crm,1);renderContactRows();};});
   var ac=$('addContact');if(ac)ac.onclick=function(){contacts.push({channel:'Email',id:''});renderContactRows();};
 }
@@ -344,7 +383,19 @@ function applyI18n(){
 call('getSignupBootstrap').then(function(b){BOOT=b;captcha=b.captcha;DEVICES=[freshDevice()];renderDevices();applyI18n();schedulePhoneCheck();}).catch(function(e){showError(e.message);});
 
 $('f-name').oninput=function(){this.value=this.value.replace(/[0-9๐-๙]/g,'');};
-$('f-phone').oninput=function(){var v=this.value.replace(/[^0-9+]/g,'');var i=v.indexOf('+');if(i>0)v=v.replace(/\+/g,'');else if(i===0)v='+'+v.slice(1).replace(/\+/g,'');this.value=v;schedulePhoneCheck();};
+$('f-phone').oninput=function(){
+  var v=this.value.replace(/[^0-9+]/g,'');var i=v.indexOf('+');if(i>0)v=v.replace(/\+/g,'');else if(i===0)v='+'+v.slice(1).replace(/\+/g,'');
+  this.value=v;
+  contacts.forEach(function(c,idx){
+    if(c.channel==='โทรอย่างเดียว' && (!c.id.trim() || c.autofilled==='phone')){
+      c.id=v.trim();
+      c.autofilled='phone';
+      var inp=document.querySelector('input[data-cid="'+idx+'"]');
+      if(inp) inp.value=v.trim();
+    }
+  });
+  schedulePhoneCheck();
+};
 
 function freshDevice(){return {model:'',capacity:'',color:'',acceptAlt:false,altColors:[],altCaps:[]};}
 function sgPrice(model,capacity){if(!BOOT||!BOOT.products)return null;var p=BOOT.products.filter(function(x){return x.model===model;})[0];if(!p||!p.prices)return null;var v=p.prices[capacity];return (v==null||v==='')?null:Number(v);}
