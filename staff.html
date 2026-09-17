@@ -7,12 +7,6 @@
 <script src="js/api.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -1653,6 +1647,14 @@ var WORK_FOCUS_DEFS=[
   {key:'pending',name:'รอตรวจสอบ',hint:'ตรวจข้อมูลเพื่อเข้าคิว'}
 ];
 function renderWorkFocus(focus){
+  if (!focus && STATE.items && STATE.items.length) {
+    focus = {
+      today: STATE.items.filter(function(x){ return x.status === 'นัดรับแล้ว' || x.status === 'ของมาแล้ว'; }).length,
+      overdue: STATE.items.filter(function(x){ return x.dueRemainingDays != null && x.dueRemainingDays < 0; }).length,
+      noCall: STATE.items.filter(function(x){ return (x.status === 'ของมาแล้ว' || x.status === 'นัดรับแล้ว') && !x.callCount; }).length,
+      pending: STATE.items.filter(function(x){ return x.status === 'รอสินค้า' || x.status === 'รอตรวจสอบ'; }).length
+    };
+  }
   var box=$('workFocusCards');if(!box)return;
   box.innerHTML=WORK_FOCUS_DEFS.map(function(x){
     return '<button class="work-card'+(STATE.focusF===x.key?' on':'')+'" type="button" data-focus="'+x.key+'" aria-pressed="'+(STATE.focusF===x.key?'true':'false')+'"><div class="work-count">'+Number((focus||{})[x.key]||0).toLocaleString()+'</div><div class="work-name">'+esc(x.name)+'</div><div class="work-hint">'+esc(x.hint)+'</div></button>';
@@ -2411,7 +2413,7 @@ function bindImportControls() {
   }
 }
 
-async async async async async function downloadIoTemplate() {
+async function downloadIoTemplate() {
   if (typeof ExcelJS === 'undefined') {
     toast('กำลังโหลดไลบรารี Excel กรุณาลองใหม่อีกครั้ง');
     return;
@@ -3268,7 +3270,7 @@ function buildLabelHTML(d){
     '<p style="margin:4px 0 0;font-size:16px;font-weight:700;line-height:1.2">'+esc(d.name)+'</p>'+
     '<p style="margin:1px 0 0;font-size:11px;color:#555">'+esc(d.phone)+'</p>'+
     '<p style="margin:8px 0 0;font-size:13px;font-weight:600">'+esc(d.model)+'</p>'+
-    '<p style="margin:1px 0 0;font-size:11px;color:#555">'+esc(d.capacity)+' · '+esc(d.color)+'</p>'+
+    '<p style="margin:1px 0 0;font-size:11px;color:#555">'+esc(d.capacity)+' · '+esc(d.color)+'</p>' + (d.appt ? '<div style="margin-top:5px;padding:3px 6px;background:#e0f2fe;border-radius:4px;border:1px solid #bae6fd;font-size:11.5px;font-weight:700;color:#0369a1">📅 นัดรับ: ' + esc(d.appt) + ' น.</div>' : (d.dueDate ? '<div style="margin-top:4px;font-size:11px;color:#64748b">ครบกำหนด: ' + esc(d.dueDate) + '</div>' : ''))+
     (d.price!=null?'<p style="margin:2px 0 0;font-size:11px;font-weight:700">'+Number(d.price).toLocaleString('th-TH')+' บาท</p>':'')+
     (d.supplierLock?'<span style="display:inline-block;margin-top:6px;font-size:9px;color:#0C447C;background:#E6F1FB;padding:2px 6px;border-radius:4px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</span>':'')+
     (orderInfo?'<div style="margin-top:6px;font-size:9.5px;font-weight:600;line-height:1.4;color:#333">'+orderInfo+'</div>':'')+
@@ -3324,7 +3326,7 @@ function buildLabelThermalHTML(d){
     '<p style="margin:6px 0 0;font-size:21px;font-weight:700;line-height:1.15">'+esc(d.name)+'</p>'+
     '<p style="margin:2px 0 0;font-size:14px">'+esc(d.phone)+'</p>'+
     '<p style="margin:9px 0 0;font-size:17px;font-weight:700">'+esc(d.model)+'</p>'+
-    '<p style="margin:1px 0 0;font-size:14px">'+esc(d.capacity)+' · '+esc(d.color)+'</p>'+
+    '<p style="margin:1px 0 0;font-size:14px">'+esc(d.capacity)+' · '+esc(d.color)+'</p>' + (d.appt ? '<div style="margin-top:5px;padding:3px 6px;background:#e0f2fe;border-radius:4px;border:1px solid #bae6fd;font-size:11.5px;font-weight:700;color:#0369a1">📅 นัดรับ: ' + esc(d.appt) + ' น.</div>' : (d.dueDate ? '<div style="margin-top:4px;font-size:11px;color:#64748b">ครบกำหนด: ' + esc(d.dueDate) + '</div>' : ''))+
     (d.price!=null?'<p style="margin:2px 0 0;font-size:15px;font-weight:700">'+Number(d.price).toLocaleString('th-TH')+' บาท</p>':'')+
     (d.supplierLock?'<p style="margin:6px 0 0;font-size:12px;font-weight:700;border:1.5px solid #000;display:inline-block;padding:1px 7px;border-radius:3px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</p>':'')+
     (orderInfo?'<div style="margin-top:6px;font-size:12px;font-weight:600;line-height:1.4">'+orderInfo+'</div>':'')+
