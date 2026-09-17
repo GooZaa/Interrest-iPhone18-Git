@@ -3283,7 +3283,7 @@ function buildLabelHTML(d){
     (d.supplierLock?'<span style="display:inline-block;margin-top:6px;font-size:9px;color:#0C447C;background:#E6F1FB;padding:2px 6px;border-radius:4px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</span>':'')+
     (orderInfo?'<div style="margin-top:6px;font-size:9.5px;font-weight:600;line-height:1.4;color:#333">'+orderInfo+'</div>':'')+
     '<div style="border-top:1px dashed #999;margin-top:8px;padding-top:6px">'+
-      (d.appt?'<p style="margin:0;font-size:10px;color:#333">นัดรับ '+esc(d.appt)+'</p>':'<p style="margin:0;font-size:10px;color:#333">นัดรับ: ______________</p>')+
+      (d.appt?'<p style="margin:0;font-size:10px;color:#333">นัดรับ '+esc(d.appt)+'</p>':'<p style="margin:0;font-size:10px;color:#333">นัดรับ: ' + (d.appt ? esc(d.appt) + ' น.' : '_______________') + '</p>')+
       (d.deposit?'<p style="margin:2px 0 0;font-size:10px;color:#333">มัดจำรายการนี้ '+d.deposit.toLocaleString()+' · #'+esc(d.billNo)+'</p>':'')+
       (d.supplierLock?'<p style="margin:2px 0 0;font-size:9px;color:#900">* ใช้โครงการ AIS ต้องเป็นเครื่อง AIS เท่านั้น</p>':'')+
     '</div>'+
@@ -3339,7 +3339,7 @@ function buildLabelThermalHTML(d){
     (d.supplierLock?'<p style="margin:6px 0 0;font-size:12px;font-weight:700;border:1.5px solid #000;display:inline-block;padding:1px 7px;border-radius:3px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</p>':'')+
     (orderInfo?'<div style="margin-top:6px;font-size:12px;font-weight:600;line-height:1.4">'+orderInfo+'</div>':'')+
     '<div style="border-top:1.5px dashed #000;margin-top:9px;padding-top:7px">'+
-      (d.appt?'<p style="margin:0;font-size:13px;font-weight:600">นัดรับ '+esc(d.appt)+'</p>':'<p style="margin:0;font-size:13px">นัดรับ: ______________</p>')+
+      (d.appt?'<p style="margin:0;font-size:13px;font-weight:600">นัดรับ '+esc(d.appt)+'</p>':'<p style="margin:0;font-size:13px">นัดรับ: ' + (d.appt ? esc(d.appt) + ' น.' : '_______________') + '</p>')+
       (d.deposit?'<p style="margin:2px 0 0;font-size:13px">มัดจำรายการนี้ '+d.deposit.toLocaleString()+' · #'+esc(d.billNo)+'</p>':'')+
     '</div>'+
     // QR เบอร์โทร (เดี่ยว กลาง) + บาร์โค้ดรหัสจอง (ล่างสุด กลาง)
