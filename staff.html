@@ -4,7 +4,7 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260917-8"></script>
+<script src="js/api.js?v=20260917-9"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
@@ -317,6 +317,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
   <section class="page" id="pg-new"><div class="booking-form">
     <p class="form-title">จองสินค้า</p><p class="form-lead">บันทึกข้อมูลลูกค้าและสเปกเครื่องให้ครบก่อนยืนยันการจอง</p>
     <div class="form-section"><div class="section-top"><h2>ข้อมูลลูกค้า</h2></div><div class="chipbar" id="groupChips" style="margin:0 0 14px"><span class="lb">กลุ่มลูกค้า</span></div>
+      <div id="f-preorder-wrap" style="display:none;margin:0 0 14px;padding:12px 14px;border-radius:11px;background:var(--cv);border:0.5px solid var(--bd2)">
+        <label style="font-weight:600;color:var(--accent);margin-bottom:6px">เลข Pre-Order <span style="color:var(--danger)">*</span></label>
+        <input id="f-preorder" type="text" placeholder="ระบุเลข Pre-Order เช่น PO-6709-001 หรือเลขที่ใบจอง">
+      </div>
       <div id="dupBox"></div>
       <div class="row"><div class="field"><label>ชื่อ-นามสกุล</label><input id="f-name" type="text" autocomplete="name" placeholder="ระบุชื่อและนามสกุล"></div><div class="field"><label>เบอร์โทรศัพท์</label><input id="f-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678"></div></div>
       <div class="row"><div class="field"><label>ช่องทางติดต่อ</label><select id="f-channel"><option value="" disabled selected>โปรดระบุ</option><option value="LINE">LINE</option><option value="WhatsApp">WhatsApp</option><option value="อีเมล">E-Mail</option><option value="โทรอย่างเดียว">โทรอย่างเดียว</option></select></div><div class="field"><label id="contactLabel">ไอดี / ข้อมูลติดต่อ</label><input id="f-contact" type="text" placeholder="ระบุข้อมูลติดต่อ"></div></div>
@@ -1295,6 +1299,13 @@ function currentGroup(){var el=$('groupChips').querySelector('.chip.on');return 
 function syncPreBook(){
   var cg = currentGroup();
   var isPo = cg==='Pre-Order' || (cg && cg.toLowerCase().indexOf('pre-order')!==-1);
+  var poWrap = $('f-preorder-wrap');
+  if (poWrap) poWrap.style.display = isPo ? 'block' : 'none';
+  var poInp = $('f-preorder');
+  if (poInp) {
+    if (!isPo) poInp.value = '';
+    else if (STATE.refs.preOrder && !poInp.value) poInp.value = STATE.refs.preOrder;
+  }
   if(!isPo) STATE.refs.preOrder='';
   renderReferences();
 }
@@ -1323,6 +1334,7 @@ $('f-contact').addEventListener('input',function(){
     }
   }
 });
+if($('f-preorder')){$('f-preorder').addEventListener('input',function(){STATE.refs.preOrder=this.value.trim();renderReferences();});}
 
 function renderReferences(){
   var groups=STATE.boot.groups||[], hasGroup=function(name){return groups.some(function(g){return g.name===name;});}, refs=[];
@@ -1357,7 +1369,11 @@ function openReferenceDialog(key){
   }
   $('ref-cancel').onclick=closePanel;$('ref-save').onclick=function(){
     if(key==='deposit'){var depositError=saveDepositDialog();if(depositError){toast(depositError);return;}}
-    else {STATE.refs[key]=$('ref-value').value.trim();if(key==='preBooking'&&STATE.refs[key]){STATE.devices.forEach(function(d){d.supplierLock=true;d.supplier='AIS';});renderDevices();}}
+    else {
+      STATE.refs[key]=$('ref-value').value.trim();
+      if(key==='preOrder'&&$('f-preorder')){$('f-preorder').value=STATE.refs[key];}
+      if(key==='preBooking'&&STATE.refs[key]){STATE.devices.forEach(function(d){d.supplierLock=true;d.supplier='AIS';});renderDevices();}
+    }
     closePanel();renderReferences();
   };
 }
@@ -1482,7 +1498,7 @@ $('f-phone').addEventListener('input',function(){
   },450);
 });
 
-function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.price=prodPrice(d.model,d.capacity)||0;x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;x.preOrder=STATE.refs.preOrder||'';x.preBooking=STATE.refs.preBooking||'';return x;})};}
+function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total),poDirect=$('f-preorder')?$('f-preorder').value.trim():'',poFinal=poDirect||STATE.refs.preOrder||'';return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:poFinal,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.price=prodPrice(d.model,d.capacity)||0;x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;x.preOrder=poFinal;x.preBooking=STATE.refs.preBooking||'';return x;})};}
 function validateBooking(p){if(!p.name.trim())return 'กรุณาระบุชื่อ-นามสกุล';if(p.phone.replace(/\D/g,'').length<9)return 'กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง';if(p.contactId.trim()&&!$('f-channel').value)return 'กรุณาเลือกช่องทางติดต่อ (เช่น LINE, WhatsApp หรือ E-Mail)';if(!p.devices.length||p.devices.some(function(d){return !d.model||!d.capacity||!d.color;}))return 'กรุณาระบุรุ่น ความจุ และสีของเครื่องให้ครบ';var isPo=p.group==='Pre-Order'||(p.group&&p.group.toLowerCase().indexOf('pre-order')!==-1);if(isPo&&!String(p.preOrder||'').trim())return 'กรุณาระบุเลข Pre-Order';if(p.preBooking&&p.devices.some(function(d){return !d.supplierLock||d.supplier!=='AIS';}))return 'Pre-Booking AIS ต้องใช้เครื่องจากซัพ AIS เท่านั้น';if(Number(p.depositTotal||0)>0&&!p.billNo)return 'กรุณาระบุเลขบิลมัดจำ';if((p.depositAllocations||[]).reduce(function(a,b){return a+Number(b||0);},0)!==Number(p.depositTotal||0))return 'ยอดมัดจำที่แบ่งให้แต่ละรายการไม่ตรงกับยอดรวม';return '';}
 $('btnSave').onclick=function(){var p=bookingPayload(),err=validateBooking(p);if(err){toast(err);return;}openBookingConfirm(p);};
 function openBookingConfirm(p){
@@ -1623,7 +1639,7 @@ function showSavedPrintChoice(id,count){
   $('saved-thermal').onclick=function(){previewDoc(id,'slip80',back);};
   $('saved-ok').onclick=closePanel;
 }
-function resetBookingForm(){['f-phone','f-name','f-contact','f-note','f-channel'].forEach(function(id){$(id).value='';});delete $('f-contact').dataset.autofilled;syncContactField();$('dupBox').innerHTML='';STATE.refs={preOrder:'',preBooking:'',deposit:'',billNo:'',depositAllocations:[]};STATE.devices=[];addDeviceRow();selectDefaultBookingGroup();renderReferences();}
+function resetBookingForm(){['f-phone','f-name','f-contact','f-note','f-channel'].forEach(function(id){$(id).value='';});if($('f-preorder'))$('f-preorder').value='';delete $('f-contact').dataset.autofilled;syncContactField();$('dupBox').innerHTML='';STATE.refs={preOrder:'',preBooking:'',deposit:'',billNo:'',depositAllocations:[]};STATE.devices=[];addDeviceRow();selectDefaultBookingGroup();renderReferences();}
 
 // ---- list ----
 var qTimer,listRequestSeq=0;
@@ -2064,12 +2080,16 @@ function bindDetail(id,r){
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0">ระบุเลข Pre-Order</h2><span class="iconbtn" onclick="openDetail(\''+id+'\')" style="cursor:pointer">×</span></div>' +
       '<p style="margin:0 0 14px;color:var(--t2);font-size:13px">'+esc(r.name)+' · <span class="mono">'+esc(r.id)+'</span></p>' +
       '<div class="field"><label>เลข Pre-Order <span style="color:var(--danger)">*</span></label>' +
-      '<input id="qpoInput" value="'+esc(r.preOrder||'')+'" placeholder="เช่น PO-6709-001 หรือเลขที่ใบจอง"></div>' +
+      '<input id="qpoInput" value="'+esc(r.preOrder||'')+'" placeholder="เช่น PO-6709-001 หรือเลขที่ใบจอง">' +
+      (r.billNo && !r.preOrder ? '<button type="button" class="btn2" id="qpoUseBill" style="margin-top:6px;font-size:11.5px;padding:5px 8px;width:auto">ใช้เลขเดียวกับบิลมัดจำ ('+esc(r.billNo)+')</button>' : '') +
+      '</div>' +
       '<div style="display:flex;gap:10px;margin-top:16px"><button type="button" class="btn2" id="qpoCancel" style="flex:1">ยกเลิก</button><button type="button" class="btn" id="qpoSave" style="flex:1">บันทึก</button></div>' +
     '</div>');
-    var inp=$('qpoInput');if(inp){inp.focus();inp.select();}
+    var inp=$('qpoInput');
     var cancelBtn=$('qpoCancel');if(cancelBtn)cancelBtn.onclick=function(){openDetail(id);};
     var saveBtn=$('qpoSave');
+    var useBillBtn=$('qpoUseBill');if(useBillBtn)useBillBtn.onclick=function(){$('qpoInput').value=r.billNo;$('qpoInput').focus();};
+    if(inp){inp.focus();inp.select();inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();saveBtn.click();}};}
     if(saveBtn)saveBtn.onclick=function(){
       var val=$('qpoInput').value.trim();
       if(!val){toast('กรุณาระบุเลข Pre-Order');$('qpoInput').focus();return;}

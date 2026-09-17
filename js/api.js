@@ -103,6 +103,21 @@
     return s === 'true' || s === '1' || s === 'yes';
   }
 
+  function extractPreOrder(row) {
+    if (!row || typeof row !== 'object') return '';
+    let po = row.pre_order_no || row.pre_order || row.preorder || row.preorder_no || row.pre_order_id || row.order_no || row.po_no || row['เลขPreOrder'] || row['เลข Pre-Order'] || '';
+    if (!po) {
+      for (const k of Object.keys(row)) {
+        const kl = k.toLowerCase().replace(/[\s\-_]/g, '');
+        if ((kl.indexOf('preorder') !== -1 || kl.indexOf('พรี') !== -1 || kl.indexOf('ใบจอง') !== -1) && row[k]) {
+          po = String(row[k]);
+          break;
+        }
+      }
+    }
+    return String(po || '').trim();
+  }
+
 
   function optFirst(a, b) {
     return (typeof a === 'string' && (a.startsWith('staff_') || a === 'logged_in')) ? b : a;
@@ -176,7 +191,7 @@
       billNo: r.bill_no,
       token: r.token,
       checkUrl: getCheckUrl(r.token),
-      preOrder: r.pre_order_no || r.pre_order || r.preorder || '',
+      preOrder: extractPreOrder(r),
       preBooking: r.pre_booking_no || '',
       supplierLock: !!r.lock_supplier,
       lockSupplier: !!r.lock_supplier,
@@ -749,7 +764,7 @@ async validateLocationCode(tokenOrCode, code) {
         callCount: data.call_count || 0,
         updatedAt: fmtDate(data.updated_at),
         updatedBy: data.updated_by,
-        preOrder: data.pre_order_no || data.pre_order || data.preorder || '',
+        preOrder: extractPreOrder(data),
         preBooking: data.pre_booking_no || '',
         extraNotes: data.extra_notes || '',
         additionalNote: data.extra_notes || '',
@@ -1276,7 +1291,7 @@ async validateLocationCode(tokenOrCode, code) {
         billNo: r.bill_no,
         dueDate: r.due_date ? fmtDay(r.due_date) : '',
         appt: fmtAppt(r),
-        preOrder: r.pre_order_no || '',
+        preOrder: extractPreOrder(r),
         preBooking: r.pre_booking_no || '',
         status: r.status,
         price: r.price_at_booking,
@@ -1305,7 +1320,7 @@ async validateLocationCode(tokenOrCode, code) {
         billNo: r.bill_no,
         dueDate: r.due_date ? fmtDay(r.due_date) : '',
         appt: fmtAppt(r),
-        preOrder: r.pre_order_no || '',
+        preOrder: extractPreOrder(r),
         preBooking: r.pre_booking_no || '',
         status: r.status,
         price: r.price_at_booking,
