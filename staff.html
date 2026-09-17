@@ -1471,7 +1471,7 @@ $('f-phone').addEventListener('input',function(){
   },450);
 });
 
-function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.price=prodPrice(d.model,d.capacity)||0;x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;return x;})};}
+function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.price=prodPrice(d.model,d.capacity)||0;x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;x.preOrder=STATE.refs.preOrder||'';x.preBooking=STATE.refs.preBooking||'';return x;})};}
 function validateBooking(p){if(!p.name.trim())return 'กรุณาระบุชื่อ-นามสกุล';if(p.phone.replace(/\D/g,'').length<9)return 'กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง';if(p.contactId.trim()&&!$('f-channel').value)return 'กรุณาเลือกช่องทางติดต่อ (เช่น LINE, WhatsApp หรือ E-Mail)';if(!p.devices.length||p.devices.some(function(d){return !d.model||!d.capacity||!d.color;}))return 'กรุณาระบุรุ่น ความจุ และสีของเครื่องให้ครบ';if(p.group==='Pre-Order'&&!String(p.preOrder||'').trim())return 'กรุณาระบุเลข Pre-Order';if(p.preBooking&&p.devices.some(function(d){return !d.supplierLock||d.supplier!=='AIS';}))return 'Pre-Booking AIS ต้องใช้เครื่องจากซัพ AIS เท่านั้น';if(Number(p.depositTotal||0)>0&&!p.billNo)return 'กรุณาระบุเลขบิลมัดจำ';if((p.depositAllocations||[]).reduce(function(a,b){return a+Number(b||0);},0)!==Number(p.depositTotal||0))return 'ยอดมัดจำที่แบ่งให้แต่ละรายการไม่ตรงกับยอดรวม';return '';}
 $('btnSave').onclick=function(){var p=bookingPayload(),err=validateBooking(p);if(err){toast(err);return;}openBookingConfirm(p);};
 function openBookingConfirm(p){
@@ -1839,7 +1839,9 @@ function openDetail(id, editMode){
     if(r.altCaps)h+='<div class="kv"><span class="k">ความจุสำรอง</span><span>'+esc(r.altCaps)+'</span></div>';
     if(r.supplierLock)h+='<div class="kv"><span class="k">ซัพ</span><span>AIS เท่านั้น</span></div>';
     if(r.promo)h+='<div class="kv"><span class="k">โครงการ</span><span>'+esc(r.promo)+'</span></div>';
-    if(r.preOrder)h+='<div class="kv"><span class="k">เลข Pre-Order</span><span class="ref-value">'+esc(r.preOrder)+'</span></div>';
+    if(r.preOrder || r.group==='Pre-Order' || r.customerGroup==='Pre-Order'){
+      h+='<div class="kv"><span class="k">เลข Pre-Order</span><span class="ref-value">'+(r.preOrder ? esc(r.preOrder) : '<span style="color:var(--t3);font-weight:400">ยังไม่ระบุ</span>')+'</span></div>';
+    }
     if(r.preBooking)h+='<div class="kv"><span class="k">เลข Pre-Booking</span><span class="ref-value">'+esc(r.preBooking)+'</span></div>';
     if(r.billNo||r.deposit)h+='<div class="kv"><span class="k">มัดจำของรายการนี้</span><span class="ref-value">'+(r.billNo?'บิล '+esc(r.billNo):'-')+(r.deposit?' · '+r.deposit.toLocaleString()+' THB':'')+'</span></div>';
     if(r.depositBatchCount>1)h+='<div class="kv"><span class="k">ยอดรวมของบิล</span><span class="ref-value">'+Number(r.depositBatchTotal||0).toLocaleString()+' THB · '+r.depositBatchCount+' รายการ</span></div>';
@@ -2409,7 +2411,7 @@ function bindImportControls() {
   }
 }
 
-async function downloadIoTemplate() {
+async async function downloadIoTemplate() {
   if (typeof ExcelJS === 'undefined') {
     toast('กำลังโหลดไลบรารี Excel กรุณาลองใหม่อีกครั้ง');
     return;

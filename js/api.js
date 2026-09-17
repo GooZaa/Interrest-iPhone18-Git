@@ -263,6 +263,8 @@
           phone: cleanPhone,
           customer_name: name,
           customer_group: 'Walk-in',
+          pre_order_no: (typeof d !== 'undefined' && d.preOrder) ? d.preOrder : (p.preOrder || p.pre_order_no || ''),
+          pre_booking_no: (typeof d !== 'undefined' && d.preBooking) ? d.preBooking : (p.preBooking || p.pre_booking_no || ''),
           model: d.model,
           capacity: d.capacity,
           color: d.color,
