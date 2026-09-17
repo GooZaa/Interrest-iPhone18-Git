@@ -176,6 +176,12 @@
       billNo: r.bill_no,
       token: r.token,
       checkUrl: getCheckUrl(r.token),
+      preOrder: r.pre_order_no || '',
+      preBooking: r.pre_booking_no || '',
+      supplierLock: !!r.lock_supplier,
+      lockSupplier: !!r.lock_supplier,
+      supplier: r.specified_supplier,
+      promo: r.campaign,
       updatedAt: updatedAt,
       createdAt: createdAt,
       bookedAt: createdAt
@@ -272,8 +278,8 @@
           phone: cleanPhone,
           customer_name: name,
           customer_group: 'Walk-in',
-          pre_order_no: (typeof d !== 'undefined' && d.preOrder) ? d.preOrder : (p.preOrder || p.pre_order_no || ''),
-          pre_booking_no: (typeof d !== 'undefined' && d.preBooking) ? d.preBooking : (p.preBooking || p.pre_booking_no || ''),
+          pre_order_no: (typeof d !== 'undefined' && d.preOrder) ? d.preOrder : (data.preOrder || ''),
+          pre_booking_no: (typeof d !== 'undefined' && d.preBooking) ? d.preBooking : (data.preBooking || ''),
           model: d.model,
           capacity: d.capacity,
           color: d.color,
@@ -552,11 +558,11 @@ async validateLocationCode(tokenOrCode, code) {
 
       const today = new Date().toISOString().slice(0, 10);
       if (appliedFilter.focus === 'overdue') {
-        query = query.eq('status', 'ของมาแล้ว').lt('due_date', today);
+        query = query.or(`and(status.eq.ของมาแล้ว,due_date.lt.${today}),and(status.eq.นัดรับแล้ว,appointment_at.lt.${today})`);
       } else if (appliedFilter.focus === 'today') {
-        query = query.eq('due_date', today);
+        query = query.or(`and(status.eq.นัดรับแล้ว,appointment_at.gte.${today}T00:00:00,appointment_at.lte.${today}T23:59:59),and(status.eq.ของมาแล้ว,due_date.eq.${today})`);
       } else if (appliedFilter.focus === 'noCall') {
-        query = query.eq('status', 'ของมาแล้ว').eq('call_count', 0);
+        query = query.eq('status', 'ของมาแล้ว').or('call_count.is.null,call_count.eq.0');
       } else if (appliedFilter.focus === 'failed') {
         query = query.gte('call_count', 3);
       } else if (appliedFilter.focus === 'pending') {
@@ -565,18 +571,31 @@ async validateLocationCode(tokenOrCode, code) {
 
       if (appliedFilter.q) {
         const q = appliedFilter.q.trim();
-        query = query.or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%,id.ilike.%${q}%,model.ilike.%${q}%,bill_no.ilike.%${q}%`);
+        query = query.or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%,id.ilike.%${q}%,model.ilike.%${q}%,bill_no.ilike.%${q}%,pre_order_no.ilike.%${q}%`);
       }
 
       query = query.order('booked_at', { ascending: true }).limit(500);
 
-      const { data, error } = await query;
+      const [{ data, error }, { data: allActive }] = await Promise.all([
+        query,
+        sb().from('reservations').select('status, due_date, appointment_at, call_count').not('status', 'in', '("รับของแล้ว","ยกเลิก")')
+      ]);
       if (error) throw new Error(error.message);
+
+      const activeRows = allActive || [];
+      const focus = {
+        overdue: activeRows.filter(r => (r.status === 'ของมาแล้ว' && r.due_date && r.due_date < today) || (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) < today)).length,
+        today: activeRows.filter(r => (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) === today) || (r.status === 'ของมาแล้ว' && r.due_date === today)).length,
+        noCall: activeRows.filter(r => r.status === 'ของมาแล้ว' && !(r.call_count || 0)).length,
+        failed: activeRows.filter(r => (r.status === 'ของมาแล้ว' || (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) < today)) && (r.call_count || 0) >= 3).length,
+        pending: activeRows.filter(r => r.status === 'รอตรวจสอบ').length
+      };
 
       const items = (data || []).map(mapReservation);
       return {
         items: items,
         total: items.length,
+        focus: focus,
         appliedFilter: appliedFilter
       };
     },
@@ -635,6 +654,8 @@ async validateLocationCode(tokenOrCode, code) {
           phone: cleanPhone,
           customer_name: custName,
           customer_group: params.customerGroup || params.group || 'Walk-in',
+          pre_order_no: (d && d.preOrder) || params.preOrder || '',
+          pre_booking_no: (d && d.preBooking) || params.preBooking || '',
           model: d.model,
           capacity: d.capacity,
           color: d.color,
@@ -1303,6 +1324,20 @@ async validateLocationCode(tokenOrCode, code) {
     async listBatchPrintCandidates(tokenOrFilter, filter) {
       const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
       let query = sb().from('reservations').select('*').in('status', ['ของมาแล้ว', 'นัดรับแล้ว', 'รอสินค้า']);
+      if (f.group) query = query.eq('customer_group', f.group);
+      if (f.status) query = query.eq('status', f.status);
+      if (f.model) query = query.eq('model', f.model);
+      if (f.capacity) query = query.eq('capacity', f.capacity);
+      if (f.color) query = query.eq('color', f.color);
+      if (f.aisOnly) query = query.eq('lock_supplier', true);
+      if (f.labeled === 'yes') query = query.eq('is_labeled', true);
+      if (f.labeled === 'no') query = query.or('is_labeled.is.null,is_labeled.eq.false');
+      if (f.apptFrom) query = query.gte('appointment_at', f.apptFrom + 'T00:00:00');
+      if (f.apptTo) query = query.lte('appointment_at', f.apptTo + 'T23:59:59');
+      if (f.q) {
+        const q = String(f.q).trim();
+        query = query.or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%,id.ilike.%${q}%,model.ilike.%${q}%,bill_no.ilike.%${q}%,pre_order_no.ilike.%${q}%`);
+      }
       const { data } = await query;
       return {
         items: (data || []).map(r => ({
@@ -1315,11 +1350,18 @@ async validateLocationCode(tokenOrCode, code) {
           capacity: r.capacity,
           color: r.color,
           status: r.status,
+          displayStatus: r.status,
           token: r.token,
           checkUrl: getCheckUrl(r.token),
           labeled: !!r.is_labeled,
           isLabeled: !!r.is_labeled,
-          appt: r.appointment_at ? fmtDate(r.appointment_at) : (r.due_date ? fmtDay(r.due_date) : '-')
+          preOrder: r.pre_order_no || '',
+          preBooking: r.pre_booking_no || '',
+          supplierLock: !!r.lock_supplier,
+          lockSupplier: !!r.lock_supplier,
+          promo: r.campaign,
+          dueDate: r.due_date ? fmtDay(r.due_date) : '',
+          appt: fmtAppt(r) || (r.due_date ? fmtDay(r.due_date) : '-')
         })),
         total: (data || []).length,
         maxSelection: 50

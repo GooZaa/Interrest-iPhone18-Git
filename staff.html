@@ -4,7 +4,7 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260917-3"></script>
+<script src="js/api.js?v=20260917-4"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
@@ -1647,25 +1647,10 @@ var WORK_FOCUS_DEFS=[
   {key:'pending',name:'รอตรวจสอบ',hint:'ตรวจข้อมูลเพื่อเข้าคิว'}
 ];
 function renderWorkFocus(focus){
-  if (!focus && STATE.items && STATE.items.length) {
-    focus = {
-      today: STATE.items.filter(function(x){ return x.status === 'นัดรับแล้ว' || x.status === 'ของมาแล้ว'; }).length,
-      overdue: STATE.items.filter(function(x){ return x.dueRemainingDays != null && x.dueRemainingDays < 0; }).length,
-      noCall: STATE.items.filter(function(x){ return (x.status === 'ของมาแล้ว' || x.status === 'นัดรับแล้ว') && !x.callCount; }).length,
-      pending: STATE.items.filter(function(x){ return x.status === 'รอสินค้า' || x.status === 'รอตรวจสอบ'; }).length
-    };
-  }
-  if (!focus && STATE.items && STATE.items.length) {
-    focus = {
-      today: STATE.items.filter(function(x){ return x.status === 'นัดรับแล้ว' || x.status === 'ของมาแล้ว'; }).length,
-      overdue: STATE.items.filter(function(x){ return x.dueRemainingDays != null && x.dueRemainingDays < 0; }).length,
-      noCall: STATE.items.filter(function(x){ return (x.status === 'ของมาแล้ว' || x.status === 'นัดรับแล้ว') && !x.callCount; }).length,
-      pending: STATE.items.filter(function(x){ return x.status === 'รอสินค้า' || x.status === 'รอตรวจสอบ'; }).length
-    };
-  }
   var box=$('workFocusCards');if(!box)return;
+  var counts = focus || {};
   box.innerHTML=WORK_FOCUS_DEFS.map(function(x){
-    return '<button class="work-card'+(STATE.focusF===x.key?' on':'')+'" type="button" data-focus="'+x.key+'" aria-pressed="'+(STATE.focusF===x.key?'true':'false')+'"><div class="work-count">'+Number((focus||{})[x.key]||0).toLocaleString()+'</div><div class="work-name">'+esc(x.name)+'</div><div class="work-hint">'+esc(x.hint)+'</div></button>';
+    return '<button class="work-card'+(STATE.focusF===x.key?' on':'')+'" type="button" data-focus="'+x.key+'" aria-pressed="'+(STATE.focusF===x.key?'true':'false')+'"><div class="work-count">'+Number(counts[x.key]||0).toLocaleString()+'</div><div class="work-name">'+esc(x.name)+'</div><div class="work-hint">'+esc(x.hint)+'</div></button>';
   }).join('');
   box.querySelectorAll('[data-focus]').forEach(function(el){
     el.onclick=function(){
