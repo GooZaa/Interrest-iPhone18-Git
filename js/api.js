@@ -1088,19 +1088,75 @@ async validateLocationCode(tokenOrCode, code) {
 
     async markDone(tokenOrId, id) {
       const resId = optFirst(tokenOrId, id);
-      await sb().from('reservations').update({
-        status: 'รับของแล้ว',
-        updated_at: new Date().toISOString()
-      }).eq('id', resId);
+      const { data: current, error: currentError } = await sb().from('reservations')
+        .select('id, status').eq('id', resId).single();
+      if (currentError || !current) throw new Error('ไม่พบรายการจอง');
+      if (current.status === 'รับของแล้ว') throw new Error('รายการนี้บันทึกรับสินค้าแล้ว');
+      if (current.status !== 'นัดรับแล้ว') throw new Error('รับสินค้าได้เฉพาะรายการที่มีสถานะนัดรับแล้ว');
 
-      await sb().from('notes').insert({
+      const now = new Date().toISOString();
+      const { data: updated, error: updateError } = await sb().from('reservations').update({
+        status: 'รับของแล้ว',
+        updated_at: now
+      }).eq('id', resId).eq('status', 'นัดรับแล้ว').select('id');
+      if (updateError) throw new Error('บันทึกรับสินค้าไม่สำเร็จ: ' + updateError.message);
+      if (!updated || updated.length !== 1) throw new Error('สถานะรายการเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลใหม่');
+
+      const { error: noteError } = await sb().from('notes').insert({
         reservation_id: resId,
         author: 'Staff',
-        message: 'ส่งมอบสินค้าเรียบร้อยแล้ว (ปิดรายการ)',
-        source: 'auto',
-        created_at: new Date().toISOString()
+        message: 'ยืนยันว่าลูกค้ามารับสินค้าแล้ว · ส่งมอบสินค้าเรียบร้อย (ปิดรายการ)',
+        source: 'manual',
+        created_at: now
       });
-      return true;
+      if (noteError) {
+        await sb().from('reservations').update({ status: 'นัดรับแล้ว', updated_at: new Date().toISOString() })
+          .eq('id', resId).eq('status', 'รับของแล้ว');
+        throw new Error('บันทึกประวัติไม่สำเร็จ ระบบคืนสถานะเดิมแล้ว กรุณาลองใหม่');
+      }
+      return { ok: true, status: 'รับของแล้ว' };
+    },
+
+    async undoMarkDone(tokenOrId, idOrReason, reason) {
+      let resId, undoReason;
+      if (typeof tokenOrId === 'string' && (tokenOrId.startsWith('staff_') || tokenOrId === 'logged_in' || isFinite(Number(tokenOrId.split('.')[0])))) {
+        resId = idOrReason;
+        undoReason = reason;
+      } else {
+        resId = tokenOrId;
+        undoReason = idOrReason;
+      }
+      undoReason = String(undoReason || '').trim();
+      if (!undoReason) throw new Error('กรุณาระบุเหตุผลที่ยกเลิกสถานะรับสินค้าแล้ว');
+      if (undoReason.length > 500) throw new Error('เหตุผลต้องไม่เกิน 500 ตัวอักษร');
+
+      const { data: current, error: currentError } = await sb().from('reservations')
+        .select('id, status, appointment_at').eq('id', resId).single();
+      if (currentError || !current) throw new Error('ไม่พบรายการจอง');
+      if (current.status !== 'รับของแล้ว') throw new Error('ยกเลิกสถานะได้เฉพาะรายการที่รับสินค้าแล้ว');
+      if (!current.appointment_at) throw new Error('รายการนี้ไม่มีวันนัดเดิม กรุณาตรวจสอบข้อมูลก่อนย้อนสถานะ');
+
+      const now = new Date().toISOString();
+      const { data: updated, error: updateError } = await sb().from('reservations').update({
+        status: 'นัดรับแล้ว',
+        updated_at: now
+      }).eq('id', resId).eq('status', 'รับของแล้ว').select('id');
+      if (updateError) throw new Error('ยกเลิกสถานะรับสินค้าไม่สำเร็จ: ' + updateError.message);
+      if (!updated || updated.length !== 1) throw new Error('สถานะรายการเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลใหม่');
+
+      const { error: noteError } = await sb().from('notes').insert({
+        reservation_id: resId,
+        author: 'Staff',
+        message: 'ยกเลิกสถานะรับสินค้าแล้ว · เหตุผล: ' + undoReason + ' · ย้อนกลับเป็น: นัดรับแล้ว',
+        source: 'manual',
+        created_at: now
+      });
+      if (noteError) {
+        await sb().from('reservations').update({ status: 'รับของแล้ว', updated_at: new Date().toISOString() })
+          .eq('id', resId).eq('status', 'นัดรับแล้ว');
+        throw new Error('บันทึกประวัติไม่สำเร็จ ระบบคืนสถานะรับของแล้ว กรุณาลองใหม่');
+      }
+      return { ok: true, status: 'นัดรับแล้ว', reason: undoReason };
     },
 
     async addManualNote(tokenOrId, idOrText, text) {
