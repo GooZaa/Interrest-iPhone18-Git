@@ -4,7 +4,7 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260917-5"></script>
+<script src="js/api.js?v=20260917-6"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
@@ -87,9 +87,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
 .divider{width:0.5px;height:22px;background:var(--bd);margin:0 2px}
 .summary{padding:8px 12px;background:var(--cv);border-radius:9px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--t2);margin-bottom:8px}.summary-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-left:auto}.summary-bulk{display:none;width:auto;padding:7px 12px;font-size:12px;box-shadow:none}.summary-bulk.on{display:inline-flex;align-items:center;gap:6px}
 .pill{font-size:10.5px;padding:3px 8px;border-radius:8px;font-weight:500;white-space:nowrap}
-.p-รอสินค้า,.p-รอตรวจสอบ{background:var(--neuBg);color:var(--neu)}
-.p-ของมาแล้ว{background:var(--okBg);color:var(--ok)}
-.p-นัดรับแล้ว{background:var(--warnBg);color:var(--warn)}
+.p-รอตรวจสอบ{background:var(--neuBg);color:var(--neu)}
+.p-รอสินค้า{background:#FFF2D8;color:#C2410C;font-weight:600}
+.p-ของมาแล้ว{background:#E0F2FE;color:#0369A1;font-weight:600}
+.p-นัดรับแล้ว{background:#DCFCE7;color:#15803D;font-weight:600}
+.dk .p-รอสินค้า{background:#3A2A0C;color:#F59E0B}
+.dk .p-ของมาแล้ว{background:#16233B;color:#60A5FA}
+.dk .p-นัดรับแล้ว{background:#064E3B;color:#4ADE80}
 .p-นัดรับวันนี้{background:var(--todayBg);color:var(--today)}
 .p-เลยกำหนดวันนัด{background:var(--dangerBg);color:var(--danger)}
 .p-รับของแล้ว{background:var(--neuBg);color:var(--neu)}
@@ -1681,9 +1685,21 @@ function pill(s){return '<span class="pill p-'+s+'">'+s+'</span>';}
 function listHeadHtml(){
   return '<div class="list-head"><div>รหัสจองสินค้า</div><div>ชื่อ-นามสกุล / เบอร์ติดต่อ</div><div>สินค้า</div><div>การโทร</div><div style="text-align:center">สถานะ</div><div>อัปเดต / ระยะเวลารอ</div><div></div></div>';
 }
+function groupBadge(group){
+  var g=String(group||'').trim();
+  if(!g)return '';
+  var lower=g.toLowerCase();
+  if(lower.indexOf('pre-order')>-1){
+    return '<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600;background:#EBF5FF;color:#1D4ED8;border:0.5px solid #BFDBFE">Pre-Order</span>';
+  }
+  if(lower.indexOf('vip')>-1){
+    return '<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600;background:#FEF9C3;color:#A16207;border:0.5px solid #FDE047">'+esc(g)+'</span>';
+  }
+  return '<span style="color:var(--t2)">'+esc(g)+'</span>';
+}
 function rowHtml(r){
   var callText=r.callCount?('โทรแล้ว '+r.callCount+' ครั้ง'+(r.callDaysAgo!=null?' · ล่าสุด '+(r.callDaysAgo<=0?'วันนี้':r.callDaysAgo+' วันก่อน'):'')):'ยังไม่โทร';
-  var callClass=(r.status==='ของมาแล้ว'&&!r.callCount)?'call-alert warn':'call-alert';
+  var callClass=((r.status==='ของมาแล้ว'||r.status==='นัดรับแล้ว')&&!r.callCount)?'call-alert warn':'call-alert';
   var waitText=r.status==='รอสินค้า'?(r.waitDays===0?'รอสินค้า วันนี้':'รอสินค้า '+r.waitDays+' วัน'):'';
   var shownStatus=r.status==='ของมาแล้ว'&&r.dueLabel&&r.dueLabel.indexOf('เลย')===0?'เลยกำหนด':(r.displayStatus||r.status);
   var updateText=(r.updatedAt||r.createdAt||r.bookedAt||'-');
@@ -1692,7 +1708,7 @@ function rowHtml(r){
     '<div class="booking-id">'+esc(r.id)+'</div>'+
     '<div style="min-width:0">'+
       '<div class="name">'+(r.urgent?'<span class="badge" style="background:var(--urgent);color:#fff"><svg class="ic"><use href="#i-warn"></use></svg></span> ':'')+esc(r.name)+'</div>'+
-      '<div class="sub">'+esc(r.phone)+' · '+esc(r.group)+'</div>'+
+      '<div class="sub">'+esc(r.phone)+' · '+groupBadge(r.group)+'</div>'+
     '</div>'+
     '<div class="col-product" style="min-width:0">'+
       '<div style="font-size:13.5px">'+esc(r.model)+'</div>'+

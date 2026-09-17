@@ -562,7 +562,7 @@ async validateLocationCode(tokenOrCode, code) {
       } else if (appliedFilter.focus === 'today') {
         query = query.or(`and(status.eq.นัดรับแล้ว,appointment_at.gte.${today}T00:00:00,appointment_at.lte.${today}T23:59:59),and(status.eq.ของมาแล้ว,due_date.eq.${today})`);
       } else if (appliedFilter.focus === 'noCall') {
-        query = query.eq('status', 'ของมาแล้ว').or('call_count.is.null,call_count.eq.0');
+        query = query.in('status', ['ของมาแล้ว', 'นัดรับแล้ว']).or('call_count.is.null,call_count.eq.0');
       } else if (appliedFilter.focus === 'failed') {
         query = query.gte('call_count', 3);
       } else if (appliedFilter.focus === 'pending') {
@@ -586,7 +586,7 @@ async validateLocationCode(tokenOrCode, code) {
       const focus = {
         overdue: activeRows.filter(r => (r.status === 'ของมาแล้ว' && r.due_date && r.due_date < today) || (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) < today)).length,
         today: activeRows.filter(r => (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) === today) || (r.status === 'ของมาแล้ว' && r.due_date === today)).length,
-        noCall: activeRows.filter(r => r.status === 'ของมาแล้ว' && !(r.call_count || 0)).length,
+        noCall: activeRows.filter(r => (r.status === 'ของมาแล้ว' || r.status === 'นัดรับแล้ว') && !(r.call_count || 0)).length,
         failed: activeRows.filter(r => (r.status === 'ของมาแล้ว' || (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) < today)) && (r.call_count || 0) >= 3).length,
         pending: activeRows.filter(r => r.status === 'รอตรวจสอบ').length
       };
@@ -1133,7 +1133,7 @@ async validateLocationCode(tokenOrCode, code) {
       const urgentItems = (urgentRes.data || []).map(mapReservation);
 
       const allRows = allActiveRes.data || [];
-      const noCallItems = allRows.filter(r => r.status === 'ของมาแล้ว' && !r.call_count).map(mapReservation);
+      const noCallItems = allRows.filter(r => (r.status === 'ของมาแล้ว' || r.status === 'นัดรับแล้ว') && !r.call_count).map(mapReservation);
       const manyFailsItems = allRows.filter(r => (r.call_count || 0) >= callAlertThreshold).map(mapReservation);
       const dueTodayItems = allRows.filter(r => r.due_date === today).map(mapReservation);
       const waitLongItems = allRows.filter(r => {
