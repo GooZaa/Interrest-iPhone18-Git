@@ -71,6 +71,15 @@
     return `${day}/${month}/${year}`;
   }
 
+  function fmtAppt(r) {
+    if (!r) return '';
+    if (r.appointment_at) return fmtDate(r.appointment_at);
+    if (r.appointment_time) {
+      return typeof fmtDateTime === 'function' ? fmtDateTime(r.appointment_time) : (typeof fmtDate === 'function' ? fmtDate(r.appointment_time) : String(r.appointment_time));
+    }
+    return '';
+  }
+
   function daysBetween(a, b) {
     return Math.floor((b - a) / (1000 * 60 * 60 * 24));
   }
@@ -156,7 +165,7 @@
       rawStatus: r.status,
       dueDate: r.due_date ? fmtDay(r.due_date) : '',
       dueLabel: dueLabel,
-      appt: (typeof mapReservation==='function' ? mapReservation(r).appt : '') || (r.appointment_time ? (typeof fmtDateTime==='function'?fmtDateTime(r.appointment_time):r.appointment_time) : (r.appointment_at ? fmtDate(r.appointment_at) : '')),
+      appt: fmtAppt(r),
       waitDays: waitDays,
       callCount: r.call_count || 0,
       urgent: !!r.is_urgent,
@@ -1245,7 +1254,7 @@ async validateLocationCode(tokenOrCode, code) {
         deposit: r.deposit,
         billNo: r.bill_no,
         dueDate: r.due_date ? fmtDay(r.due_date) : '',
-        appt: (typeof mapReservation==='function' ? mapReservation(r).appt : '') || (r.appointment_time ? (typeof fmtDateTime==='function'?fmtDateTime(r.appointment_time):r.appointment_time) : (r.appointment_at ? fmtDate(r.appointment_at) : '')),
+        appt: fmtAppt(r),
         preOrder: r.pre_order_no || '',
         preBooking: r.pre_booking_no || '',
         status: r.status,
@@ -1274,7 +1283,7 @@ async validateLocationCode(tokenOrCode, code) {
         deposit: r.deposit,
         billNo: r.bill_no,
         dueDate: r.due_date ? fmtDay(r.due_date) : '',
-        appt: (typeof mapReservation==='function' ? mapReservation(r).appt : '') || (r.appointment_time ? (typeof fmtDateTime==='function'?fmtDateTime(r.appointment_time):r.appointment_time) : (r.appointment_at ? fmtDate(r.appointment_at) : '')),
+        appt: fmtAppt(r),
         preOrder: r.pre_order_no || '',
         preBooking: r.pre_booking_no || '',
         status: r.status,
