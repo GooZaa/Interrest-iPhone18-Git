@@ -4,7 +4,7 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260917-7"></script>
+<script src="js/api.js?v=20260917-8"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
@@ -1293,7 +1293,9 @@ function renderFilterChips(){
 }
 function currentGroup(){var el=$('groupChips').querySelector('.chip.on');return el?el.dataset.g:'';}
 function syncPreBook(){
-  if(currentGroup()!=='Pre-Order')STATE.refs.preOrder='';
+  var cg = currentGroup();
+  var isPo = cg==='Pre-Order' || (cg && cg.toLowerCase().indexOf('pre-order')!==-1);
+  if(!isPo) STATE.refs.preOrder='';
   renderReferences();
 }
 function syncContactField(){
@@ -1324,10 +1326,13 @@ $('f-contact').addEventListener('input',function(){
 
 function renderReferences(){
   var groups=STATE.boot.groups||[], hasGroup=function(name){return groups.some(function(g){return g.name===name;});}, refs=[];
-  if(hasGroup('Pre-Order')&&currentGroup()==='Pre-Order') refs.push({key:'preOrder',title:'เลข Pre-Order (จำเป็น)',empty:'＋ ระบุเลข Pre-Order',value:STATE.refs.preOrder});
+  var cg = currentGroup();
+  var isPoGroup = cg==='Pre-Order' || (cg && cg.toLowerCase().indexOf('pre-order')!==-1);
+  var poConfigured = hasGroup('Pre-Order') || groups.some(function(g){return g.name && g.name.toLowerCase().indexOf('pre-order')!==-1;});
+  if(poConfigured && isPoGroup) refs.push({key:'preOrder',title:'เลข Pre-Order (จำเป็น)',empty:'＋ ระบุเลข Pre-Order',value:STATE.refs.preOrder});
   if(hasGroup('Pre-Booking')&&STATE.boot.supplierLockEnabled) refs.push({key:'preBooking',title:'Pre-Booking AIS',empty:'＋ เพิ่มเลข Pre-Booking',value:STATE.refs.preBooking});
   if(STATE.boot.depositEnabled) refs.push({key:'deposit',title:'บิลมัดจำ',empty:'＋ เพิ่มบิลมัดจำ',value:STATE.refs.billNo?('เลขที่ '+STATE.refs.billNo+' · '+Number(STATE.refs.deposit||0).toLocaleString()+' บาท'):''});
-  if(!hasGroup('Pre-Order'))STATE.refs.preOrder='';
+  if(!poConfigured)STATE.refs.preOrder='';
   if(!hasGroup('Pre-Booking')||!STATE.boot.supplierLockEnabled)STATE.refs.preBooking='';
   if(!STATE.boot.depositEnabled){STATE.refs.deposit='';STATE.refs.billNo='';}
   var cards=$('referenceCards'), section=cards.closest('.form-section');
@@ -1342,6 +1347,14 @@ function openReferenceDialog(key){
     : '<div class="field"><label>'+title+'</label><input id="ref-value" value="'+esc(STATE.refs[key])+'" placeholder="ระบุ'+title+'"></div>';
   openPanel('<div class="section-top"><h2>'+title+'</h2><button class="iconbtn" onclick="closePanel()">×</button></div>'+body+'<div class="row"><button class="btn2" id="ref-cancel">ยกเลิก</button><button class="btn" id="ref-save">บันทึก</button></div>');
   if(key==='deposit')bindDepositDialog();
+  else {
+    var inp=$('ref-value');
+    if(inp){
+      inp.focus();
+      inp.select();
+      inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();$('ref-save').click();}};
+    }
+  }
   $('ref-cancel').onclick=closePanel;$('ref-save').onclick=function(){
     if(key==='deposit'){var depositError=saveDepositDialog();if(depositError){toast(depositError);return;}}
     else {STATE.refs[key]=$('ref-value').value.trim();if(key==='preBooking'&&STATE.refs[key]){STATE.devices.forEach(function(d){d.supplierLock=true;d.supplier='AIS';});renderDevices();}}
@@ -1470,7 +1483,7 @@ $('f-phone').addEventListener('input',function(){
 });
 
 function bookingPayload(){var total=Number(STATE.refs.deposit||0),alloc=depositAllocationsForDevices(total);return {phone:$('f-phone').value,name:$('f-name').value,channel:$('f-channel').value||($('f-contact').value.trim()?'':'โทรอย่างเดียว'),contactId:$('f-contact').value,group:currentGroup(),preOrder:STATE.refs.preOrder,preBooking:STATE.refs.preBooking,note:$('f-note').value.trim(),lang:'ไทย',source:'staff',depositTotal:total,billNo:STATE.refs.billNo,depositAllocations:alloc,devices:STATE.devices.map(function(d,i){var x=Object.assign({},d);if(STATE.refs.preBooking){x.supplierLock=true;x.supplier='AIS';}x.price=prodPrice(d.model,d.capacity)||0;x.deposit=alloc[i]||0;x.billNo=STATE.refs.billNo;x.preOrder=STATE.refs.preOrder||'';x.preBooking=STATE.refs.preBooking||'';return x;})};}
-function validateBooking(p){if(!p.name.trim())return 'กรุณาระบุชื่อ-นามสกุล';if(p.phone.replace(/\D/g,'').length<9)return 'กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง';if(p.contactId.trim()&&!$('f-channel').value)return 'กรุณาเลือกช่องทางติดต่อ (เช่น LINE, WhatsApp หรือ E-Mail)';if(!p.devices.length||p.devices.some(function(d){return !d.model||!d.capacity||!d.color;}))return 'กรุณาระบุรุ่น ความจุ และสีของเครื่องให้ครบ';if(p.group==='Pre-Order'&&!String(p.preOrder||'').trim())return 'กรุณาระบุเลข Pre-Order';if(p.preBooking&&p.devices.some(function(d){return !d.supplierLock||d.supplier!=='AIS';}))return 'Pre-Booking AIS ต้องใช้เครื่องจากซัพ AIS เท่านั้น';if(Number(p.depositTotal||0)>0&&!p.billNo)return 'กรุณาระบุเลขบิลมัดจำ';if((p.depositAllocations||[]).reduce(function(a,b){return a+Number(b||0);},0)!==Number(p.depositTotal||0))return 'ยอดมัดจำที่แบ่งให้แต่ละรายการไม่ตรงกับยอดรวม';return '';}
+function validateBooking(p){if(!p.name.trim())return 'กรุณาระบุชื่อ-นามสกุล';if(p.phone.replace(/\D/g,'').length<9)return 'กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง';if(p.contactId.trim()&&!$('f-channel').value)return 'กรุณาเลือกช่องทางติดต่อ (เช่น LINE, WhatsApp หรือ E-Mail)';if(!p.devices.length||p.devices.some(function(d){return !d.model||!d.capacity||!d.color;}))return 'กรุณาระบุรุ่น ความจุ และสีของเครื่องให้ครบ';var isPo=p.group==='Pre-Order'||(p.group&&p.group.toLowerCase().indexOf('pre-order')!==-1);if(isPo&&!String(p.preOrder||'').trim())return 'กรุณาระบุเลข Pre-Order';if(p.preBooking&&p.devices.some(function(d){return !d.supplierLock||d.supplier!=='AIS';}))return 'Pre-Booking AIS ต้องใช้เครื่องจากซัพ AIS เท่านั้น';if(Number(p.depositTotal||0)>0&&!p.billNo)return 'กรุณาระบุเลขบิลมัดจำ';if((p.depositAllocations||[]).reduce(function(a,b){return a+Number(b||0);},0)!==Number(p.depositTotal||0))return 'ยอดมัดจำที่แบ่งให้แต่ละรายการไม่ตรงกับยอดรวม';return '';}
 $('btnSave').onclick=function(){var p=bookingPayload(),err=validateBooking(p);if(err){toast(err);return;}openBookingConfirm(p);};
 function openBookingConfirm(p){
   var totalEstPrice = 0;
