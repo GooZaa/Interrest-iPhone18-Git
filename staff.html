@@ -4,7 +4,7 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260917-9"></script>
+<script src="js/api.js?v=20260918-3"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
@@ -1840,7 +1840,7 @@ function openDetail(id, editMode){
        (canEdit&&!editMode?'<span class="iconbtn" id="btnEdit" title="แก้ไขข้อมูล" style="cursor:pointer"><svg class="ic"><use href="#i-pencil"></use></svg></span>':'')+
        '<span class="iconbtn" onclick="closePanel()" style="cursor:pointer"><span class="ic">×</span></span></span></div>';
     h+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><p style="margin:0;font-size:18px;font-weight:600">'+esc(r.name)+'</p><span class="mono" style="font-size:12px;font-weight:600;color:var(--selT);white-space:nowrap">'+esc(r.id)+'</span></div>';
-    h+='<p style="margin:3px 0 0;font-size:12px;color:var(--t2)">'+esc(r.phone)+' · '+esc(r.group)+'</p>';
+    h+='<p style="margin:3px 0 0;font-size:12px;color:var(--t2);display:flex;align-items:center;gap:5px"><span>'+esc(r.phone)+'</span><span>·</span>'+groupBadge(r.group)+'</p>';
     if(r.siblings&&r.siblings.length){h+='<p style="margin:8px 0 0;font-size:11.5px;color:var(--t3)">ลูกค้าคนนี้มีอีก '+r.siblings.length+' เครื่อง</p>';}
     if(closed){h+='<div class="alert" style="margin-top:12px"><span class="ic">■</span> '+(r.status==='ยกเลิก'?'รายการนี้ยกเลิกแล้ว':'รายการนี้รับสินค้าเรียบร้อยแล้ว')+' · ไม่สามารถแก้ไขหรือทำรายการต่อได้</div>';}
 
@@ -1889,8 +1889,8 @@ function openDetail(id, editMode){
     if(r.preBooking)h+='<div class="kv"><span class="k">เลข Pre-Booking</span><span class="ref-value">'+esc(r.preBooking)+'</span></div>';
     if(r.billNo||r.deposit)h+='<div class="kv"><span class="k">มัดจำของรายการนี้</span><span class="ref-value">'+(r.billNo?'บิล '+esc(r.billNo):'-')+(r.deposit?' · '+r.deposit.toLocaleString()+' THB':'')+'</span></div>';
     if(r.depositBatchCount>1)h+='<div class="kv"><span class="k">ยอดรวมของบิล</span><span class="ref-value">'+Number(r.depositBatchTotal||0).toLocaleString()+' THB · '+r.depositBatchCount+' รายการ</span></div>';
-    if(r.dueDate)h+='<div class="kv"><span class="k">ครบกำหนด</span><span>'+esc(r.dueDate)+(r.dueLabel?' · '+esc(r.dueLabel):'')+'</span></div>';
-    if(r.appt)h+='<div class="kv"><span class="k">นัดรับ</span><span>'+esc(r.appt)+'</span></div>';
+    if(r.appt)h+='<div class="kv"><span class="k">นัดรับ</span><span style="color:#2563eb;font-weight:700">'+esc(r.appt)+'</span></div>';
+    if(r.dueDate)h+='<div class="kv"><span class="k">ครบกำหนด</span><span style="color:#dc2626;font-weight:700">'+esc(r.dueDate)+(r.dueLabel?' · '+esc(r.dueLabel):'')+'</span></div>';
     h+='<div class="kv"><span class="k">โทรแล้ว</span><span>'+r.callCount+' ครั้ง</span></div></div>';
     h+='<div id="durationBox"></div>';
 
@@ -3363,6 +3363,7 @@ function buildLabelHTML(d){
     (d.price!=null?'<p style="margin:2px 0 0;font-size:11px;font-weight:700">'+Number(d.price).toLocaleString('th-TH')+' บาท</p>':'')+
     (d.supplierLock?'<span style="display:inline-block;margin-top:6px;font-size:9px;color:#0C447C;background:#E6F1FB;padding:2px 6px;border-radius:4px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</span>':'')+
     (orderInfo?'<div style="margin-top:6px;font-size:9.5px;font-weight:600;line-height:1.4;color:#333">'+orderInfo+'</div>':'')+
+    (d.additionalNote?'<div style="margin-top:6px;padding:5px 6px;border:1px solid #777;border-radius:4px;font-size:9.5px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere"><b>ข้อมูลเพิ่มเติม:</b> '+esc(d.additionalNote)+'</div>':'')+
     '<div style="border-top:1px dashed #999;margin-top:8px;padding-top:6px">'+
       (d.appt?'<p style="margin:0;font-size:10px;color:#333">นัดรับ '+esc(d.appt)+' น.</p>':'<p style="margin:0;font-size:10px;color:#333">นัดรับ: ______________</p>')+
       (d.deposit?'<p style="margin:2px 0 0;font-size:10px;color:#333">มัดจำรายการนี้ '+d.deposit.toLocaleString()+' · #'+esc(d.billNo)+'</p>':'')+
@@ -3419,6 +3420,7 @@ function buildLabelThermalHTML(d){
     (d.price!=null?'<p style="margin:2px 0 0;font-size:15px;font-weight:700">'+Number(d.price).toLocaleString('th-TH')+' บาท</p>':'')+
     (d.supplierLock?'<p style="margin:6px 0 0;font-size:12px;font-weight:700;border:1.5px solid #000;display:inline-block;padding:1px 7px;border-radius:3px">AIS เท่านั้น'+(d.promo?' · '+esc(d.promo):'')+'</p>':'')+
     (orderInfo?'<div style="margin-top:6px;font-size:12px;font-weight:600;line-height:1.4">'+orderInfo+'</div>':'')+
+    (d.additionalNote?'<div style="margin-top:7px;padding:6px 7px;border:1.5px solid #000;border-radius:4px;font-size:12px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere"><b>ข้อมูลเพิ่มเติม:</b> '+esc(d.additionalNote)+'</div>':'')+
     '<div style="border-top:1.5px dashed #000;margin-top:9px;padding-top:7px">'+
       (d.appt?'<p style="margin:0;font-size:13px;font-weight:600">นัดรับ '+esc(d.appt)+' น.</p>':'<p style="margin:0;font-size:13px">นัดรับ: ______________</p>')+
       (d.deposit?'<p style="margin:2px 0 0;font-size:13px">มัดจำรายการนี้ '+d.deposit.toLocaleString()+' · #'+esc(d.billNo)+'</p>':'')+

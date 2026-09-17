@@ -71,6 +71,28 @@
     return `${day}/${month}/${year}`;
   }
 
+  function bangkokDateKey(value) {
+    const date = value instanceof Date ? value : new Date(value || Date.now());
+    if (isNaN(date.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(date);
+    const values = {};
+    parts.forEach(part => { values[part.type] = part.value; });
+    return `${values.year}-${values.month}-${values.day}`;
+  }
+
+  function bangkokDayBounds(value) {
+    const key = bangkokDateKey(value);
+    const parts = key.split('-').map(Number);
+    const start = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]) - (7 * 60 * 60 * 1000));
+    return {
+      key: key,
+      start: start.toISOString(),
+      end: new Date(start.getTime() + (24 * 60 * 60 * 1000) - 1).toISOString()
+    };
+  }
+
   function fmtAppt(r) {
     if (!r) return '';
     if (r.appointment_at) return fmtDate(r.appointment_at);
@@ -101,6 +123,18 @@
     if (typeof v === 'boolean') return v;
     const s = String(v).trim().toLowerCase();
     return s === 'true' || s === '1' || s === 'yes';
+  }
+
+  function isPreOrderGroup(value) {
+    return String(value || '').trim().toLowerCase().indexOf('pre-order') !== -1;
+  }
+
+  function requirePreOrderNumber(group, value) {
+    const preOrder = String(value || '').trim();
+    if (isPreOrderGroup(group) && !preOrder) {
+      throw new Error('กลุ่ม Pre-Order ต้องระบุเลข Pre-Order ก่อนบันทึก');
+    }
+    return preOrder;
   }
 
   function extractPreOrder(row) {
@@ -571,11 +605,12 @@ async validateLocationCode(tokenOrCode, code) {
         query = query.eq('customer_group', appliedFilter.group);
       }
 
-      const today = new Date().toISOString().slice(0, 10);
+      const todayBounds = bangkokDayBounds();
+      const today = todayBounds.key;
       if (appliedFilter.focus === 'overdue') {
-        query = query.or(`and(status.eq.ของมาแล้ว,due_date.lt.${today}),and(status.eq.นัดรับแล้ว,appointment_at.lt.${today})`);
+        query = query.or(`and(status.eq.ของมาแล้ว,due_date.lt.${today}),and(status.eq.นัดรับแล้ว,appointment_at.lt.${todayBounds.start})`);
       } else if (appliedFilter.focus === 'today') {
-        query = query.or(`and(status.eq.นัดรับแล้ว,appointment_at.gte.${today}T00:00:00,appointment_at.lte.${today}T23:59:59),and(status.eq.ของมาแล้ว,due_date.eq.${today})`);
+        query = query.eq('status', 'นัดรับแล้ว').gte('appointment_at', todayBounds.start).lte('appointment_at', todayBounds.end);
       } else if (appliedFilter.focus === 'noCall') {
         query = query.in('status', ['ของมาแล้ว', 'นัดรับแล้ว']).or('call_count.is.null,call_count.eq.0');
       } else if (appliedFilter.focus === 'failed') {
@@ -599,10 +634,10 @@ async validateLocationCode(tokenOrCode, code) {
 
       const activeRows = allActive || [];
       const focus = {
-        overdue: activeRows.filter(r => (r.status === 'ของมาแล้ว' && r.due_date && r.due_date < today) || (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) < today)).length,
-        today: activeRows.filter(r => (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) === today) || (r.status === 'ของมาแล้ว' && r.due_date === today)).length,
+        overdue: activeRows.filter(r => (r.status === 'ของมาแล้ว' && r.due_date && r.due_date < today) || (r.status === 'นัดรับแล้ว' && r.appointment_at && new Date(r.appointment_at) < new Date(todayBounds.start))).length,
+        today: activeRows.filter(r => r.status === 'นัดรับแล้ว' && r.appointment_at && bangkokDateKey(r.appointment_at) === today).length,
         noCall: activeRows.filter(r => (r.status === 'ของมาแล้ว' || r.status === 'นัดรับแล้ว') && !(r.call_count || 0)).length,
-        failed: activeRows.filter(r => (r.status === 'ของมาแล้ว' || (r.status === 'นัดรับแล้ว' && r.appointment_at && r.appointment_at.slice(0, 10) < today)) && (r.call_count || 0) >= 3).length,
+        failed: activeRows.filter(r => (r.status === 'ของมาแล้ว' || (r.status === 'นัดรับแล้ว' && r.appointment_at && new Date(r.appointment_at) < new Date(todayBounds.start))) && (r.call_count || 0) >= 3).length,
         pending: activeRows.filter(r => r.status === 'รอตรวจสอบ').length
       };
 
@@ -646,13 +681,15 @@ async validateLocationCode(tokenOrCode, code) {
         throw new Error('ข้อมูลไม่ครบถ้วน: กรุณากรอกชื่อ เบอร์โทร และระบุเครื่องที่ต้องการจอง');
       }
       const cleanPhone = normPhone(params.phone);
+      const customerGroup = params.customerGroup || params.group || 'Walk-in';
+      const batchPreOrder = requirePreOrderNumber(customerGroup, params.preOrder);
 
       await sb().from('customers').upsert({
         phone: cleanPhone,
         name: custName,
         contact_channel: params.contactChannel || params.channel || 'LINE',
         contact_id: params.contactId || '',
-        customer_group: params.customerGroup || params.group || 'Walk-in'
+        customer_group: customerGroup
       }, { onConflict: 'phone' });
 
       const batchGroupId = 'B_' + Date.now();
@@ -662,14 +699,15 @@ async validateLocationCode(tokenOrCode, code) {
       for (const d of params.devices) {
         const id = genShortId();
         const token = genToken();
+        const devicePreOrder = requirePreOrderNumber(customerGroup, (d && d.preOrder) || batchPreOrder);
 
         reservations.push({
           id: id,
           token: token,
           phone: cleanPhone,
           customer_name: custName,
-          customer_group: params.customerGroup || params.group || 'Walk-in',
-          pre_order_no: (d && d.preOrder) || params.preOrder || '',
+          customer_group: customerGroup,
+          pre_order_no: devicePreOrder,
           pre_booking_no: (d && d.preBooking) || params.preBooking || '',
           model: d.model,
           capacity: d.capacity,
@@ -702,8 +740,10 @@ async validateLocationCode(tokenOrCode, code) {
         });
       }
 
-      await sb().from('reservations').insert(reservations);
-      await sb().from('notes').insert(notes);
+      const { error: reservationError } = await sb().from('reservations').insert(reservations);
+      if (reservationError) throw new Error('บันทึกรายการจองไม่สำเร็จ: ' + reservationError.message);
+      const { error: noteError } = await sb().from('notes').insert(notes);
+      if (noteError) console.warn('บันทึกไทม์ไลน์ไม่สำเร็จ:', noteError.message);
       return {
         ok: true,
         count: reservations.length,
@@ -807,6 +847,24 @@ async validateLocationCode(tokenOrCode, code) {
       } else {
         id = tokenOrId;
         dataPatch = idOrPatch;
+      }
+
+      const changesPreOrderIdentity = dataPatch.group !== undefined || dataPatch.customer_group !== undefined ||
+        dataPatch.preOrder !== undefined || dataPatch.pre_order_no !== undefined;
+      if (changesPreOrderIdentity) {
+        const { data: current, error: currentError } = await sb()
+          .from('reservations')
+          .select('customer_group, pre_order_no')
+          .eq('id', id)
+          .single();
+        if (currentError || !current) throw new Error('ไม่พบรายการจองที่ต้องการแก้ไข');
+        const finalGroup = dataPatch.group !== undefined || dataPatch.customer_group !== undefined
+          ? (dataPatch.group || dataPatch.customer_group || '')
+          : current.customer_group;
+        const finalPreOrder = dataPatch.preOrder !== undefined || dataPatch.pre_order_no !== undefined
+          ? (dataPatch.preOrder !== undefined ? dataPatch.preOrder : dataPatch.pre_order_no)
+          : current.pre_order_no;
+        requirePreOrderNumber(finalGroup, finalPreOrder);
       }
 
       const updateData = {
@@ -1104,15 +1162,17 @@ async validateLocationCode(tokenOrCode, code) {
       } else {
         id = tokenOrId; group = idOrGroup; deposit = groupOrDeposit; billNo = depositOrBill; pre = billOrPre;
       }
+      pre = requirePreOrderNumber(group || 'Walk-in', pre);
 
-      await sb().from('reservations').update({
+      const { error: approvalError } = await sb().from('reservations').update({
         status: 'รอสินค้า',
         customer_group: group || 'Walk-in',
         deposit: Number(deposit) || 0,
         bill_no: billNo || '',
-        pre_order_no: pre || '',
+        pre_order_no: pre,
         updated_at: new Date().toISOString()
       }).eq('id', id);
+      if (approvalError) throw new Error('อนุมัติรายการไม่สำเร็จ: ' + approvalError.message);
 
       await sb().from('notes').insert({
         reservation_id: id,
@@ -1125,7 +1185,7 @@ async validateLocationCode(tokenOrCode, code) {
     },
 
     async getFollowUpList() {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = bangkokDateKey();
       let waitLongDays = 14;
       let callAlertThreshold = 3;
       try {
@@ -1293,6 +1353,7 @@ async validateLocationCode(tokenOrCode, code) {
         appt: fmtAppt(r),
         preOrder: extractPreOrder(r),
         preBooking: r.pre_booking_no || '',
+        additionalNote: r.extra_notes || '',
         status: r.status,
         price: r.price_at_booking,
         supplier: r.specified_supplier,
@@ -1322,6 +1383,7 @@ async validateLocationCode(tokenOrCode, code) {
         appt: fmtAppt(r),
         preOrder: extractPreOrder(r),
         preBooking: r.pre_booking_no || '',
+        additionalNote: r.extra_notes || '',
         status: r.status,
         price: r.price_at_booking,
         supplier: r.specified_supplier,
@@ -1413,6 +1475,7 @@ async validateLocationCode(tokenOrCode, code) {
           appt: fmtAppt(r),
           preOrder: r.pre_order_no || '',
           preBooking: r.pre_booking_no || '',
+          additionalNote: r.extra_notes || '',
           price: r.price_at_booking,
           supplier: r.specified_supplier,
           lockSupplier: r.lock_supplier,
@@ -2051,6 +2114,7 @@ async validateLocationCode(tokenOrCode, code) {
           booked_at: bookedAt,
           updated_at: new Date().toISOString()
         };
+        resObj.pre_order_no = requirePreOrderNumber(resObj.customer_group, resObj.pre_order_no);
         reservationsToInsert.push(resObj);
 
         notesToInsert.push({
