@@ -237,6 +237,78 @@
     };
   }
 
+  function reportFilterRows(rows, filter) {
+    const f = filter || {};
+    return (rows || []).filter(r => {
+      if (f.group && r.customer_group !== f.group) return false;
+      if (f.model && r.model !== f.model) return false;
+      return true;
+    });
+  }
+
+  function reportActionItem(row, reason, severity) {
+    return Object.assign(mapReservation(row), {
+      reason: reason || row.status || '',
+      severity: severity || 'medium'
+    });
+  }
+
+  function buildReportActions(rows, options) {
+    const opts = options || {};
+    const todayBounds = bangkokDayBounds(opts.now);
+    const today = todayBounds.key;
+    const waitLongDays = Number(opts.waitLongDays) || 14;
+    const callAlertThreshold = Number(opts.callAlertThreshold) || 3;
+    const knownStatuses = ['รอตรวจสอบ', 'รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว', 'รับของแล้ว', 'ยกเลิก'];
+    const activeContactStatuses = ['ของมาแล้ว', 'นัดรับแล้ว'];
+    const activeStatuses = ['รอตรวจสอบ', 'รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว'];
+
+    const overdue = [], todayItems = [], noCall = [], waitLong = [], manyFails = [], quality = [];
+    (rows || []).forEach(r => {
+      const dueKey = r.due_date ? String(r.due_date).slice(0, 10) : '';
+      const appointment = r.appointment_at ? new Date(r.appointment_at) : null;
+      const appointmentValid = appointment && !isNaN(appointment.getTime());
+      const appointmentKey = appointmentValid ? bangkokDateKey(appointment) : '';
+      const isOverdue = (r.status === 'ของมาแล้ว' && dueKey && dueKey < today) ||
+        (r.status === 'นัดรับแล้ว' && appointmentValid && appointment < new Date(todayBounds.start));
+
+      if (isOverdue) {
+        const reason = r.status === 'นัดรับแล้ว' ? 'เลยวันนัดรับสินค้า' : 'เลยวันครบกำหนดรับ';
+        overdue.push(reportActionItem(r, reason, 'high'));
+      }
+      if (r.status === 'นัดรับแล้ว' && appointmentKey === today) {
+        todayItems.push(reportActionItem(r, 'นัดรับสินค้า ' + fmtAppt(r), 'medium'));
+      }
+      if (activeContactStatuses.includes(r.status) && !(Number(r.call_count) || 0)) {
+        noCall.push(reportActionItem(r, 'ของพร้อมแล้ว แต่ยังไม่มีบันทึกการโทร', 'medium'));
+      }
+      if (r.status === 'รอสินค้า') {
+        const booked = parseBookingDate(r);
+        const waitDays = booked && !isNaN(booked.getTime()) ? Math.max(0, daysBetween(booked, new Date())) : 0;
+        if (waitDays >= waitLongDays) waitLong.push(reportActionItem(r, 'รอสินค้า ' + waitDays + ' วัน', 'medium'));
+      }
+      if (activeStatuses.includes(r.status) && (Number(r.call_count) || 0) >= callAlertThreshold) {
+        manyFails.push(reportActionItem(r, 'บันทึกการโทรแล้ว ' + (Number(r.call_count) || 0) + ' ครั้ง', 'medium'));
+      }
+
+      const issues = [];
+      if (!knownStatuses.includes(r.status)) issues.push('สถานะไม่อยู่ในระบบ');
+      if (!r.customer_name || !r.phone) issues.push('ชื่อลูกค้าหรือเบอร์ติดต่อไม่ครบ');
+      if (!r.model || !r.capacity || !r.color) issues.push('ข้อมูลสินค้าไม่ครบ');
+      if (isPreOrderGroup(r.customer_group) && !extractPreOrder(r)) issues.push('ยังไม่มีเลข Pre-Order');
+      if ((Number(r.deposit) || 0) > 0 && !String(r.bill_no || '').trim()) issues.push('มีมัดจำแต่ไม่มีเลขบิล');
+      if (r.status === 'นัดรับแล้ว' && !appointmentValid) issues.push('สถานะนัดรับแล้วแต่ไม่มีวันนัดรับ');
+      if (issues.length) quality.push(reportActionItem(r, issues.join(' · '), 'high'));
+    });
+
+    const sortByAppointment = (a, b) => String(a.appt || a.dueDate || '').localeCompare(String(b.appt || b.dueDate || ''));
+    overdue.sort(sortByAppointment);
+    todayItems.sort(sortByAppointment);
+    waitLong.sort((a, b) => (b.waitDays || 0) - (a.waitDays || 0));
+    manyFails.sort((a, b) => (b.callCount || 0) - (a.callCount || 0));
+    return { overdue: overdue, today: todayItems, noCall: noCall, waitLong: waitLong, manyFails: manyFails, quality: quality };
+  }
+
   const api = {
     // -------------------------------------------------------------
     // SIGNUP
@@ -1784,16 +1856,39 @@ async validateLocationCode(tokenOrCode, code) {
     // -------------------------------------------------------------
     async reportGetDashboard(tokenOrFilter, filter) {
       const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
-      const [allRes, groupsRes, prodsRes] = await Promise.all([
+      const [allRes, groupsRes, prodsRes, configsRes] = await Promise.all([
         sb().from('reservations').select('*'),
         sb().from('customer_groups').select('name').order('sort_order'),
-        sb().from('products').select('*').order('id')
+        sb().from('products').select('*').order('id'),
+        sb().from('system_configs').select('key, value')
       ]);
-      const rows = allRes.data || [];
+      if (allRes.error) throw new Error(allRes.error.message);
+      const allRows = allRes.data || [];
+      const rows = reportFilterRows(allRows, f);
+      const configs = {};
+      (configsRes.data || []).forEach(c => { configs[c.key] = c.value; });
+      const waitLongDays = Number(configs['วันรอนาน']) || 14;
+      const callAlertThreshold = Number(configs['ครั้งโทรไม่ติดแล้วเตือน']) || 3;
+
+      const today = bangkokDateKey();
+      const defaultStartDate = new Date();
+      defaultStartDate.setDate(defaultStartDate.getDate() - 29);
+      let start = /^\d{4}-\d{2}-\d{2}$/.test(String(f.start || '')) ? String(f.start) : bangkokDateKey(defaultStartDate);
+      let end = /^\d{4}-\d{2}-\d{2}$/.test(String(f.end || '')) ? String(f.end) : today;
+      if (start > end) { const swap = start; start = end; end = swap; }
+      const maxStart = new Date(end + 'T00:00:00Z');
+      maxStart.setUTCDate(maxStart.getUTCDate() - 91);
+      const earliest = maxStart.toISOString().slice(0, 10);
+      if (start < earliest) start = earliest;
+      const inPeriod = key => !!key && key >= start && key <= end;
+      const createdKey = r => bangkokDateKey(r.booked_at || r.created_at);
+      const updatedKey = r => bangkokDateKey(r.updated_at || r.booked_at || r.created_at);
 
       const counts = { 'รอตรวจสอบ': 0, 'รอสินค้า': 0, 'ของมาแล้ว': 0, 'นัดรับแล้ว': 0, 'รับของแล้ว': 0, 'ยกเลิก': 0 };
+      let unknownStatuses = 0;
       rows.forEach(r => {
         if (counts[r.status] !== undefined) counts[r.status]++;
+        else unknownStatuses++;
       });
 
       // 1. Build Product Analytics
@@ -1818,9 +1913,9 @@ async validateLocationCode(tokenOrCode, code) {
           };
         }
         const item = specMap[key];
-        item.demand++;
-        if (r.status === 'รับของแล้ว') item.sold++;
-        if (r.status === 'ยกเลิก') item.cancelled++;
+        if (inPeriod(createdKey(r))) item.demand++;
+        if (r.status === 'รับของแล้ว' && inPeriod(updatedKey(r))) item.sold++;
+        if (r.status === 'ยกเลิก' && inPeriod(updatedKey(r))) item.cancelled++;
         if (r.status === 'รอตรวจสอบ' || r.status === 'รอสินค้า') item.backlog++;
         if (r.status === 'ของมาแล้ว' || r.status === 'นัดรับแล้ว') item.allocated++;
       });
@@ -1831,7 +1926,7 @@ async validateLocationCode(tokenOrCode, code) {
         item.successRate = item.closed ? Math.round((item.sold * 1000) / item.closed) / 10 : null;
         item.label = item.model + ' · ' + item.capacity + ' · ' + item.color;
         return item;
-      });
+      }).filter(item => item.demand || item.sold || item.backlog || item.allocated || item.cancelled);
 
       function rollupDimension(field) {
         const rmap = {};
@@ -1930,36 +2025,32 @@ async validateLocationCode(tokenOrCode, code) {
           if (w > item.longestWait) item.longestWait = w;
         }
       });
-      const productSummary = Object.keys(productSummaryMap).map(k => productSummaryMap[k]);
+      const productSummary = Object.keys(productSummaryMap).map(k => productSummaryMap[k]).sort((a, b) => {
+        const pendingA = a.pending + a.waiting;
+        const pendingB = b.pending + b.waiting;
+        return pendingB - pendingA || b.waiting - a.waiting || a.model.localeCompare(b.model);
+      });
 
       // 3. Actions list
-      const today = new Date().toISOString().slice(0, 10);
-      const overdueActions = rows.filter(r => r.status === 'ของมาแล้ว' && r.due_date && r.due_date < today).map(mapReservation);
-      const todayActions = rows.filter(r => r.due_date === today).map(mapReservation);
-      const noCallActions = rows.filter(r => r.status === 'ของมาแล้ว' && !r.call_count).map(mapReservation);
-      const waitLongActions = rows.filter(r => r.status === 'รอสินค้า' && r.booked_at && daysBetween(new Date(r.booked_at), new Date()) > 7).map(mapReservation);
-      const manyFailsActions = rows.filter(r => (r.call_count || 0) >= 3).map(mapReservation);
-
-      const start = f.start || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-      const end = f.end || new Date().toISOString().slice(0, 10);
+      const actions = buildReportActions(rows, { waitLongDays: waitLongDays, callAlertThreshold: callAlertThreshold });
 
       // Build daily trend points for the period
       const dayMap = {};
-      let cur = new Date(start + 'T00:00:00');
-      const endD = new Date(end + 'T23:59:59');
+      let cur = new Date(start + 'T00:00:00Z');
+      const endD = new Date(end + 'T00:00:00Z');
       while (cur <= endD) {
         const dStr = cur.toISOString().slice(0, 10);
         dayMap[dStr] = { date: dStr, created: 0, done: 0 };
-        cur.setDate(cur.getDate() + 1);
+        cur.setUTCDate(cur.getUTCDate() + 1);
       }
 
       rows.forEach(r => {
-        const cDate = (r.booked_at || r.created_at || '').slice(0, 10);
+        const cDate = createdKey(r);
         if (dayMap[cDate]) {
           dayMap[cDate].created++;
         }
         if (r.status === 'รับของแล้ว') {
-          const dDate = (r.updated_at || r.booked_at || r.created_at || '').slice(0, 10);
+          const dDate = updatedKey(r);
           if (dayMap[dDate]) {
             dayMap[dDate].done++;
           }
@@ -1967,6 +2058,17 @@ async validateLocationCode(tokenOrCode, code) {
       });
 
       const trend = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date));
+      const newCount = rows.filter(r => inPeriod(createdKey(r))).length;
+      const doneRows = rows.filter(r => r.status === 'รับของแล้ว' && inPeriod(updatedKey(r)));
+      const cancelRows = rows.filter(r => r.status === 'ยกเลิก' && inPeriod(updatedKey(r)));
+      const closedCount = doneRows.length + cancelRows.length;
+      const waitSamples = doneRows.map(r => {
+        const booked = parseBookingDate(r);
+        const closed = new Date(r.updated_at || r.booked_at || r.created_at || '');
+        if (!booked || isNaN(booked.getTime()) || isNaN(closed.getTime())) return null;
+        return Math.max(0, daysBetween(booked, closed));
+      }).filter(v => v !== null);
+      const avgWaitDays = waitSamples.length ? Math.round(waitSamples.reduce((sum, value) => sum + value, 0) * 10 / waitSamples.length) / 10 : null;
 
       return {
         generatedAt: fmtDate(new Date()),
@@ -1981,15 +2083,9 @@ async validateLocationCode(tokenOrCode, code) {
           groups: (groupsRes.data || []).map(g => g.name),
           models: (prodsRes.data || []).map(p => p.model)
         },
-        current: { total: rows.length, statuses: counts },
-        actions: {
-          overdue: overdueActions,
-          today: todayActions,
-          noCall: noCallActions,
-          waitLong: waitLongActions,
-          manyFails: manyFailsActions,
-          quality: []
-        },
+        current: { total: rows.length, statuses: counts, unknownStatuses: unknownStatuses },
+        actions: actions,
+        actionRules: { waitLongDays: waitLongDays, callAlertThreshold: callAlertThreshold },
         products: productSummary,
         productAnalytics: {
           specs: specs,
@@ -1997,9 +2093,12 @@ async validateLocationCode(tokenOrCode, code) {
           rankings: rankings
         },
         period: {
-          newCount: rows.length,
-          doneCount: counts['รับของแล้ว'] || 0,
-          cancelCount: counts['ยกเลิก'] || 0,
+          newCount: newCount,
+          doneCount: doneRows.length,
+          cancelCount: cancelRows.length,
+          successRate: closedCount ? Math.round(doneRows.length * 1000 / closedCount) / 10 : null,
+          avgWaitDays: avgWaitDays,
+          waitSampleSize: waitSamples.length,
           trend: trend
         }
       };
@@ -2008,7 +2107,8 @@ async validateLocationCode(tokenOrCode, code) {
     async reportGetDetails(tokenOrReq, request) {
       const req = (typeof tokenOrReq === 'object' && tokenOrReq !== null) ? tokenOrReq : (request || {});
       const { data: allRes } = await sb().from('reservations').select('*');
-      let items = allRes || [];
+      let items = reportFilterRows(allRes || [], req.filter || {});
+      let mappedItems = null;
 
       if (req.kind === 'status' && req.value) {
         items = items.filter(r => r.status === req.value);
@@ -2016,12 +2116,25 @@ async validateLocationCode(tokenOrCode, code) {
         items = items.filter(r => r.model === req.value);
       } else if (req.kind === 'spec' && req.value) {
         items = items.filter(r => (r.model + ' · ' + r.capacity + ' · ' + r.color) === req.value);
+      } else if (req.kind === 'action' && req.value) {
+        let waitLongDays = 14;
+        let callAlertThreshold = 3;
+        const { data: configs } = await sb().from('system_configs').select('key, value');
+        (configs || []).forEach(c => {
+          if (c.key === 'วันรอนาน') waitLongDays = Number(c.value) || waitLongDays;
+          if (c.key === 'ครั้งโทรไม่ติดแล้วเตือน') callAlertThreshold = Number(c.value) || callAlertThreshold;
+        });
+        const actions = buildReportActions(items, { waitLongDays: waitLongDays, callAlertThreshold: callAlertThreshold });
+        mappedItems = actions[req.value] || [];
       }
 
       return {
-        title: req.value || 'รายละเอียด',
-        total: items.length,
-        items: items.map(mapReservation)
+        title: req.kind === 'action' ? ({
+          overdue: 'เลยกำหนด', today: 'นัดรับวันนี้', noCall: 'ยังไม่เคยโทร',
+          waitLong: 'รอสินค้านาน', manyFails: 'ติดต่อหลายครั้ง', quality: 'ข้อมูลที่ต้องตรวจสอบ'
+        }[req.value] || 'งานที่ต้องจัดการ') : (req.value || 'รายละเอียด'),
+        total: mappedItems ? mappedItems.length : items.length,
+        items: mappedItems || items.map(mapReservation)
       };
     },
 
