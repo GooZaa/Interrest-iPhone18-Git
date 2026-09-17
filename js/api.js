@@ -176,7 +176,7 @@
       billNo: r.bill_no,
       token: r.token,
       checkUrl: getCheckUrl(r.token),
-      preOrder: r.pre_order_no || '',
+      preOrder: r.pre_order_no || r.pre_order || r.preorder || '',
       preBooking: r.pre_booking_no || '',
       supplierLock: !!r.lock_supplier,
       lockSupplier: !!r.lock_supplier,
@@ -749,7 +749,7 @@ async validateLocationCode(tokenOrCode, code) {
         callCount: data.call_count || 0,
         updatedAt: fmtDate(data.updated_at),
         updatedBy: data.updated_by,
-        preOrder: data.pre_order_no || '',
+        preOrder: data.pre_order_no || data.pre_order || data.preorder || '',
         preBooking: data.pre_booking_no || '',
         extraNotes: data.extra_notes || '',
         additionalNote: data.extra_notes || '',
@@ -817,7 +817,7 @@ async validateLocationCode(tokenOrCode, code) {
         updateData.customer_group = dataPatch.group || dataPatch.customer_group;
       }
       if (dataPatch.preOrder !== undefined || dataPatch.pre_order_no !== undefined) {
-        updateData.pre_order_no = dataPatch.preOrder || dataPatch.pre_order_no;
+        updateData.pre_order_no = dataPatch.preOrder !== undefined ? String(dataPatch.preOrder || '').trim() : String(dataPatch.pre_order_no || '').trim();
       }
       if (dataPatch.preBooking !== undefined || dataPatch.pre_booking_no !== undefined) {
         updateData.pre_booking_no = dataPatch.preBooking || dataPatch.pre_booking_no;
@@ -2024,8 +2024,8 @@ async validateLocationCode(tokenOrCode, code) {
           color: r.color || '',
           price_at_booking: Number(price) || 0,
           status: r.status || 'รอสินค้า',
-          pre_order_no: r.preOrder || '',
-          pre_booking_no: r.preBooking || '',
+          pre_order_no: r.preOrder || r.pre_order_no || '',
+          pre_booking_no: r.preBooking || r.pre_booking_no || '',
           lock_supplier: !!r.supplierLock,
           supplier_name: r.supplierLock ? 'AIS' : null,
           campaign: r.promo || null,

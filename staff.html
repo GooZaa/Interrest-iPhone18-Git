@@ -4,7 +4,7 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260917-6"></script>
+<script src="js/api.js?v=20260917-7"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
@@ -1828,7 +1828,8 @@ function openDetail(id, editMode){
          '<span class="mono" style="font-size:16px;font-weight:700;color:var(--selT)">฿<span id="e-price">'+(initPrice!=null?Number(initPrice).toLocaleString('th-TH'):'-')+'</span> บาท</span>'+
          '</div>';
       h+='<label>กลุ่มลูกค้า</label><select id="e-group" style="margin-bottom:9px">'+STATE.boot.groups.map(function(g){return '<option'+(g.name===r.group?' selected':'')+'>'+esc(g.name)+'</option>';}).join('')+'</select>';
-      h+='<div id="e-preorder-wrap" style="display:'+(r.group==='Pre-Order'?'block':'none')+'"><label>เลข Pre-Order <span style="color:var(--danger)">*</span></label><input id="e-preorder" value="'+esc(r.preOrder||'')+'" placeholder="จำเป็นสำหรับกลุ่ม Pre-Order" style="margin-bottom:9px"></div>';
+      var isPoEdit = r.group==='Pre-Order'||(r.group&&r.group.toLowerCase().indexOf('pre-order')!==-1);
+      h+='<div id="e-preorder-wrap" style="display:'+(isPoEdit?'block':'none')+'"><label>เลข Pre-Order <span style="color:var(--danger)">*</span></label><input id="e-preorder" value="'+esc(r.preOrder||'')+'" placeholder="จำเป็นสำหรับกลุ่ม Pre-Order" style="margin-bottom:9px"></div>';
       if(STATE.boot.supplierLockEnabled&&STATE.boot.alternativeOptionsEnabled){
         h+='<label>ประเภทเครื่อง</label><div class="chipbar" style="margin-bottom:10px"><span class="chip'+(!r.supplierLock?' on':'')+'" data-emode="plain">เครื่องทั่วไป</span><span class="chip'+(r.supplierLock?' on':'')+'" data-emode="ais">เครื่อง AIS</span></div>';
         if(STATE.boot.promos.length)h+='<div id="e-promowrap" style="display:'+(r.supplierLock?'block':'none')+'"><label>โครงการ AIS</label><div class="chipbar">'+STATE.boot.promos.map(function(p){return '<span class="chip'+(r.promo===p.name?' on':'')+'" data-epromo="'+esc(p.name)+'" title="'+esc(p.desc||'')+'">'+esc(p.name)+'</span>';}).join('')+'<span class="chip'+(!r.promo?' on':'')+'" data-epromo="">ไม่ระบุ</span></div></div>';
@@ -1850,8 +1851,11 @@ function openDetail(id, editMode){
     if(r.altCaps)h+='<div class="kv"><span class="k">ความจุสำรอง</span><span>'+esc(r.altCaps)+'</span></div>';
     if(r.supplierLock)h+='<div class="kv"><span class="k">ซัพ</span><span>AIS เท่านั้น</span></div>';
     if(r.promo)h+='<div class="kv"><span class="k">โครงการ</span><span>'+esc(r.promo)+'</span></div>';
-    if(r.preOrder || r.group==='Pre-Order' || r.customerGroup==='Pre-Order'){
-      h+='<div class="kv"><span class="k">เลข Pre-Order</span><span class="ref-value">'+(r.preOrder ? esc(r.preOrder) : '<span style="color:var(--t3);font-weight:400">ยังไม่ระบุ</span>')+'</span></div>';
+    var isPoGroup = r.group==='Pre-Order'||r.customerGroup==='Pre-Order'||(r.group&&r.group.toLowerCase().indexOf('pre-order')!==-1);
+    if(r.preOrder || isPoGroup){
+      var poVal = r.preOrder ? esc(r.preOrder) : '<span style="color:var(--t3);font-weight:400">ยังไม่ระบุ</span>';
+      var poEditBtn = canEdit ? ' <button type="button" id="btnQuickPreOrder" class="hbtn" style="width:22px;height:22px;padding:0;margin-left:6px;vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;border-radius:6px" title="ระบุ/แก้ไขเลข Pre-Order"><svg class="ic" style="width:12px;height:12px"><use href="#i-pencil"></use></svg></button>' : '';
+      h+='<div class="kv"><span class="k">เลข Pre-Order</span><span class="ref-value" style="display:inline-flex;align-items:center">'+poVal+poEditBtn+'</span></div>';
     }
     if(r.preBooking)h+='<div class="kv"><span class="k">เลข Pre-Booking</span><span class="ref-value">'+esc(r.preBooking)+'</span></div>';
     if(r.billNo||r.deposit)h+='<div class="kv"><span class="k">มัดจำของรายการนี้</span><span class="ref-value">'+(r.billNo?'บิล '+esc(r.billNo):'-')+(r.deposit?' · '+r.deposit.toLocaleString()+' THB':'')+'</span></div>';
@@ -1943,7 +1947,7 @@ function bindEditMode(id,r){
     if(el) el.textContent=pr!=null?Number(pr).toLocaleString('th-TH'):'-';
     return pr;
   }
-  eg.onchange=function(){var wrap=$('e-preorder-wrap');if(wrap)wrap.style.display=eg.value==='Pre-Order'?'block':'none';};
+  eg.onchange=function(){var isPo=eg.value==='Pre-Order'||(eg.value&&eg.value.toLowerCase().indexOf('pre-order')!==-1);var wrap=$('e-preorder-wrap');if(wrap)wrap.style.display=isPo?'block':'none';};
   em.onchange=function(){
     var p=STATE.boot.products.filter(function(x){return x.model===em.value;})[0];
     if(p){
@@ -1966,8 +1970,8 @@ function bindEditMode(id,r){
   };});
   $('e-cancel').onclick=function(){openDetail(id);};
   $('e-save').onclick=function(){
-    var group=$('e-group').value,preOrder=group==='Pre-Order'?$('e-preorder').value.trim():'';
-    if(group==='Pre-Order'&&!preOrder){toast('กรุณาระบุเลข Pre-Order');$('e-preorder').focus();return;}
+    var group=$('e-group').value, isPo=group==='Pre-Order'||(group&&group.toLowerCase().indexOf('pre-order')!==-1), preOrder=isPo?$('e-preorder').value.trim():'';
+    if(isPo&&!preOrder){toast('กรุณาระบุเลข Pre-Order');$('e-preorder').focus();return;}
     var newPrice=prodPrice($('e-model').value, $('e-cap').value);
     var patch={
       model:$('e-model').value,
@@ -2041,6 +2045,35 @@ function openEditConfirmDialog(id, r, patch){
 function bindDetail(id,r){
   var editBtn=$('btnEdit');
   if(editBtn)editBtn.onclick=function(){openDetail(id,true);};
+  var qpoBtn=$('btnQuickPreOrder');
+  if(qpoBtn)qpoBtn.onclick=function(){
+    openPanel('<div style="padding:4px 2px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0">ระบุเลข Pre-Order</h2><span class="iconbtn" onclick="openDetail(\''+id+'\')" style="cursor:pointer">×</span></div>' +
+      '<p style="margin:0 0 14px;color:var(--t2);font-size:13px">'+esc(r.name)+' · <span class="mono">'+esc(r.id)+'</span></p>' +
+      '<div class="field"><label>เลข Pre-Order <span style="color:var(--danger)">*</span></label>' +
+      '<input id="qpoInput" value="'+esc(r.preOrder||'')+'" placeholder="เช่น PO-6709-001 หรือเลขที่ใบจอง"></div>' +
+      '<div style="display:flex;gap:10px;margin-top:16px"><button type="button" class="btn2" id="qpoCancel" style="flex:1">ยกเลิก</button><button type="button" class="btn" id="qpoSave" style="flex:1">บันทึก</button></div>' +
+    '</div>');
+    var inp=$('qpoInput');if(inp){inp.focus();inp.select();}
+    var cancelBtn=$('qpoCancel');if(cancelBtn)cancelBtn.onclick=function(){openDetail(id);};
+    var saveBtn=$('qpoSave');
+    if(saveBtn)saveBtn.onclick=function(){
+      var val=$('qpoInput').value.trim();
+      if(!val){toast('กรุณาระบุเลข Pre-Order');$('qpoInput').focus();return;}
+      saveBtn.disabled=true;
+      saveBtn.textContent='กำลังบันทึก…';
+      callApi('editReservation',id,{preOrder:val}).then(function(){
+        toast('บันทึกเลข Pre-Order เรียบร้อยแล้ว');
+        openDetail(id);
+        markQueueViewsStale();
+        loadList();
+      }).catch(function(e){
+        toast(e.message);
+        saveBtn.disabled=false;
+        saveBtn.textContent='บันทึก';
+      });
+    };
+  };
   var approveBtn=$('btnApprove');
   var apGroup=$('apGroup');if(apGroup)apGroup.onchange=function(){var wrap=$('apPreOrderWrap');if(wrap)wrap.style.display=apGroup.value==='Pre-Order'?'block':'none';};
   if(approveBtn)approveBtn.onclick=function(){var group=$('apGroup').value,preOrder=group==='Pre-Order'?$('apPreOrder').value.trim():'';if(group==='Pre-Order'&&!preOrder){toast('กรุณาระบุเลข Pre-Order');$('apPreOrder').focus();return;}callApi('approveCustomerSignup',id,group,0,'',preOrder).then(function(){toast('เข้าคิวแล้ว');openDetail(id);markQueueViewsStale();loadList();}).catch(function(e){toast(e.message);});};
@@ -2616,8 +2649,9 @@ function handleImportFile(file) {
       var colMap = {};
 
       headers.forEach(function(h, idx) {
+        var hl = h.toLowerCase().replace(/[\s\-_]/g, '');
         if (h.indexOf('ชื่อ') !== -1) colMap.name = idx;
-        else if (h.indexOf('เบอร์') !== -1 || h.indexOf('โทร') !== -1 && h.indexOf('ช่องทาง') === -1) colMap.phone = idx;
+        else if (h.indexOf('เบอร์') !== -1 || (h.indexOf('โทร') !== -1 && h.indexOf('ช่องทาง') === -1)) colMap.phone = idx;
         else if (h.indexOf('รุ่น') !== -1) colMap.model = idx;
         else if (h.indexOf('ความจุ') !== -1) colMap.capacity = idx;
         else if (h.indexOf('สี') !== -1) colMap.color = idx;
@@ -2626,10 +2660,10 @@ function handleImportFile(file) {
         else if (h.indexOf('ไอดี') !== -1 || h.indexOf('ติดต่อ') !== -1) colMap.contactId = idx;
         else if (h.indexOf('ประเภท') !== -1 || h.indexOf('ซัพ') !== -1) colMap.supplier = idx;
         else if (h.indexOf('โครงการ') !== -1 || h.indexOf('แคมเปญ') !== -1) colMap.promo = idx;
-        else if (h.indexOf('Pre-Order') !== -1) colMap.preOrder = idx;
-        else if (h.indexOf('บิล') !== -1) colMap.billNo = idx;
-        else if (h.indexOf('มัดจำ') !== -1) colMap.deposit = idx;
-        else if (h.indexOf('หมายเหตุ') !== -1) colMap.note = idx;
+        else if (hl.indexOf('preorder') !== -1 || hl.indexOf('pre') !== -1 || h.indexOf('พรี') !== -1 || h.indexOf('ใบจอง') !== -1 || h.indexOf('เลขที่จอง') !== -1 || h.indexOf('เลขจอง') !== -1 || (hl.indexOf('order') !== -1 && h.indexOf('บิล') === -1)) colMap.preOrder = idx;
+        else if (h.indexOf('บิล') !== -1 || hl.indexOf('bill') !== -1 || hl.indexOf('inv') !== -1) colMap.billNo = idx;
+        else if (h.indexOf('มัดจำ') !== -1 || hl.indexOf('deposit') !== -1) colMap.deposit = idx;
+        else if (h.indexOf('หมายเหตุ') !== -1 || hl.indexOf('note') !== -1 || hl.indexOf('remark') !== -1) colMap.note = idx;
       });
 
       // Default mappings if headers didn't match perfectly
@@ -2638,6 +2672,15 @@ function handleImportFile(file) {
       if (colMap.model == null) colMap.model = 2;
       if (colMap.capacity == null) colMap.capacity = 3;
       if (colMap.color == null) colMap.color = 4;
+      if (colMap.group == null && headers.length > 5) colMap.group = 5;
+      if (colMap.channel == null && headers.length > 6) colMap.channel = 6;
+      if (colMap.contactId == null && headers.length > 7) colMap.contactId = 7;
+      if (colMap.supplier == null && headers.length > 8) colMap.supplier = 8;
+      if (colMap.promo == null && headers.length > 9) colMap.promo = 9;
+      if (colMap.preOrder == null && headers.length > 10) colMap.preOrder = 10;
+      if (colMap.billNo == null && headers.length > 11) colMap.billNo = 11;
+      if (colMap.deposit == null && headers.length > 12) colMap.deposit = 12;
+      if (colMap.note == null && headers.length > 13) colMap.note = 13;
 
       var parsedRows = [];
       var skippedCount = 0;
@@ -2745,7 +2788,11 @@ function renderImportPreview(skippedCount) {
       '<td style="padding:9px 10px;font-weight:600">' + esc(r.name) + '</td>' +
       '<td style="padding:9px 10px;font-family:monospace">' + esc(r.phone) + '</td>' +
       '<td style="padding:9px 10px">' + spec + sup + '</td>' +
-      '<td style="padding:9px 10px"><span class="badge">' + esc(r.group) + '</span></td>' +
+      '<td style="padding:9px 10px">' +
+        '<span class="badge">' + esc(r.group) + '</span>' +
+        (r.preOrder ? '<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;font-family:monospace">PO: ' + esc(r.preOrder) + '</div>' : '') +
+        (r.billNo ? '<div style="font-size:10.5px;color:var(--t2);margin-top:1px">บิล: ' + esc(r.billNo) + (r.deposit ? ' (' + Number(r.deposit).toLocaleString() + ')' : '') + '</div>' : '') +
+      '</td>' +
       '<td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--selT)">' + priceStr + '</td>' +
       '<td style="padding:9px 10px;text-align:center">' +
         '<button type="button" class="tagx" data-del-import="' + idx + '" title="ลบรายการนี้" style="border:none;background:none;cursor:pointer">✕</button>' +
