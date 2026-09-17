@@ -1881,7 +1881,121 @@ async validateLocationCode(tokenOrCode, code) {
         total: items.length,
         items: items.map(mapReservation)
       };
-    }
+    },
+
+    async exportReservations(tokenOrFilter, filter) {
+      const f = (typeof tokenOrFilter === 'object' && tokenOrFilter !== null) ? tokenOrFilter : (filter || {});
+      let query = sb().from('reservations').select('*');
+
+      if (f.status) {
+        query = query.eq('status', f.status);
+      }
+      if (f.group) {
+        query = query.eq('customer_group', f.group);
+      }
+      if (f.startDate) {
+        query = query.gte('booked_at', f.startDate + 'T00:00:00');
+      }
+      if (f.endDate) {
+        query = query.lte('booked_at', f.endDate + 'T23:59:59');
+      }
+
+      query = query.order('booked_at', { ascending: true });
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+      return (data || []).map(mapReservation);
+    },
+
+    async importReservations(tokenOrItems, items) {
+      const rows = Array.isArray(tokenOrItems) ? tokenOrItems : (items || []);
+      if (!rows.length) throw new Error('ไม่พบข้อมูลที่จะนำเข้า');
+
+      // ดึงราคาสินค้ามาทำ lookup เผื่อในไฟล์ไม่ได้ระบุราคา
+      const { data: prods } = await sb().from('products').select('*');
+      const prodMap = {};
+      (prods || []).forEach(p => {
+        prodMap[p.model] = parsePriceMap(p.prices);
+      });
+
+      const todayPrefix = (function() {
+        const d = new Date();
+        const yy = String(d.getFullYear()).slice(-2);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `R${yy}${mm}${dd}`;
+      })();
+
+      const generateUniqueId = () => {
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        return `${todayPrefix}-${rand}`;
+      };
+
+      const generateToken = () => {
+        return 'tk_' + Math.random().toString(36).slice(2, 11) + Date.now().toString(36);
+      };
+
+      const reservationsToInsert = [];
+      const notesToInsert = [];
+
+      rows.forEach(r => {
+        const id = r.id || generateUniqueId();
+        const token = r.token || generateToken();
+        const bookedAt = r.bookedAt ? new Date(r.bookedAt).toISOString() : new Date().toISOString();
+
+        let price = r.price;
+        if ((price == null || price === '') && prodMap[r.model] && prodMap[r.model][r.capacity] != null) {
+          price = prodMap[r.model][r.capacity];
+        }
+
+        const resObj = {
+          id: id,
+          token: token,
+          customer_name: r.name || 'ไม่ระบุชื่อ',
+          phone: r.phone || '',
+          contact_channel: r.channel || 'โทรอย่างเดียว',
+          contact_id: r.contactId || (r.channel === 'โทรอย่างเดียว' ? (r.phone || '') : ''),
+          customer_group: r.group || 'Walk-in',
+          model: r.model || '',
+          capacity: r.capacity || '',
+          color: r.color || '',
+          price_at_booking: Number(price) || 0,
+          status: r.status || 'รอสินค้า',
+          pre_order_no: r.preOrder || '',
+          pre_booking_no: r.preBooking || '',
+          lock_supplier: !!r.supplierLock,
+          supplier_name: r.supplierLock ? 'AIS' : null,
+          campaign: r.promo || null,
+          deposit: Number(r.deposit) || 0,
+          bill_no: r.billNo || '',
+          extra_notes: r.note || '',
+          source: 'import',
+          booked_at: bookedAt,
+          updated_at: new Date().toISOString()
+        };
+        reservationsToInsert.push(resObj);
+
+        notesToInsert.push({
+          reservation_id: id,
+          author: 'Import',
+          message: 'นำเข้ารายการจองจากไฟล์ (' + resObj.model + ' ' + resObj.capacity + ' ' + resObj.color + ')',
+          source: 'manual',
+          created_at: new Date().toISOString()
+        });
+      });
+
+      // Insert in chunks of 50
+      const CHUNK_SIZE = 50;
+      for (let i = 0; i < reservationsToInsert.length; i += CHUNK_SIZE) {
+        const resChunk = reservationsToInsert.slice(i, i + CHUNK_SIZE);
+        const { error: insErr } = await sb().from('reservations').insert(resChunk);
+        if (insErr) throw new Error('เกิดข้อผิดพลาดในการบันทึกนำเข้า: ' + insErr.message);
+
+        const noteChunk = notesToInsert.slice(i, i + CHUNK_SIZE);
+        await sb().from('notes').insert(noteChunk);
+      }
+
+      return { ok: true, count: reservationsToInsert.length };
+    },
   };
 
   window.api = api;

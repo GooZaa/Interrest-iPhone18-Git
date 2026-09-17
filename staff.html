@@ -5,6 +5,8 @@
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
 <script src="js/api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -174,6 +176,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
 .addRow{background:var(--cv)}
 .access-overlay{position:fixed;inset:0;z-index:110;background:#F5F7FC;display:flex;align-items:center;justify-content:center;padding:24px}
 .access-card{width:min(100%,430px);text-align:center}.access-mark{width:60px;height:60px;margin:0 auto 18px;border-radius:18px;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff}.access-mark svg{width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.access-card h1{font-size:29px;line-height:1.2;margin:0 0 8px;color:var(--tx)}.access-card p{font-size:15px;line-height:1.6;margin:0 0 28px;color:var(--t2)}.access-card label{text-align:left;color:var(--tx);font-size:14px;font-weight:600;margin-bottom:7px}.access-card input{background:var(--bg);border:1px solid var(--bd);font-size:19px;letter-spacing:3px;text-align:center;padding:13px;color:var(--tx)}.access-card input:focus{outline:2px solid var(--brand)}.access-card .btn{margin-top:14px;background:var(--brand);border-radius:10px;padding:13px}.access-card .btn:hover{background:var(--brandHover)}.access-error{min-height:22px;text-align:left;margin-top:8px;color:var(--danger);font-size:12.5px}.access-error.on{animation:shake .36s ease-in-out}.access-loading{width:min(100%,340px);text-align:center;background:var(--bg);border:1px solid var(--bd);border-radius:18px;padding:28px 22px;box-shadow:0 12px 40px rgba(15,23,42,.12)}.spinner{width:28px;height:28px;margin:0 auto 14px;border:3px solid var(--bd2);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@media(max-width:880px){.io-grid{grid-template-columns:1fr !important}}
 @media(max-width:720px){
   html,body{overflow-x:hidden;width:100%;max-width:100vw}
   header{display:flex;flex-direction:column;gap:7px;padding:calc(6px + env(safe-area-inset-top)) 12px 6px}
@@ -287,6 +290,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
     <button data-p="due">ตามด่วน</button>
     <button data-p="batchprint">พิมพ์หลายรายการ</button>
     <button data-p="report">รายงาน</button>
+    <button data-p="io">นำเข้า / ส่งออก</button>
     <button data-p="settings">ตั้งค่า</button>
   </nav>
 </header>
@@ -427,6 +431,147 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--selT);bo
   </section>
 
   <!-- ===== ตั้งค่า ===== -->
+    <!-- ===== หน้า นำเข้า / ส่งออก (Import & Export) ===== -->
+  <section class="page" id="pg-io">
+    <div style="max-width:1120px;margin:0 auto">
+      <div style="margin-bottom:20px">
+        <h1 style="font-size:22px;font-weight:700;margin:0 0 4px">นำเข้า / ส่งออกข้อมูล (Import & Export)</h1>
+        <p style="margin:0;font-size:13px;color:var(--t2)">จัดการข้อมูลการจองสินค้าผ่านไฟล์ Excel (.xlsx) และ CSV</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:18px;align-items:start" class="io-grid">
+        <!-- ฝั่งซ้าย: นำเข้าข้อมูล (Import) -->
+        <div class="card" style="padding:20px;border-radius:18px;border:0.5px solid var(--bd);background:var(--bg);box-shadow:var(--shadow)">
+          <div class="section-top" style="margin-bottom:14px">
+            <div>
+              <h2 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">
+                <span style="display:inline-flex;width:28px;height:28px;border-radius:8px;background:var(--sel);color:var(--selT);align-items:center;justify-content:center">📥</span>
+                นำเข้าข้อมูลการจอง (Import)
+              </h2>
+              <p style="margin:3px 0 0;font-size:12px;color:var(--t2)">อัปโหลดไฟล์ Excel เพื่อสร้างคิวจองอัตโนมัติเป็นชุด</p>
+            </div>
+            <button class="btn2" id="btnDownloadTemplate" style="width:auto;padding:8px 14px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+              <svg class="ic" style="width:15px;height:15px"><use href="#i-down"></use></svg>
+              ดาวน์โหลดแม่แบบ (.xlsx)
+            </button>
+          </div>
+
+          <!-- Drag & Drop Zone -->
+          <div id="importDropZone" style="border:2px dashed var(--bd);border-radius:14px;padding:26px 20px;text-align:center;background:var(--cv);cursor:pointer;transition:border-color .18s,background .18s;margin-bottom:14px">
+            <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+            <div style="width:48px;height:48px;margin:0 auto 10px;border-radius:14px;background:var(--sel);color:var(--selT);display:grid;place-items:center;font-size:22px">📄</div>
+            <b style="display:block;font-size:14px;color:var(--tx);margin-bottom:4px">คลิกเพื่อเลือกไฟล์ หรือ ลากไฟล์ Excel / CSV มาวางที่นี่</b>
+            <p style="margin:0;font-size:12px;color:var(--t3)">รองรับไฟล์ .xlsx, .xls และ .csv</p>
+          </div>
+
+          <!-- คำแนะนำ -->
+          <div style="background:var(--cv);border-radius:11px;padding:11px 14px;font-size:12px;line-height:1.6;color:var(--t2);margin-bottom:14px">
+            💡 <b>คำแนะนำ:</b> ในไฟล์แม่แบบจะมี Dropdown สำหรับเลือกรุ่น, ความจุ, สี และกลุ่มลูกค้า และมี<b>แถวตัวอย่าง</b>ให้ดูเป็นแนวทาง (ระบบจะตรวจจับและข้ามแถวตัวอย่างให้อัตโนมัติเมื่อนำเข้า)
+          </div>
+
+          <!-- Import Preview Section -->
+          <div id="importPreviewWrap" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div>
+                <b style="font-size:14px">พรีวิวข้อมูลที่จะนำเข้า (<span id="importValidCount" style="color:var(--brand)">0</span> รายการ)</b>
+                <small id="importSkipHint" style="display:block;color:var(--t3);font-size:11px;margin-top:2px"></small>
+              </div>
+              <button class="btn2" id="btnClearImport" style="width:auto;padding:5px 10px;font-size:11.5px">ยกเลิกไฟล์</button>
+            </div>
+
+            <div style="max-height:300px;overflow-y:auto;border:0.5px solid var(--bd2);border-radius:11px;margin-bottom:14px">
+              <table id="importTable" style="width:100%;border-collapse:collapse;font-size:12px;text-align:left">
+                <thead>
+                  <tr style="background:var(--cv);color:var(--t2);position:sticky;top:0;z-index:1">
+                    <th style="padding:8px 10px">ลำดับ</th>
+                    <th style="padding:8px 10px">ชื่อลูกค้า</th>
+                    <th style="padding:8px 10px">เบอร์โทร</th>
+                    <th style="padding:8px 10px">สินค้า</th>
+                    <th style="padding:8px 10px">กลุ่ม</th>
+                    <th style="padding:8px 10px;text-align:right">ราคา</th>
+                    <th style="padding:8px 10px;text-align:center">ลบ</th>
+                  </tr>
+                </thead>
+                <tbody id="importTbody"></tbody>
+              </table>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px">
+              <button class="btn" id="btnConfirmImport" style="width:auto;min-width:220px;padding:12px 22px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px">
+                <svg class="ic" style="width:16px;height:16px"><use href="#i-check"></use></svg>
+                ยืนยันนำเข้าข้อมูล (<span id="btnImportCount">0</span> เครื่อง)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ฝั่งขวา: ส่งออกข้อมูล (Export) -->
+        <div class="card" style="padding:20px;border-radius:18px;border:0.5px solid var(--bd);background:var(--bg);box-shadow:var(--shadow)">
+          <div class="section-top" style="margin-bottom:14px">
+            <div>
+              <h2 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">
+                <span style="display:inline-flex;width:28px;height:28px;border-radius:8px;background:var(--okBg);color:var(--ok);align-items:center;justify-content:center">📤</span>
+                ส่งออกข้อมูล (Export)
+              </h2>
+              <p style="margin:3px 0 0;font-size:12px;color:var(--t2)">ดาวน์โหลดข้อมูลรายการจองสินค้าเป็น Excel หรือ CSV</p>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:12px">
+            <label>ช่วงเวลาที่ต้องการส่งออก</label>
+            <div class="chipbar" id="exportPresetBar" style="margin-bottom:8px">
+              <span class="chip on" data-exp-preset="all">ทั้งหมด</span>
+              <span class="chip" data-exp-preset="today">วันนี้</span>
+              <span class="chip" data-exp-preset="7d">7 วันล่าสุด</span>
+              <span class="chip" data-exp-preset="month">เดือนนี้</span>
+              <span class="chip" data-exp-preset="custom">กำหนดเอง</span>
+            </div>
+            <div class="row" id="exportCustomDateRow" style="display:none;margin-top:6px">
+              <div><label style="font-size:11px">ตั้งแต่วันที่</label><input type="date" id="exportStartDate"></div>
+              <div><label style="font-size:11px">ถึงวันที่</label><input type="date" id="exportEndDate"></div>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:12px">
+            <label>สถานะรายการ</label>
+            <select id="exportStatus">
+              <option value="">ทั้งหมด (ทุกสถานะ)</option>
+              <option value="รอสินค้า">รอสินค้า</option>
+              <option value="ของมาแล้ว">ของมาแล้ว</option>
+              <option value="นัดรับแล้ว">นัดรับแล้ว</option>
+              <option value="รับของแล้ว">รับของแล้ว</option>
+              <option value="รอตรวจสอบ">รอตรวจสอบ</option>
+              <option value="ยกเลิก">ยกเลิก</option>
+            </select>
+          </div>
+
+          <div class="field" style="margin-bottom:16px">
+            <label>กลุ่มลูกค้า</label>
+            <select id="exportGroup">
+              <option value="">ทั้งหมด (ทุกกลุ่ม)</option>
+            </select>
+          </div>
+
+          <div style="background:var(--cv);border-radius:11px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <span style="font-size:12.5px;color:var(--t2)">จำนวนรายการที่ตรงเงื่อนไข:</span>
+            <b class="mono" id="exportCountBadge" style="font-size:16px;color:var(--tx)">กำลังโหลด…</b>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <button class="btn" id="btnExportXlsx" style="padding:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px">
+              <svg class="ic" style="width:16px;height:16px"><use href="#i-down"></use></svg>
+              ส่งออก Excel (.xlsx)
+            </button>
+            <button class="btn2" id="btnExportCsv" style="padding:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px">
+              <svg class="ic" style="width:16px;height:16px"><use href="#i-down"></use></svg>
+              ส่งออก CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="page" id="pg-settings">
     <div id="settingsContent"><div class="loading"><span class="loader"></span><span>กำลังโหลดข้อมูล…</span></div></div>
   </section>
@@ -863,6 +1008,7 @@ document.querySelectorAll('#tabs button').forEach(function(b){
     if(b.dataset.p==='due'&&!STATE.views.due)loadDue();
     if(b.dataset.p==='batchprint'&&typeof bpOpen==='function')bpOpen();
     if(b.dataset.p==='report'&&typeof reportOpen==='function')reportOpen();
+    if(b.dataset.p==='io')initIoPage();
     if(b.dataset.p==='settings'&&!STATE.views.settings)loadSettings();
   };
 });
@@ -1969,7 +2115,582 @@ var SETTINGS_DEFS=[
   {sheet:'ค่าระบบ',title:'ค่าระบบ',desc:'ฟีเจอร์และค่าควบคุมการทำงานของแอป',tone:'violet',icon:'sliders',grid:'1fr 100px 1.6fr 24px',
    cols:[{k:'คีย์',t:'text'},{k:'ค่า',t:'cfgvalue'},{k:'คำอธิบาย',t:'text'}]}
 ];
+
+// ========================================================
+// IMPORT & EXPORT MODULE
+// ========================================================
+var IO_STATE = {
+  importRows: [],
+  exportPreset: 'all',
+  exportCountTimer: null
+};
+
+function initIoPage() {
+  // Populate Groups in Export filter
+  var eg = $('exportGroup');
+  if (eg && STATE.boot && STATE.boot.groups) {
+    var cur = eg.value;
+    eg.innerHTML = '<option value="">ทั้งหมด (ทุกกลุ่ม)</option>' +
+      STATE.boot.groups.map(function(g) {
+        return '<option value="' + esc(g.name) + '">' + esc(g.name) + '</option>';
+      }).join('');
+    eg.value = cur;
+  }
+
+  bindExportControls();
+  bindImportControls();
+  refreshExportCount();
+}
+
+function bindExportControls() {
+  // Date presets
+  document.querySelectorAll('[data-exp-preset]').forEach(function(el) {
+    el.onclick = function() {
+      document.querySelectorAll('[data-exp-preset]').forEach(function(x) { x.classList.remove('on'); });
+      el.classList.add('on');
+      IO_STATE.exportPreset = el.dataset.expPreset;
+      var customRow = $('exportCustomDateRow');
+      if (customRow) customRow.style.display = IO_STATE.exportPreset === 'custom' ? 'grid' : 'none';
+      refreshExportCount();
+    };
+  });
+
+  if ($('exportStatus')) $('exportStatus').onchange = refreshExportCount;
+  if ($('exportGroup')) $('exportGroup').onchange = refreshExportCount;
+  if ($('exportStartDate')) $('exportStartDate').onchange = refreshExportCount;
+  if ($('exportEndDate')) $('exportEndDate').onchange = refreshExportCount;
+
+  if ($('btnExportXlsx')) $('btnExportXlsx').onclick = function() { executeExport('xlsx'); };
+  if ($('btnExportCsv')) $('btnExportCsv').onclick = function() { executeExport('csv'); };
+
+  // Quick export in List summary
+  var qe = $('btnQuickExportExcel');
+  if (qe) {
+    qe.onclick = function() {
+      var filter = {
+        q: $('q').value,
+        group: STATE.groupF,
+        status: STATE.statusF,
+        focus: STATE.focusF,
+        includeClosed: STATE.includeClosed
+      };
+      qe.disabled = true;
+      callApi('listReservations', filter).then(function(res) {
+        downloadReservationsFile(res.items || [], 'xlsx', 'iPhone_Queue_Filtered');
+      }).catch(function(e) {
+        toast('ส่งออกไม่สำเร็จ: ' + e.message);
+      }).finally(function() {
+        qe.disabled = false;
+      });
+    };
+  }
+}
+
+function getExportFilterCriteria() {
+  var criteria = {
+    status: $('exportStatus') ? $('exportStatus').value : '',
+    group: $('exportGroup') ? $('exportGroup').value : ''
+  };
+
+  var now = new Date();
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  var fmtYmd = function(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+
+  if (IO_STATE.exportPreset === 'today') {
+    criteria.startDate = fmtYmd(now);
+    criteria.endDate = fmtYmd(now);
+  } else if (IO_STATE.exportPreset === '7d') {
+    var d7 = new Date(now.getTime() - 6 * 86400000);
+    criteria.startDate = fmtYmd(d7);
+    criteria.endDate = fmtYmd(now);
+  } else if (IO_STATE.exportPreset === 'month') {
+    var dMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    criteria.startDate = fmtYmd(dMonth);
+    criteria.endDate = fmtYmd(now);
+  } else if (IO_STATE.exportPreset === 'custom') {
+    if ($('exportStartDate') && $('exportStartDate').value) criteria.startDate = $('exportStartDate').value;
+    if ($('exportEndDate') && $('exportEndDate').value) criteria.endDate = $('exportEndDate').value;
+  }
+
+  return criteria;
+}
+
+function refreshExportCount() {
+  clearTimeout(IO_STATE.exportCountTimer);
+  var badge = $('exportCountBadge');
+  if (badge) badge.textContent = 'กำลังโหลด…';
+
+  IO_STATE.exportCountTimer = setTimeout(function() {
+    var criteria = getExportFilterCriteria();
+    callApi('exportReservations', criteria).then(function(items) {
+      if (badge) badge.textContent = Number(items.length).toLocaleString() + ' รายการ';
+    }).catch(function() {
+      if (badge) badge.textContent = '- รายการ';
+    });
+  }, 200);
+}
+
+function executeExport(format) {
+  var criteria = getExportFilterCriteria();
+  var btn = format === 'xlsx' ? $('btnExportXlsx') : $('btnExportCsv');
+  if (btn) btn.disabled = true;
+
+  callApi('exportReservations', criteria).then(function(items) {
+    if (!items.length) {
+      toast('ไม่พบข้อมูลตามเงื่อนไขที่เลือก');
+      return;
+    }
+    downloadReservationsFile(items, format, 'iPhone_Queue_Export');
+    toast('ส่งออกข้อมูล ' + items.length + ' รายการสำเร็จ');
+  }).catch(function(e) {
+    toast('เกิดข้อผิดพลาดในการส่งออก: ' + e.message);
+  }).finally(function() {
+    if (btn) btn.disabled = false;
+  });
+}
+
+function downloadReservationsFile(items, format, filePrefix) {
+  var rows = items.map(function(r) {
+    return {
+      'รหัสจองสินค้า': r.id || '',
+      'ชื่อลูกค้า': r.name || '',
+      'เบอร์โทรศัพท์': r.phone || '',
+      'ช่องทางติดต่อ': r.channel || 'โทรอย่างเดียว',
+      'ไอดี/ข้อมูลติดต่อ': r.contactId || '',
+      'รุ่นสินค้า': r.model || '',
+      'ความจุ': r.capacity || '',
+      'สี': r.color || '',
+      'ราคาจำหน่าย (บาท)': (r.price != null && r.price !== '') ? Number(r.price) : '',
+      'ประเภทเครื่อง': r.supplierLock ? '🟢 AIS' : 'เครื่องเปล่า',
+      'โครงการ AIS': r.promo || '',
+      'กลุ่มลูกค้า': r.group || 'Walk-in',
+      'เลข Pre-Order': r.preOrder || '',
+      'เลขที่บิลมัดจำ': r.billNo || '',
+      'ยอดมัดจำ (บาท)': r.deposit ? Number(r.deposit) : 0,
+      'สถานะ': r.status || '',
+      'วันที่จอง': r.bookedAt || r.createdAt || '',
+      'วันที่นัดรับสินค้า': r.appt || '',
+      'วันครบกำหนดรับ': r.dueDate || '',
+      'จำนวนครั้งที่โทร': r.callCount || 0,
+      'หมายเหตุ': r.additionalNote || r.extraNotes || ''
+    };
+  });
+
+  var now = new Date();
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  var stamp = now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes());
+  var filename = (filePrefix || 'iPhone_Queue') + '_' + stamp;
+
+  if (format === 'xlsx' && typeof XLSX !== 'undefined') {
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.json_to_sheet(rows);
+
+    // Auto Column Widths
+    var colWidths = Object.keys(rows[0] || {}).map(function(k) {
+      var maxL = k.length * 2;
+      rows.forEach(function(row) {
+        var valStr = String(row[k] || '');
+        maxL = Math.max(maxL, valStr.length + 3);
+      });
+      return { wch: Math.min(maxL, 38) };
+    });
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, 'รายการจอง');
+    XLSX.writeFile(wb, filename + '.xlsx');
+  } else {
+    // CSV with UTF-8 BOM
+    var headers = Object.keys(rows[0] || {});
+    var csvLines = [headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(',')];
+
+    rows.forEach(function(row) {
+      var line = headers.map(function(h) {
+        var v = row[h];
+        if (v == null) v = '';
+        return '"' + String(v).replace(/"/g, '""') + '"';
+      }).join(',');
+      csvLines.push(line);
+    });
+
+    var csvContent = '\uFEFF' + csvLines.join('\r\n');
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
+// ========================================================
+// IMPORT & TEMPLATE GENERATION
+// ========================================================
+function bindImportControls() {
+  var dropZone = $('importDropZone');
+  var fileInput = $('importFileInput');
+  var btnTemplate = $('btnDownloadTemplate');
+  var btnClear = $('btnClearImport');
+  var btnConfirm = $('btnConfirmImport');
+
+  if (btnTemplate) btnTemplate.onclick = downloadIoTemplate;
+
+  if (dropZone && fileInput) {
+    dropZone.onclick = function() { fileInput.click(); };
+
+    dropZone.ondragover = function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--brand)';
+      dropZone.style.background = 'var(--sel)';
+    };
+    dropZone.ondragleave = function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--bd)';
+      dropZone.style.background = 'var(--cv)';
+    };
+    dropZone.ondrop = function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--bd)';
+      dropZone.style.background = 'var(--cv)';
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        handleImportFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    fileInput.onchange = function() {
+      if (fileInput.files && fileInput.files.length) {
+        handleImportFile(fileInput.files[0]);
+      }
+    };
+  }
+
+  if (btnClear) {
+    btnClear.onclick = function() {
+      IO_STATE.importRows = [];
+      if (fileInput) fileInput.value = '';
+      $('importPreviewWrap').style.display = 'none';
+      $('importDropZone').style.display = 'block';
+    };
+  }
+
+  if (btnConfirm) {
+    btnConfirm.onclick = function() {
+      if (!IO_STATE.importRows.length) {
+        toast('ไม่มีรายการที่จะนำเข้า');
+        return;
+      }
+      btnConfirm.disabled = true;
+      btnConfirm.innerHTML = '<span class="loader" style="width:16px;height:16px;border-width:2px"></span> กำลังบันทึกนำเข้า…';
+
+      callApi('importReservations', IO_STATE.importRows).then(function(res) {
+        toast('นำเข้าข้อมูลสำเร็จแล้ว ' + res.count + ' รายการ');
+        IO_STATE.importRows = [];
+        if (fileInput) fileInput.value = '';
+        $('importPreviewWrap').style.display = 'none';
+        $('importDropZone').style.display = 'block';
+
+        markQueueViewsStale();
+        // สลับไปหน้ารายชื่อเพื่อดูผลทันที
+        var listTab = document.querySelector('[data-p="list"]');
+        if (listTab) listTab.click();
+        loadList();
+      }).catch(function(e) {
+        toast('เกิดข้อผิดพลาดในการนำเข้า: ' + e.message);
+      }).finally(function() {
+        btnConfirm.disabled = false;
+        btnConfirm.innerHTML = '<svg class="ic" style="width:16px;height:16px"><use href="#i-check"></use></svg> ยืนยันนำเข้าข้อมูล (<span id="btnImportCount">' + IO_STATE.importRows.length + '</span> เครื่อง)';
+      });
+    };
+  }
+}
+
+function downloadIoTemplate() {
+  if (typeof XLSX === 'undefined') {
+    toast('กำลังโหลดไลบรารี Excel กรุณาลองใหม่อีกครั้ง');
+    return;
+  }
+
+  var prods = (STATE.boot && STATE.boot.products) ? STATE.boot.products : [];
+  var groups = (STATE.boot && STATE.boot.groups) ? STATE.boot.groups.map(function(g) { return g.name; }) : ['Walk-in', 'Pre-Order', 'Pre-Booking'];
+  var models = prods.map(function(p) { return p.model; });
+
+  // รวบรวม capacities และ colors ที่มีในระบบ
+  var capSet = {}, colSet = {};
+  prods.forEach(function(p) {
+    (p.capacities || []).forEach(function(c) { capSet[c] = true; });
+    (p.colors || []).forEach(function(col) { colSet[col] = true; });
+  });
+  var capacities = Object.keys(capSet);
+  if (!capacities.length) capacities = ['128GB', '256GB', '512GB', '1TB'];
+  var colors = Object.keys(colSet);
+  if (!colors.length) colors = ['Burgundy', 'Glacier', 'Silver', 'Black'];
+
+  var sampleModel = models[0] || 'iPhone 18 Pro Max';
+  var sampleCap = capacities[0] || '256GB';
+  var sampleColor = colors[0] || 'Burgundy';
+
+  var templateRows = [
+    [
+      'ชื่อ-นามสกุล *',
+      'เบอร์โทรศัพท์ *',
+      'รุ่นสินค้า *',
+      'ความจุ *',
+      'สี *',
+      'กลุ่มลูกค้า',
+      'ช่องทางติดต่อ',
+      'ไอดี/ข้อมูลติดต่อ',
+      'ประเภทเครื่อง',
+      'โครงการ AIS',
+      'เลข Pre-Order',
+      'เลขที่บิลมัดจำ',
+      'ยอดมัดจำ (บาท)',
+      'หมายเหตุ'
+    ],
+    [
+      'สมชาย ตัวอย่าง (แถวตัวอย่าง - ระบบจะข้ามให้อัตโนมัติ)',
+      '0812345678',
+      sampleModel,
+      sampleCap,
+      sampleColor,
+      groups[0] || 'Walk-in',
+      'โทรอย่างเดียว',
+      '0812345678',
+      'เครื่องเปล่า (ทั่วไป)',
+      '',
+      '',
+      '',
+      '',
+      'ตัวอย่างการจองเครื่องเปล่า'
+    ],
+    [
+      'สมหญิง ตัวอย่าง (แถวตัวอย่าง - ระบบจะข้ามให้อัตโนมัติ)',
+      '0898765432',
+      models[1] || sampleModel,
+      capacities[1] || sampleCap,
+      colors[1] || sampleColor,
+      'Pre-Order',
+      'LINE',
+      'somying_line',
+      'AIS',
+      'HotDeal',
+      'PO-998811',
+      'B69-001',
+      2000,
+      'ตัวอย่างการจอง Pre-Order มีมัดจำ'
+    ]
+  ];
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(templateRows);
+
+  // Column Widths
+  ws['!cols'] = [
+    { wch: 34 }, // Name
+    { wch: 16 }, // Phone
+    { wch: 22 }, // Model
+    { wch: 13 }, // Capacity
+    { wch: 16 }, // Color
+    { wch: 16 }, // Group
+    { wch: 15 }, // Channel
+    { wch: 20 }, // Contact ID
+    { wch: 22 }, // Supplier
+    { wch: 18 }, // Promo
+    { wch: 16 }, // PreOrder
+    { wch: 16 }, // Bill
+    { wch: 16 }, // Deposit
+    { wch: 32 }  // Note
+  ];
+
+  // Data Validation Dropdown Lists
+  ws['!dataValidation'] = [
+    { sqref: "C2:C1000", type: "list", formula1: '"' + models.join(',') + '"' },
+    { sqref: "D2:D1000", type: "list", formula1: '"' + capacities.join(',') + '"' },
+    { sqref: "E2:E1000", type: "list", formula1: '"' + colors.join(',') + '"' },
+    { sqref: "F2:F1000", type: "list", formula1: '"' + groups.join(',') + '"' },
+    { sqref: "G2:G1000", type: "list", formula1: '"โทรอย่างเดียว,LINE,WhatsApp,อีเมล"' },
+    { sqref: "I2:I1000", type: "list", formula1: '"เครื่องเปล่า (ทั่วไป),AIS"' }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'แม่แบบการจอง');
+  XLSX.writeFile(wb, 'Template_จองสินค้า_iPhone.xlsx');
+  toast('ดาวน์โหลดแม่แบบ Excel สำเร็จแล้ว');
+}
+
+function handleImportFile(file) {
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var wb = XLSX.read(data, { type: 'array' });
+      var sheetName = wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
+      var jsonRows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      if (!jsonRows || jsonRows.length <= 1) {
+        toast('ไฟล์ไม่มีข้อมูลรายการจอง');
+        return;
+      }
+
+      var headers = jsonRows[0].map(function(h) { return String(h || '').trim(); });
+      var colMap = {};
+
+      headers.forEach(function(h, idx) {
+        if (h.indexOf('ชื่อ') !== -1) colMap.name = idx;
+        else if (h.indexOf('เบอร์') !== -1 || h.indexOf('โทร') !== -1 && h.indexOf('ช่องทาง') === -1) colMap.phone = idx;
+        else if (h.indexOf('รุ่น') !== -1) colMap.model = idx;
+        else if (h.indexOf('ความจุ') !== -1) colMap.capacity = idx;
+        else if (h.indexOf('สี') !== -1) colMap.color = idx;
+        else if (h.indexOf('กลุ่ม') !== -1) colMap.group = idx;
+        else if (h.indexOf('ช่องทาง') !== -1) colMap.channel = idx;
+        else if (h.indexOf('ไอดี') !== -1 || h.indexOf('ติดต่อ') !== -1) colMap.contactId = idx;
+        else if (h.indexOf('ประเภท') !== -1 || h.indexOf('ซัพ') !== -1) colMap.supplier = idx;
+        else if (h.indexOf('โครงการ') !== -1 || h.indexOf('แคมเปญ') !== -1) colMap.promo = idx;
+        else if (h.indexOf('Pre-Order') !== -1) colMap.preOrder = idx;
+        else if (h.indexOf('บิล') !== -1) colMap.billNo = idx;
+        else if (h.indexOf('มัดจำ') !== -1) colMap.deposit = idx;
+        else if (h.indexOf('หมายเหตุ') !== -1) colMap.note = idx;
+      });
+
+      // Default mappings if headers didn't match perfectly
+      if (colMap.name == null) colMap.name = 0;
+      if (colMap.phone == null) colMap.phone = 1;
+      if (colMap.model == null) colMap.model = 2;
+      if (colMap.capacity == null) colMap.capacity = 3;
+      if (colMap.color == null) colMap.color = 4;
+
+      var parsedRows = [];
+      var skippedCount = 0;
+
+      for (var r = 1; r < jsonRows.length; r++) {
+        var row = jsonRows[r];
+        if (!row || !row.length) continue;
+
+        var name = String(row[colMap.name] != null ? row[colMap.name] : '').trim();
+        var phone = String(row[colMap.phone] != null ? row[colMap.phone] : '').replace(/[^0-9+]/g, '').trim();
+        var model = String(row[colMap.model] != null ? row[colMap.model] : '').trim();
+        var capacity = String(row[colMap.capacity] != null ? row[colMap.capacity] : '').trim();
+        var color = String(row[colMap.color] != null ? row[colMap.color] : '').trim();
+
+        // 1. ตรวจจับแถวว่างเปล่า
+        if (!name && !phone && !model) continue;
+
+        // 2. ตรวจจับและ Auto-Skip แถวตัวอย่าง
+        var isSample = name.indexOf('ตัวอย่าง') !== -1 ||
+                       name.toLowerCase().indexOf('sample') !== -1 ||
+                       phone === '0812345678' ||
+                       phone === '0898765432' ||
+                       phone.indexOf('12345678') !== -1;
+
+        if (isSample) {
+          skippedCount++;
+          continue;
+        }
+
+        var group = colMap.group != null && row[colMap.group] ? String(row[colMap.group]).trim() : 'Walk-in';
+        var channel = colMap.channel != null && row[colMap.channel] ? String(row[colMap.channel]).trim() : 'โทรอย่างเดียว';
+        var contactId = colMap.contactId != null && row[colMap.contactId] ? String(row[colMap.contactId]).trim() : '';
+        var supplierText = colMap.supplier != null && row[colMap.supplier] ? String(row[colMap.supplier]).trim() : '';
+        var isAis = supplierText.indexOf('AIS') !== -1;
+        var promo = colMap.promo != null && row[colMap.promo] ? String(row[colMap.promo]).trim() : '';
+        var preOrder = colMap.preOrder != null && row[colMap.preOrder] ? String(row[colMap.preOrder]).trim() : '';
+        var billNo = colMap.billNo != null && row[colMap.billNo] ? String(row[colMap.billNo]).trim() : '';
+        var deposit = colMap.deposit != null && row[colMap.deposit] ? Number(String(row[colMap.deposit]).replace(/[^0-9.]/g, '')) || 0 : 0;
+        var note = colMap.note != null && row[colMap.note] ? String(row[colMap.note]).trim() : '';
+
+        // Auto Price Lookup
+        var price = prodPrice(model, capacity);
+
+        parsedRows.push({
+          name: name,
+          phone: phone,
+          channel: channel,
+          contactId: contactId,
+          model: model,
+          capacity: capacity,
+          color: color,
+          price: price,
+          group: group,
+          supplierLock: isAis,
+          promo: promo,
+          preOrder: preOrder,
+          billNo: billNo,
+          deposit: deposit,
+          note: note
+        });
+      }
+
+      if (!parsedRows.length) {
+        toast(skippedCount > 0 ? 'ไฟล์มีเฉพาะแถวตัวอย่าง (ระบบข้ามให้อัตโนมัติ)' : 'ไม่พบรายการข้อมูลในไฟล์');
+        return;
+      }
+
+      IO_STATE.importRows = parsedRows;
+      renderImportPreview(skippedCount);
+      toast('อ่านไฟล์สำเร็จ ' + parsedRows.length + ' รายการ' + (skippedCount > 0 ? ' (ข้ามแถวตัวอย่าง ' + skippedCount + ' แถว)' : ''));
+    } catch (err) {
+      toast('ไม่สามารถอ่านไฟล์ได้: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderImportPreview(skippedCount) {
+  var wrap = $('importPreviewWrap');
+  var tbody = $('importTbody');
+  var dropZone = $('importDropZone');
+  var countEl = $('importValidCount');
+  var btnCount = $('btnImportCount');
+  var skipHint = $('importSkipHint');
+
+  if (!wrap || !tbody) return;
+
+  dropZone.style.display = 'none';
+  wrap.style.display = 'block';
+
+  countEl.textContent = IO_STATE.importRows.length;
+  if (btnCount) btnCount.textContent = IO_STATE.importRows.length;
+
+  if (skipHint) {
+    skipHint.textContent = skippedCount > 0 ? '✓ ระบบตรวจจับและข้ามแถวตัวอย่างให้อัตโนมัติ (' + skippedCount + ' แถว)' : '';
+  }
+
+  tbody.innerHTML = IO_STATE.importRows.map(function(r, idx) {
+    var spec = esc(r.model) + ' · ' + esc(r.capacity) + ' · ' + esc(r.color);
+    var sup = r.supplierLock ? ' <small style="color:#991B1B">🟢 AIS</small>' : '';
+    var priceStr = r.price != null ? '฿' + Number(r.price).toLocaleString('th-TH') : '-';
+
+    return '<tr style="border-bottom:0.5px solid var(--bd2)">' +
+      '<td style="padding:9px 10px;color:var(--t3)">' + (idx + 1) + '</td>' +
+      '<td style="padding:9px 10px;font-weight:600">' + esc(r.name) + '</td>' +
+      '<td style="padding:9px 10px;font-family:monospace">' + esc(r.phone) + '</td>' +
+      '<td style="padding:9px 10px">' + spec + sup + '</td>' +
+      '<td style="padding:9px 10px"><span class="badge">' + esc(r.group) + '</span></td>' +
+      '<td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--selT)">' + priceStr + '</td>' +
+      '<td style="padding:9px 10px;text-align:center">' +
+        '<button type="button" class="tagx" data-del-import="' + idx + '" title="ลบรายการนี้" style="border:none;background:none;cursor:pointer">✕</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  tbody.querySelectorAll('[data-del-import]').forEach(function(btn) {
+    btn.onclick = function() {
+      var delIdx = Number(btn.dataset.delImport);
+      IO_STATE.importRows.splice(delIdx, 1);
+      if (!IO_STATE.importRows.length) {
+        wrap.style.display = 'none';
+        dropZone.style.display = 'block';
+        if ($('importFileInput')) $('importFileInput').value = '';
+      } else {
+        renderImportPreview(0);
+      }
+    };
+  });
+}
+
 function loadSettings(){
+
   STATE.views.settings=true;
   var content=$('settingsContent');content.innerHTML='<h2>ตั้งค่าระบบ</h2>'+skelBlock(4);
   Promise.all(SETTINGS_DEFS.map(function(def){return callApi('adminList',def.sheet);})).then(function(data){
