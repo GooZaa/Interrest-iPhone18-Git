@@ -4,12 +4,13 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260918-5"></script>
+<script src="js/api.js?v=20260918-6"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="css/bulk-manager.css?v=20260918-1" rel="stylesheet">
 <style>
 /* icon fallback: ไม่พึ่ง CDN ภายนอก ใช้สัญลักษณ์ในตัว */
 .ic{display:inline-block;font-style:normal;line-height:1;font-family:-apple-system,'IBM Plex Sans Thai',sans-serif}svg.ic{width:1em;height:1em;vertical-align:-.14em;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -306,6 +307,7 @@ body.dk .card,body.dk .form-section,body.dk .stock-card,body.dk .batch-box,body.
     <button data-p="new">จองใหม่</button>
     <button data-p="match">ของเข้า</button>
     <button data-p="due">ตามด่วน</button>
+    <button data-p="bulk">จัดการหลายรายการ</button>
     <button data-p="batchprint">พิมพ์หลายรายการ</button>
     <button data-p="report">รายงาน</button>
     <button data-p="io">นำเข้า / ส่งออก</button>
@@ -363,6 +365,11 @@ body.dk .card,body.dk .form-section,body.dk .stock-card,body.dk .batch-box,body.
   <section class="page" id="pg-due">
     <div class="statgrid" id="dueStats"></div>
     <div id="dueSections"><div class="loading"><span class="loader"></span><span>กำลังโหลดข้อมูล…</span></div></div>
+  </section>
+
+  <!-- ===== จัดการหลายรายการ ===== -->
+  <section class="page" id="pg-bulk">
+    <div id="bulk-root"><div class="loading"><span class="loader"></span><span>กำลังเตรียมเมนูจัดการหลายรายการ…</span></div></div>
   </section>
 
   <!-- ===== พิมพ์หลายรายการ (รายละเอียดอยู่ใน Index.BatchPrint.html) ===== -->
@@ -945,6 +952,7 @@ var ACTION_BUSY={
   runSetupFromWeb:'กำลังติดตั้งระบบ…',saveReservation:'กำลังบันทึกการจอง…',editReservation:'กำลังบันทึกการแก้ไข…',
   approveCustomerSignup:'กำลังยืนยันเข้าคิว…',approveAllPending:'กำลังนำรายชื่อทั้งหมดเข้าคิว…',markArrived:'กำลังบันทึกสถานะสินค้าเข้า…',setAppointment:'กำลังบันทึกวันนัดรับ…',
   logCallResult:'กำลังบันทึกผลการติดต่อ…',markDone:'กำลังยืนยันการรับสินค้า…',undoMarkDone:'กำลังยกเลิกสถานะรับสินค้าแล้ว…',cancelByCustomer:'กำลังยกเลิกรายการ…',
+  performBatchAction:'กำลังบันทึกหลายรายการ…',
   releaseReservation:'กำลังยกเลิกสิทธิ์…',addManualNote:'กำลังบันทึกโน้ต…',allocateToCustomer:'กำลังจัดสรรสินค้า…',resetStockLot:'กำลังตั้งจำนวนเครื่องใหม่…',markUrgent:'กำลังบันทึกเคสเร่งด่วน…',clearUrgent:'กำลังยกเลิกเคสเร่งด่วน…',
   markLabeled:'กำลังบันทึกการพิมพ์ใบแปะ…',markLabeledBatch:'กำลังบันทึกการพิมพ์ใบแปะ…',prepareBatchPrintJob:'กำลังตรวจสอบและจัดเอกสาร…',confirmBatchPrintJob:'กำลังบันทึกประวัติงานพิมพ์…'
 };
@@ -1017,7 +1025,7 @@ function callApi(name){
 }
 
 var STATE={boot:null,groupF:'',statusF:'',focusF:'',includeClosed:false,devices:[],stockLines:[],stockRemaining:{},priorityGroups:[],priorityUrgent:false,recentAllocations:[],refs:{preOrder:'',preBooking:'',deposit:'',billNo:'',depositAllocations:[]},changeAppt:{},views:{list:false,due:false,settings:false}};
-function markQueueViewsStale(){STATE.views.list=false;STATE.views.due=false;if(typeof reportMarkStale==='function')reportMarkStale();}
+function markQueueViewsStale(){STATE.views.list=false;STATE.views.due=false;if(typeof reportMarkStale==='function')reportMarkStale();if(typeof bmMarkStale==='function')bmMarkStale();}
 
 // ---- theme ----
 if(localStorage.getItem('qdark')==='1')document.body.classList.add('dk');
@@ -1041,6 +1049,7 @@ document.querySelectorAll('#tabs button').forEach(function(b){
     // โหลดเฉพาะครั้งแรก การสลับกลับมาใช้ข้อมูลเดิมทันที
     if(b.dataset.p==='list'&&!STATE.views.list)loadList();
     if(b.dataset.p==='due'&&!STATE.views.due)loadDue();
+    if(b.dataset.p==='bulk'&&typeof bmOpen==='function')bmOpen();
     if(b.dataset.p==='batchprint'&&typeof bpOpen==='function')bpOpen();
     if(b.dataset.p==='report'&&typeof reportOpen==='function')reportOpen();
     if(b.dataset.p==='io')initIoPage();
@@ -3987,5 +3996,6 @@ window.reportMarkStale=function(){RP.loaded=false;var page=rpEl('pg-report');if(
 })();
 </script>
 
+<script src="js/bulk-manager.js?v=20260918-1"></script>
 </body>
 </html>

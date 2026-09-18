@@ -365,6 +365,7 @@
 
     async submitSignup(data) {
       if (!data || !data.name || !data.phone || !data.devices || !data.devices.length) throw new Error('ข้อมูลไม่ครบถ้วน');
+      if (data.devices.length > 20) throw new Error('ลงทะเบียนได้สูงสุดครั้งละ 20 เครื่อง');
       if (window._currentSignupCaptcha) {
         const expected = String(window._currentSignupCaptcha.ans);
         const given = String(data.captchaAnswer || '').trim();
@@ -374,6 +375,35 @@
       }
       const cleanPhone = normPhone(data.phone);
       const name = String(data.name).trim();
+      const submissionId = String(data.submissionId || '').trim();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionId)) {
+        throw new Error('รหัสการส่งข้อมูลไม่ถูกต้อง กรุณาโหลดหน้าใหม่');
+      }
+
+      const { data: previousSubmission, error: previousError } = await sb().from('reservations')
+        .select('id, submission_device_index').eq('submission_id', submissionId).order('submission_device_index', { ascending: true });
+      if (previousError) throw new Error('ตรวจสอบการส่งซ้ำไม่สำเร็จ: ' + previousError.message);
+      if (previousSubmission && previousSubmission.length) {
+        return { ok: true, count: previousSubmission.length, duplicatePrevented: true, ids: previousSubmission.map(r => r.id) };
+      }
+
+      const deviceSignature = d => [d && d.model, d && d.capacity, d && d.color].map(v => String(v || '').trim().toLowerCase()).join('|');
+      const incomingSignatures = data.devices.map(deviceSignature);
+      const repeatedInside = incomingSignatures.filter((sig, index) => sig && incomingSignatures.indexOf(sig) !== index);
+      const { data: activeRows, error: activeError } = await sb().from('reservations')
+        .select('model, capacity, color').eq('phone', cleanPhone)
+        .in('status', ['รอตรวจสอบ', 'รอสินค้า', 'ของมาแล้ว', 'นัดรับแล้ว']);
+      if (activeError) throw new Error('ตรวจสอบรายการเดิมไม่สำเร็จ: ' + activeError.message);
+      const activeSignatures = new Set((activeRows || []).map(deviceSignature));
+      const existingMatches = incomingSignatures.filter(sig => activeSignatures.has(sig));
+      if (!data.confirmDuplicate && (repeatedInside.length || existingMatches.length)) {
+        const duplicateInfo = {
+          repeatedInside: new Set(repeatedInside).size,
+          existingMatches: existingMatches.length,
+          deviceCount: data.devices.length
+        };
+        throw new Error('DUPLICATE_CONFIRM_REQUIRED|' + JSON.stringify(duplicateInfo));
+      }
 
       await sb().from('customers').upsert({
         phone: cleanPhone,
@@ -388,7 +418,8 @@
       const newReservations = [];
       const notes = [];
 
-      for (const d of data.devices) {
+      for (let deviceIndex = 0; deviceIndex < data.devices.length; deviceIndex++) {
+        const d = data.devices[deviceIndex];
         const id = genShortId();
         const token = genToken();
         const price = d.price || (d.model ? (d.prices && d.prices[d.capacity]) || 0 : 0);
@@ -415,6 +446,8 @@
           extra_notes: data.note || '',
           price_at_booking: Number(price) || 0,
           batch_group_id: batchGroupId,
+          submission_id: submissionId,
+          submission_device_index: deviceIndex + 1,
           booked_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -429,10 +462,16 @@
       }
 
       const { error: insErr } = await sb().from('reservations').insert(newReservations);
-      if (insErr) throw new Error('เกิดข้อผิดพลาดในการบันทึก: ' + insErr.message);
+      if (insErr) {
+        if (/submission|unique|duplicate/i.test(String(insErr.message || ''))) {
+          const { data: replayRows } = await sb().from('reservations').select('id').eq('submission_id', submissionId);
+          if (replayRows && replayRows.length) return { ok: true, count: replayRows.length, duplicatePrevented: true, ids: replayRows.map(r => r.id) };
+        }
+        throw new Error('เกิดข้อผิดพลาดในการบันทึก: ' + insErr.message);
+      }
 
       await sb().from('notes').insert(notes);
-      return { ok: true, count: newReservations.length };
+      return { ok: true, count: newReservations.length, duplicatePrevented: false, ids: newReservations.map(r => r.id) };
     },
 
     // -------------------------------------------------------------
@@ -1524,6 +1563,95 @@ async validateLocationCode(tokenOrCode, code) {
       const targetIds = Array.isArray(tokenOrIds) ? tokenOrIds : (ids || []);
       await sb().from('reservations').update({ is_labeled: true }).in('id', targetIds);
       return { ok: true, count: targetIds.length };
+    },
+
+    async getBulkWorkspace() {
+      const { data, error } = await sb().from('reservations').select('*').order('booked_at', { ascending: false }).limit(500);
+      if (error) throw new Error('โหลดรายการสำหรับจัดการหลายรายการไม่สำเร็จ: ' + error.message);
+      const rows = data || [];
+      const items = rows.map(r => Object.assign(mapReservation(r), {
+        source: r.source || '',
+        batchGroupId: r.batch_group_id || '',
+        bookedAtIso: r.booked_at || r.created_at || '',
+        appointmentAtIso: r.appointment_at || '',
+        extraNotes: r.extra_notes || ''
+      }));
+
+      const customerRows = rows.filter(r => r.source === 'customer');
+      const signature = r => [r.model, r.capacity, r.color].map(v => String(v || '').trim().toLowerCase()).join('|');
+      const batches = new Map();
+      customerRows.forEach(r => {
+        const key = r.batch_group_id || ('NO_BATCH:' + r.id);
+        if (!batches.has(key)) batches.set(key, []);
+        batches.get(key).push(r);
+      });
+      const duplicateCandidates = [];
+      batches.forEach((batchRows, batchId) => {
+        const bySpec = new Map();
+        batchRows.forEach(r => {
+          const key = signature(r);
+          if (!bySpec.has(key)) bySpec.set(key, []);
+          bySpec.get(key).push(r);
+        });
+        bySpec.forEach(specRows => {
+          if (specRows.length > 1) duplicateCandidates.push({
+            key: 'inside:' + batchId + ':' + signature(specRows[0]),
+            type: 'same_submission', severity: 'medium', ids: specRows.map(r => r.id),
+            name: specRows[0].customer_name, phone: specRows[0].phone,
+            spec: [specRows[0].model, specRows[0].capacity, specRows[0].color].filter(Boolean).join(' · '),
+            detail: 'สเปกเหมือนกัน ' + specRows.length + ' เครื่องในการส่งครั้งเดียว'
+          });
+        });
+      });
+
+      const batchSummaries = [];
+      batches.forEach((batchRows, batchId) => {
+        const times = batchRows.map(r => Date.parse(r.booked_at || r.created_at)).filter(Number.isFinite);
+        batchSummaries.push({
+          id: batchId, phone: normPhone(batchRows[0] && batchRows[0].phone), rows: batchRows,
+          at: times.length ? Math.min.apply(Math, times) : 0,
+          signature: batchRows.map(signature).sort().join('||')
+        });
+      });
+      const byPhone = new Map();
+      batchSummaries.forEach(b => { if (!byPhone.has(b.phone)) byPhone.set(b.phone, []); byPhone.get(b.phone).push(b); });
+      byPhone.forEach(phoneBatches => {
+        phoneBatches.sort((a, b) => a.at - b.at);
+        for (let i = 0; i < phoneBatches.length; i++) {
+          for (let j = i + 1; j < phoneBatches.length; j++) {
+            const gapSeconds = Math.round((phoneBatches[j].at - phoneBatches[i].at) / 1000);
+            if (gapSeconds > 900) break;
+            if (phoneBatches[i].signature !== phoneBatches[j].signature) continue;
+            const allRows = phoneBatches[i].rows.concat(phoneBatches[j].rows);
+            duplicateCandidates.push({
+              key: 'repeat:' + phoneBatches[i].id + ':' + phoneBatches[j].id,
+              type: 'repeated_submission', severity: gapSeconds <= 120 ? 'high' : 'medium', ids: allRows.map(r => r.id),
+              name: allRows[0].customer_name, phone: allRows[0].phone,
+              spec: phoneBatches[j].rows.map(r => [r.model, r.capacity, r.color].filter(Boolean).join(' · ')).join(' / '),
+              detail: 'ส่งข้อมูลเหมือนกันซ้ำภายใน ' + gapSeconds + ' วินาที'
+            });
+          }
+        }
+      });
+
+      return { items: items, duplicateCandidates: duplicateCandidates };
+    },
+
+    async performBatchAction(request) {
+      const req = request || {};
+      const ids = Array.isArray(req.ids) ? Array.from(new Set(req.ids.map(String).filter(Boolean))) : [];
+      if (!ids.length) throw new Error('กรุณาเลือกอย่างน้อย 1 รายการ');
+      if (ids.length > 100) throw new Error('ทำรายการได้สูงสุดครั้งละ 100 รายการ');
+      if (!/^[0-9a-f-]{36}$/i.test(String(req.requestId || ''))) throw new Error('ไม่พบ Request ID ของชุดงาน');
+      const { data, error } = await sb().rpc('perform_batch_action', {
+        p_request_id: req.requestId,
+        p_action: req.action,
+        p_ids: ids,
+        p_payload: req.payload || {},
+        p_actor: req.actor || 'Staff'
+      });
+      if (error) throw new Error(error.message || 'ดำเนินการหลายรายการไม่สำเร็จ');
+      return data || { ok: true, count: ids.length };
     },
 
     async listBatchPrintCandidates(tokenOrFilter, filter) {

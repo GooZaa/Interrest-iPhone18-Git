@@ -3,7 +3,7 @@
 <head>
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
-<script src="js/api.js"></script>
+<script src="js/api.js?v=20260918-6"></script>
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -15,6 +15,7 @@
 header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:0.5px solid var(--bd);padding:calc(13px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) 13px calc(24px + env(safe-area-inset-left))}.header-inner{width:min(100%,1180px);margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-size:17px;font-weight:600;white-space:nowrap}.brand-sub{display:block;font-size:11.5px;color:var(--t3);font-weight:400;margin-top:1px}.lang-control{display:inline-flex;align-items:center;gap:9px}.lang-control svg{width:19px;height:19px;stroke:var(--t2);fill:none;stroke-width:1.8;flex:none;pointer-events:none}.lang-control select{width:auto;min-width:104px;padding:9px 34px 9px 12px;font-size:13px;border:0.5px solid var(--bd);border-radius:9px;-webkit-appearance:none;appearance:none;background:var(--btn) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") no-repeat right 12px center;background-size:13px}.lang-control select:focus{outline:none;border-color:var(--selT);box-shadow:0 0 0 3px color-mix(in srgb,var(--selT) 18%,transparent)}.home-link{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;border:0.5px solid var(--bd);background:var(--btn);color:var(--t2)}.home-link:hover{background:var(--btnh);color:var(--tx)}.home-link svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.header-actions{display:flex;align-items:center;gap:10px}
 main{max-width:1180px;margin:0 auto;padding:32px calc(24px + env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left))}.signup-hero{margin:0 0 22px}.signup-hero h1{font-size:27px;line-height:1.25;margin:0 0 5px;font-weight:600}.signup-hero p{font-size:14px;color:var(--t2);margin:0}.signup-layout{display:grid;grid-template-columns:minmax(280px,.83fr) minmax(470px,1.35fr);gap:16px;align-items:start}.signup-card{border:0.5px solid var(--bd);border-radius:var(--r);padding:20px;background:var(--bg);box-shadow:0 1px 1px rgba(0,0,0,.015)}.signup-card.full{grid-column:1/-1}.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}.section-title h2{font-size:17px;font-weight:600;margin:0}.section-title span{font-size:12px;color:var(--t3)}
 .field{margin-bottom:14px} label{display:block;font-size:13px;color:var(--t2);margin-bottom:7px} input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px 13px;border:0.5px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}select{-webkit-appearance:none;appearance:none;padding-right:40px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 15px center;background-size:14px}textarea{min-height:96px;resize:vertical;line-height:1.5}input:focus,select:focus,textarea:focus{outline:2px solid var(--selT);outline-offset:1px}.phone-status{display:none;align-items:flex-start;gap:8px;margin-top:7px;padding:8px 10px;border-radius:9px;font-size:12.5px;line-height:1.45}.phone-status.on{display:flex}.phone-status-dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:5px;background:currentColor}.phone-status.checking{color:#64748B;background:#F1F5F9}.phone-status.new{color:#047857;background:#ECFDF5}.phone-status.known{color:#2563EB;background:#EFF6FF}.phone-status.active{color:#B45309;background:#FFFBEB}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.card{border:0.5px solid var(--bd);border-radius:11px;padding:16px;margin-bottom:12px;background:var(--bg)}.sub{border-left:2px solid var(--sel);padding-left:12px;margin-bottom:14px}.option-title{font-size:12.5px;color:var(--t2);margin:0 0 8px}.sg-price{margin:0 0 12px;font-size:14px;color:var(--tx)}.sg-price b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:16px;color:var(--selT)}.sg-price small{color:var(--t3);font-size:11.5px}.sg-total{display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding:11px 13px;border-radius:11px;background:var(--sel);color:var(--selT);font-size:14px}.sg-total b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:16px}.chip{font-size:13.5px;padding:9px 12px;border-radius:9px;border:0.5px solid var(--bd);background:var(--btn);text-align:center;flex:1;cursor:pointer}.chip:hover{background:var(--btnh)}.chip.on{background:var(--sel);color:var(--selT);border-color:var(--sel)}.chiprow{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}.promo{border-radius:9px;padding:10px 12px;margin-bottom:8px;cursor:pointer;border:0.5px solid var(--bd);background:var(--btn)}.promo.on{background:var(--sel);border-color:var(--sel)}.promo p{margin:0;font-size:14px}.promo p.d{margin-top:2px;font-size:11.5px;color:var(--t2)}.btn{width:100%;background:var(--ink);color:var(--inkT);padding:14px;border-radius:10px;border:none;font-size:16px;font-weight:500;text-decoration:none;text-align:center;display:block}.btn:disabled{opacity:.5}.btn2{width:100%;background:var(--btn);color:var(--tx);padding:11px;border-radius:10px;border:0.5px solid var(--bd);font-size:14px;text-align:center}.btn2:hover{background:var(--btnh)}.form-actions{grid-column:1/-1;display:flex;justify-content:flex-end}.form-actions .btn{width:min(100%,430px)}.done{text-align:center;padding:80px 10px}.done .ic{width:52px;height:52px;border-radius:50%;background:var(--sel);color:var(--selT);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:26px}.done .home-btn{width:min(100%,310px);margin:22px auto 0}.msg{margin:0 0 20px;font-size:13.5px;color:var(--t2);line-height:1.7}.capnum{font-size:24px;font-weight:600;text-align:center;margin-bottom:12px}.err{color:#B91C1C;font-size:12.5px;margin-top:6px}.modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(20,20,18,.4);display:flex;align-items:center;justify-content:center;padding:20px}.modal{width:min(100%,410px);border-radius:16px;background:var(--bg);box-shadow:0 18px 50px rgba(0,0,0,.22);padding:22px}.modal-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FDECEC;color:#B42318;font-size:20px;font-weight:600;margin-bottom:13px}.modal-icon.warn{background:#FFF4E5;color:#B45309}.modal h2{font-size:18px;line-height:1.3;margin:0 0 7px}.modal p{font-size:14px;line-height:1.55;color:var(--t2);margin:0 0 18px}.modal .btn{padding:11px;font-size:15px}.modal-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:9px}.modal-actions .btn2,.modal-actions .btn{padding:11px;font-size:14px}
+.multi-confirm{margin-top:12px;padding:13px 14px;border:1px solid color-mix(in srgb,#A15C05 28%,var(--bd));border-radius:13px;background:linear-gradient(145deg,#FFF9ED,var(--bg));text-align:left}.multi-confirm.high{border-color:color-mix(in srgb,#BE3E6C 34%,var(--bd));background:linear-gradient(145deg,#FFF1F6,var(--bg))}.multi-confirm strong{display:block;font-size:14px;margin-bottom:4px}.multi-confirm p{margin:0;color:var(--t2);font-size:12.5px;line-height:1.55}.multi-confirm label{display:flex;align-items:flex-start;gap:9px;margin:11px 0 0;padding-top:10px;border-top:.5px solid var(--bd);color:var(--tx);font-size:13px;font-weight:600}.multi-confirm input{width:19px;height:19px;flex:0 0 19px;margin:0}
 .saving-backdrop{position:fixed;inset:0;z-index:120;background:rgba(245,244,241,.76);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:20px}.saving-card{width:min(100%,360px);padding:28px 24px;border:0.5px solid var(--bd);border-radius:18px;background:var(--bg);box-shadow:0 22px 60px rgba(0,0,0,.18);text-align:center}.saving-spinner{display:block;width:44px;height:44px;margin:0 auto 17px;border:4px solid var(--sel);border-top-color:var(--selT);border-radius:50%;animation:saving-spin .78s linear infinite}.saving-card h2{margin:0 0 7px;font-size:19px}.saving-card p{margin:0;color:var(--t2);font-size:14px;line-height:1.55}@keyframes saving-spin{to{transform:rotate(360deg)}}
 @media(max-width:860px){
   header{padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right))}
@@ -100,6 +101,7 @@ main{max-width:1180px;margin:0 auto;padding:32px calc(24px + env(safe-area-inset
       </div>
       <div id="reviewDevicesList"></div>
       <div id="reviewTotalBar" style="margin-top:10px"></div>
+      <div id="multiDeviceConfirmWrap" style="display:none"></div>
     </section>
 
     <!-- ป้องกันโปรแกรมอัตโนมัติ (Captcha) -->
@@ -256,7 +258,19 @@ function showError(message){$('modalTitle').textContent=LANG==='th'?'ตรว�
 $('modalClose').onclick=function(){$('errorModal').style.display='none';};
 $('errorModal').onclick=function(e){if(e.target===$('errorModal'))$('errorModal').style.display='none';};
 
-var BOOT=null, DEVICES=[], captcha=null, wantAIS=false, selectedPromo='',PHONE_STATUS='',PHONE_CHECK_TIMER=null,PHONE_CHECK_SEQ=0;
+var BOOT=null, DEVICES=[], captcha=null, wantAIS=false, selectedPromo='',PHONE_STATUS='',PHONE_CHECK_TIMER=null,PHONE_CHECK_SEQ=0,SUBMIT_IN_FLIGHT=false;
+
+function newRequestId(){
+  if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16);});
+}
+function signupSubmissionId(){
+  var key='iphoneQueueSignupSubmissionId',id='';
+  try{id=sessionStorage.getItem(key)||'';}catch(e){}
+  if(!/^[0-9a-f-]{36}$/i.test(id)){id=newRequestId();try{sessionStorage.setItem(key,id);}catch(e){}}
+  return id;
+}
+function clearSignupSubmissionId(){try{sessionStorage.removeItem('iphoneQueueSignupSubmissionId');}catch(e){}}
 
 function call(name){var args=[].slice.call(arguments,1);if(!window.api||!window.api[name])return Promise.reject(new Error("API not found: "+name));return window.api[name].apply(window.api,args);}
 
@@ -538,6 +552,26 @@ function renderReviewView(){
   }).join('');
   $('reviewDevicesList').innerHTML = devHtml;
 
+  // ถ้าลูกค้าเลือกหลายเครื่อง ให้ยืนยันจำนวนอย่างชัดเจนก่อนส่ง
+  var signatureCount = {};
+  DEVICES.forEach(function(d){
+    var key = [d.model,d.capacity,d.color].join('|').toLowerCase();
+    signatureCount[key] = (signatureCount[key] || 0) + 1;
+  });
+  var repeatedSpecs = Object.keys(signatureCount).filter(function(key){ return signatureCount[key] > 1; }).length;
+  var multiWrap = $('multiDeviceConfirmWrap');
+  if (DEVICES.length > 1) {
+    multiWrap.style.display = '';
+    multiWrap.innerHTML = '<div class="multi-confirm'+(repeatedSpecs ? ' high' : '')+'">' +
+      '<strong>'+(repeatedSpecs ? '⚠ พบสเปกซ้ำกันในรายการ' : 'ยืนยันการจองหลายเครื่อง')+'</strong>' +
+      '<p>คุณกำลังส่งความสนใจทั้งหมด <b>'+DEVICES.length+' เครื่อง</b>'+(repeatedSpecs ? ' และมีรุ่น–ความจุ–สีซ้ำกัน กรุณาตรวจสอบว่าต้องการหลายเครื่องจริง' : ' กรุณาตรวจสอบแต่ละรายการอีกครั้ง')+'</p>' +
+      '<label><input type="checkbox" id="multiDeviceConfirm"><span>ฉันตรวจสอบแล้ว และยืนยันว่าต้องการ '+DEVICES.length+' เครื่องตามรายการด้านบน</span></label>' +
+    '</div>';
+  } else {
+    multiWrap.style.display = 'none';
+    multiWrap.innerHTML = '';
+  }
+
   // 3. Summary total bar
   if (hasPriced) {
     $('reviewTotalBar').innerHTML = 
@@ -665,8 +699,11 @@ $('successOk').onclick = function(){
 $('duplicateBack').onclick = function(){
   $('duplicateModal').style.display = 'none';
   $('btnConfirmSubmit').disabled = false;
+  $('duplicateConfirm').disabled = false;
 };
 $('duplicateConfirm').onclick = function(){
+  if (SUBMIT_IN_FLIGHT) return;
+  $('duplicateConfirm').disabled = true;
   $('duplicateModal').style.display = 'none';
   submitForm(true);
 };
@@ -676,9 +713,14 @@ $('duplicateModal').onclick = function(e){
     $('btnConfirmSubmit').disabled = false;
   }
 };
-function showDuplicateConfirm(){
+function showDuplicateConfirm(info){
   $('duplicateTitle').textContent = t('duplicateTitle');
-  $('duplicateMessage').textContent = t('duplicateMessage');
+  var count = info && Number(info.count || info.activeCount || info.existingMatches || 0);
+  var sameBatch = info && Number(info.sameBatchCount || info.repeatedInside || 0);
+  var detail = t('duplicateMessage');
+  if (sameBatch > 0) detail = 'ในการส่งครั้งนี้มีสเปกเดียวกันซ้ำ '+sameBatch+' รายการ โปรดยืนยันว่าต้องการหลายเครื่องจริง';
+  else if (count > 0) detail = 'เบอร์นี้มีรายการสเปกเดียวกันที่ยังดำเนินการอยู่ '+count+' รายการ ต้องการลงทะเบียนเพิ่มอีกหรือไม่?';
+  $('duplicateMessage').textContent = detail;
   $('duplicateBack').textContent = t('duplicateBack');
   $('duplicateConfirm').textContent = t('duplicateConfirm');
   $('duplicateModal').style.display = 'flex';
@@ -695,10 +737,17 @@ function hideSaving(){
 }
 
 function submitForm(confirmDuplicate){
+  if (SUBMIT_IN_FLIGHT) return;
   if (!devicesComplete()) {
     showError(t('needProduct'));
     return;
   }
+  if (DEVICES.length > 1 && (!$('multiDeviceConfirm') || !$('multiDeviceConfirm').checked)) {
+    showError('กรุณาติ๊กยืนยันว่าต้องการจองทั้งหมด '+DEVICES.length+' เครื่อง');
+    $('multiDeviceConfirm').focus();
+    return;
+  }
+  SUBMIT_IN_FLIGHT = true;
   $('btnConfirmSubmit').disabled = true;
   $('capErrReview').style.display = 'none';
 
@@ -728,20 +777,26 @@ function submitForm(confirmDuplicate){
     }),
     captchaSid: captcha ? captcha.sid : '',
     captchaAnswer: $('capAnswerReview').value.trim(),
-    confirmDuplicate: confirmDuplicate === true
+    confirmDuplicate: confirmDuplicate === true,
+    submissionId: signupSubmissionId()
   };
 
   showSaving();
   call('submitSignup', p).then(function(){
+    SUBMIT_IN_FLIGHT = false;
+    clearSignupSubmissionId();
     hideSaving();
     $('confirmView').style.display = 'none';
     showSuccessModal(p);
   }).catch(function(e){
+    SUBMIT_IN_FLIGHT = false;
     hideSaving();
     $('btnConfirmSubmit').disabled = false;
     var message = String(e && e.message || e || '').replace(/^Exception:\s*/, '');
     if (message.indexOf('DUPLICATE_CONFIRM_REQUIRED') > -1) {
-      showDuplicateConfirm();
+      var info = null;
+      try { info = JSON.parse(message.slice(message.indexOf('|') + 1)); } catch (ignore) {}
+      showDuplicateConfirm(info);
       return;
     }
     if (message.indexOf('คำตอบไม่ถูกต้อง') > -1) {
