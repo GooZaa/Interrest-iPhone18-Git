@@ -82,6 +82,23 @@
     return `${values.year}-${values.month}-${values.day}`;
   }
 
+  function validatedAppointmentDate(value) {
+    const date = new Date(value);
+    if (isNaN(date.getTime()) || date.getTime() <= Date.now()) {
+      throw new Error('กรุณาเลือกวันและเวลานัดรับในอนาคต');
+    }
+    const timeParts = {};
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(date).forEach(part => { timeParts[part.type] = part.value; });
+    const hour = Number(timeParts.hour);
+    const minute = Number(timeParts.minute);
+    if (hour < 11 || hour > 20 || (minute !== 0 && minute !== 30) || (hour === 20 && minute !== 0)) {
+      throw new Error('เวลานัดรับต้องอยู่ระหว่าง 11:00–20:00 น. โดยเลือกทุก 30 นาที');
+    }
+    return date;
+  }
+
   function bangkokDayBounds(value) {
     const key = bangkokDateKey(value);
     const parts = key.split('-').map(Number);
@@ -1234,14 +1251,16 @@ async validateLocationCode(tokenOrCode, code) {
         id = tokenOrId; dt = idOrDt;
       }
 
-      const apptDate = new Date(dt);
+      const apptDate = validatedAppointmentDate(dt);
       let postDueDays = 3;
       try {
         const { data: cfg } = await sb().from('system_configs').select('value').eq('key', 'วันครบกำหนดหลังนัด').single();
         if (cfg && cfg.value) postDueDays = Number(cfg.value) || 3;
       } catch(e){}
 
-      const dueDate = new Date(apptDate.getTime() + postDueDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const appointmentDay = bangkokDateKey(apptDate);
+      const [year, month, day] = appointmentDay.split('-').map(Number);
+      const dueDate = new Date(Date.UTC(year, month - 1, day + postDueDays)).toISOString().slice(0, 10);
 
       const { data: cur } = await sb().from('reservations').select('status, appointment_at, reschedule_count').eq('id', id).single();
       const isReschedule = cur && cur.status === 'นัดรับแล้ว' && cur.appointment_at;
@@ -1659,6 +1678,7 @@ async validateLocationCode(tokenOrCode, code) {
       if (!ids.length) throw new Error('กรุณาเลือกอย่างน้อย 1 รายการ');
       if (ids.length > 100) throw new Error('ทำรายการได้สูงสุดครั้งละ 100 รายการ');
       if (!/^[0-9a-f-]{36}$/i.test(String(req.requestId || ''))) throw new Error('ไม่พบ Request ID ของชุดงาน');
+      if (req.action === 'appointment') validatedAppointmentDate(req.payload && req.payload.appointment_at);
       const { data, error } = await sb().rpc('perform_batch_action', {
         p_request_id: req.requestId,
         p_action: req.action,

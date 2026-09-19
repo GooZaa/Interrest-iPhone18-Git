@@ -115,7 +115,7 @@ test('signup remains usable before the duplicate guard column is deployed', asyn
   assert.equal('duplicate_confirmed' in insertAttempts[1][0], false);
 });
 
-test('bulk review back form keeps appointment and call inputs', () => {
+test('bulk appointment uses shared picker and call inputs remain populated', () => {
   const source = fs.readFileSync(path.join(__dirname, '../js/bulk-manager.js'), 'utf8')
     .replace(/\}\)\(\);\s*$/, ';window.__bulkTest={BM,formHtml};})();');
   const window = {};
@@ -124,7 +124,8 @@ test('bulk review back form keeps appointment and call inputs', () => {
   const { BM, formHtml } = window.__bulkTest;
   BM.action = 'appointment';
   BM.payload = { _input: '2026-09-20T14:30' };
-  assert.match(formHtml(), /value="2026-09-20T14:30"/);
+  assert.match(formHtml(), /id="bm-appt-picker"/);
+  assert.equal(BM.payload._input, '2026-09-20T14:30');
   BM.action = 'call';
   BM.payload = { call_result: 'no_answer', note: 'โทรอีกครั้งช่วงบ่าย' };
   assert.match(formHtml(), /value="no_answer" selected/);

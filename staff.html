@@ -4,13 +4,15 @@
 <script src="js/supabase.min.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/qr.js"></script>
-<script src="js/api.js?v=20260918-6"></script>
+<script src="js/api.js?v=20260920-1"></script>
+<script src="js/appointment-picker.js?v=20260920-1"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link href="css/bulk-manager.css?v=20260918-1" rel="stylesheet">
+<link href="css/appointment-picker.css?v=20260920-1" rel="stylesheet">
 <style>
 /* icon fallback: ไม่พึ่ง CDN ภายนอก ใช้สัญลักษณ์ในตัว */
 .ic{display:inline-block;font-style:normal;line-height:1;font-family:-apple-system,'IBM Plex Sans Thai',sans-serif}svg.ic{width:1em;height:1em;vertical-align:-.14em;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -1978,10 +1980,8 @@ function openDetail(id, editMode){
         if(r.appt&&STATE.changeAppt[id]!==true){
           h+='<h2>นัดรับสินค้า</h2><div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span>นัดไว้ '+esc(r.appt)+'</span><button class="btn2" id="btnChangeAppt" style="width:auto;padding:6px 12px">เปลี่ยนวันนัด</button></div>';
         }else{
-          h+='<h2>'+(r.appt?'เปลี่ยนวันนัดรับ':'นัดรับสินค้า')+'</h2><p style="margin:-4px 0 9px;font-size:12px;color:var(--t2)">เลือกวันที่สะดวก แล้วกำหนดเวลาได้เฉพาะ 11:00–20:00 น.</p>'+
-            '<div class="row" style="margin-bottom:8px"><button class="btn2" data-appt-day="3">อีก 3 วัน</button><button class="btn2" data-appt-day="5">อีก 5 วัน</button></div>'+
-            '<div class="row" style="margin-bottom:8px"><button class="btn2" data-appt-day="7">อีก 7 วัน</button><button class="btn2" data-appt-day="0">เลือกวันนี้</button></div>'+
-            '<label>ระบุวันและเวลานัดรับ</label><input type="datetime-local" id="apptDt" min="" style="margin-bottom:8px"><button class="btn" id="btnAppt" style="margin-bottom:10px">บันทึกวันนัด</button>';
+          h+='<h2>'+(r.appt?'เปลี่ยนวันนัดรับ':'นัดรับสินค้า')+'</h2>'+
+            '<div id="apptPicker"></div><button class="btn" id="btnAppt" style="margin-bottom:10px">บันทึกวันนัด</button>';
         }
         if(r.status==='นัดรับแล้ว'){
           h+='<button class="btn" id="btnDone" style="margin-bottom:8px"><svg class="ic"><use href="#i-check"></use></svg> รับสินค้าแล้ว</button>';
@@ -3139,14 +3139,6 @@ function saveDepositDialog(){
 
 <script>
 /* Detail actions: แยกเมนูการนัดรับ/ยกเลิกออกจาก Index.html เพื่อแก้กติกาได้เป็นส่วนเดียว */
-function localDateTimeValue(days) {
-  var d = new Date();
-  d.setDate(d.getDate() + (days || 0));
-  d.setHours(11, 0, 0, 0);
-  var pad = function(n) { return String(n).padStart(2, '0'); };
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-}
-
 function openCancellationDialog(id, kind) {
   var byCustomer = kind === 'customer';
   var title = byCustomer ? 'ลูกค้าขอยกเลิก' : 'ยกเลิกสิทธิ์ · พร้อมขาย';
@@ -3288,11 +3280,13 @@ function openUrgentDialog(id) {
 }
 
 function bindAppointmentControls(id) {
-  function saveAppointment(value) {
-    if (!value) { toast('เลือกวันและเวลานัดรับก่อน'); return; }
-    callApi('getAppointmentSlot', new Date(value).toISOString(), id).then(function(slot) {
+  var picker = window.AppointmentPicker && window.AppointmentPicker.mount('apptPicker');
+  function saveAppointment() {
+    var iso = picker && picker.getIso();
+    if (!iso) { toast('กรุณาเลือกวันและเวลาในอนาคต ช่วง 11:00–20:00 น. ทุก 30 นาที'); return; }
+    callApi('getAppointmentSlot', iso, id).then(function(slot) {
       if (slot.isBusy && !confirm('ช่วงเวลา ' + slot.label + ' มีคิวนัดแล้ว ' + slot.count + ' คิว ต้องการใช้เวลาเดิมหรือไม่?')) return;
-      return callApi('setAppointment', id, new Date(value).toISOString(), slot.isBusy);
+      return callApi('setAppointment', id, iso, slot.isBusy);
     }).then(function(out) {
       if (!out) return;
       if (out.needsConfirm) return;
@@ -3300,11 +3294,8 @@ function bindAppointmentControls(id) {
       STATE.changeAppt[id] = false; markQueueViewsStale(); openDetail(id); loadList(); loadDue(true);
     }).catch(function(e) { toast(e.message); });
   }
-  document.querySelectorAll('[data-appt-day]').forEach(function(button) {
-    button.onclick = function() { $('apptDt').value = localDateTimeValue(Number(button.dataset.apptDay)); };
-  });
   var save = $('btnAppt');
-  if (save) save.onclick = function() { saveAppointment($('apptDt').value); };
+  if (save) save.onclick = saveAppointment;
 }
 </script>
 
@@ -3996,6 +3987,6 @@ window.reportMarkStale=function(){RP.loaded=false;var page=rpEl('pg-report');if(
 })();
 </script>
 
-<script src="js/bulk-manager.js?v=20260918-1"></script>
+<script src="js/bulk-manager.js?v=20260920-1"></script>
 </body>
 </html>
