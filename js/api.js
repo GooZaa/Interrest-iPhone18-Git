@@ -448,6 +448,7 @@
           batch_group_id: batchGroupId,
           submission_id: submissionId,
           submission_device_index: deviceIndex + 1,
+          duplicate_confirmed: data.confirmDuplicate === true,
           booked_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -461,7 +462,15 @@
         });
       }
 
-      const { error: insErr } = await sb().from('reservations').insert(newReservations);
+      let { error: insErr } = await sb().from('reservations').insert(newReservations);
+      // Deploys from main may go live before the Supabase migration. In that
+      // interval, retain the previous signup behavior instead of rejecting all
+      // customer submissions because this new column is not installed yet.
+      if (insErr && /duplicate_confirmed/i.test(String(insErr.message || '')) &&
+          /(does not exist|schema cache|unknown column)/i.test(String(insErr.message || ''))) {
+        const legacyReservations = newReservations.map(({ duplicate_confirmed, ...reservation }) => reservation);
+        ({ error: insErr } = await sb().from('reservations').insert(legacyReservations));
+      }
       if (insErr) {
         if (/submission|unique|duplicate/i.test(String(insErr.message || ''))) {
           const { data: replayRows } = await sb().from('reservations').select('id').eq('submission_id', submissionId);
@@ -1566,9 +1575,16 @@ async validateLocationCode(tokenOrCode, code) {
     },
 
     async getBulkWorkspace() {
-      const { data, error } = await sb().from('reservations').select('*').order('booked_at', { ascending: false }).limit(500);
-      if (error) throw new Error('โหลดรายการสำหรับจัดการหลายรายการไม่สำเร็จ: ' + error.message);
-      const rows = data || [];
+      const rows = [];
+      const pageSize = 500;
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error } = await sb().from('reservations').select('*')
+          .order('booked_at', { ascending: false }).order('id', { ascending: false })
+          .range(offset, offset + pageSize - 1);
+        if (error) throw new Error('โหลดรายการสำหรับจัดการหลายรายการไม่สำเร็จ: ' + error.message);
+        rows.push(...(data || []));
+        if (!data || data.length < pageSize) break;
+      }
       const items = rows.map(r => Object.assign(mapReservation(r), {
         source: r.source || '',
         batchGroupId: r.batch_group_id || '',
