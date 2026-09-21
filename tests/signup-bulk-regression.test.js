@@ -151,3 +151,10 @@ test('bulk review and final confirmation clearly state action and item count', (
   assert.match(confirmationHtml(), /เปลี่ยนวันนัดรับ 2 รายการ\?/);
   assert.match(confirmationHtml(), /ยืนยันครั้งสุดท้าย/);
 });
+
+test('bulk modal action buttons have self-contained visible colors', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../css/bulk-manager.css'), 'utf8');
+  assert.match(css, /\.bm-modal\{--bm-tone:#2563eb;--bm-danger:#c53d68/);
+  assert.match(css, /\.bm-modal\[data-action=done\]\{--bm-tone:#c53d68\}/);
+  assert.match(css, /\.bm-confirm\{[^}]*background:var\(--bm-tone,#2563eb\);[^}]*color:#fff/);
+});
