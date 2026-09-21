@@ -117,7 +117,7 @@ test('signup remains usable before the duplicate guard column is deployed', asyn
 
 test('bulk appointment uses shared picker and call inputs remain populated', () => {
   const source = fs.readFileSync(path.join(__dirname, '../js/bulk-manager.js'), 'utf8')
-    .replace(/\}\)\(\);\s*$/, ';window.__bulkTest={BM,formHtml};})();');
+    .replace(/\}\)\(\);\s*$/, ';window.__bulkTest={BM,formHtml,reviewHtml,confirmationHtml};})();');
   const window = {};
   const document = { getElementById() { return null; } };
   vm.runInNewContext(source, { window, document, crypto: { randomUUID: () => 'test' } });
@@ -130,4 +130,24 @@ test('bulk appointment uses shared picker and call inputs remain populated', () 
   BM.payload = { call_result: 'no_answer', note: 'โทรอีกครั้งช่วงบ่าย' };
   assert.match(formHtml(), /value="no_answer" selected/);
   assert.match(formHtml(), /โทรอีกครั้งช่วงบ่าย/);
+});
+
+test('bulk review and final confirmation clearly state action and item count', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../js/bulk-manager.js'), 'utf8')
+    .replace(/\}\)\(\);\s*$/, ';window.__bulkTest={BM,reviewHtml,confirmationHtml};})();');
+  const window = {};
+  const document = { getElementById() { return null; } };
+  vm.runInNewContext(source, { window, document, crypto: { randomUUID: () => 'test' } });
+  const { BM, reviewHtml, confirmationHtml } = window.__bulkTest;
+  BM.items = [
+    { id: 'R1', name: 'ลูกค้า A', model: 'iPhone 18 Pro', capacity: '256GB', status: 'ของมาแล้ว' },
+    { id: 'R2', name: 'ลูกค้า A', model: 'iPhone 18 Pro Max', capacity: '512GB', status: 'ของมาแล้ว' }
+  ];
+  BM.selected = { R1: true, R2: true };
+  BM.action = 'appointment';
+  BM.payload = { _display: '21 ก.ย. 2569 13:30' };
+  assert.match(reviewHtml(), /กำลังเปลี่ยนวันนัดรับ · 2 รายการ/);
+  assert.match(reviewHtml(), /21 ก.ย. 2569 13:30/);
+  assert.match(confirmationHtml(), /เปลี่ยนวันนัดรับ 2 รายการ\?/);
+  assert.match(confirmationHtml(), /ยืนยันครั้งสุดท้าย/);
 });
