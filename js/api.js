@@ -1598,13 +1598,15 @@ async validateLocationCode(tokenOrCode, code) {
       const pageSize = 500;
       for (let offset = 0; ; offset += pageSize) {
         const { data, error } = await sb().from('reservations').select('*')
+          .not('status', 'in', '("รับของแล้ว","ยกเลิก")')
           .order('booked_at', { ascending: false }).order('id', { ascending: false })
           .range(offset, offset + pageSize - 1);
         if (error) throw new Error('โหลดรายการสำหรับจัดการหลายรายการไม่สำเร็จ: ' + error.message);
         rows.push(...(data || []));
         if (!data || data.length < pageSize) break;
       }
-      const items = rows.map(r => Object.assign(mapReservation(r), {
+      const activeRows = rows.filter(r => r.status !== 'รับของแล้ว' && r.status !== 'ยกเลิก');
+      const items = activeRows.map(r => Object.assign(mapReservation(r), {
         source: r.source || '',
         batchGroupId: r.batch_group_id || '',
         bookedAtIso: r.booked_at || r.created_at || '',
@@ -1612,7 +1614,7 @@ async validateLocationCode(tokenOrCode, code) {
         extraNotes: r.extra_notes || ''
       }));
 
-      const customerRows = rows.filter(r => r.source === 'customer');
+      const customerRows = activeRows.filter(r => r.source === 'customer');
       const signature = r => [r.model, r.capacity, r.color].map(v => String(v || '').trim().toLowerCase()).join('|');
       const batches = new Map();
       customerRows.forEach(r => {

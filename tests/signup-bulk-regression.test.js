@@ -24,6 +24,7 @@ test('bulk workspace pages past the first 500 reservations', async () => {
     assert.equal(table, 'reservations');
     return {
       select() { return this; },
+      not() { return this; },
       order() { return this; },
       range(start, end) {
         calls.push([start, end]);
@@ -36,6 +37,28 @@ test('bulk workspace pages past the first 500 reservations', async () => {
   assert.equal(result.items.length, 501);
   assert.equal(result.items.at(-1).id, 'R500');
   assert.deepEqual(calls, [[0, 499], [500, 999]]);
+});
+
+test('bulk workspace excludes completed and cancelled reservations', async () => {
+  const rows = [
+    { id: 'ACTIVE', status: 'นัดรับแล้ว', source: 'customer', phone: '0811111111', customer_name: 'Active', model: 'iPhone 18 Pro', capacity: '256GB', color: 'Black' },
+    { id: 'DONE', status: 'รับของแล้ว', source: 'customer', phone: '0822222222', customer_name: 'Done', model: 'iPhone 18 Pro', capacity: '256GB', color: 'Black' },
+    { id: 'CANCELLED', status: 'ยกเลิก', source: 'customer', phone: '0833333333', customer_name: 'Cancelled', model: 'iPhone 18 Pro', capacity: '256GB', color: 'Black' }
+  ];
+  let statusFilter;
+  const client = { from(table) {
+    assert.equal(table, 'reservations');
+    return {
+      select() { return this; },
+      not(column, operator, value) { statusFilter = [column, operator, value]; return this; },
+      order() { return this; },
+      range() { return Promise.resolve({ data: rows, error: null }); }
+    };
+  } };
+  const result = await loadApi(client).getBulkWorkspace();
+  assert.deepEqual(Array.from(result.items, item => item.id), ['ACTIVE']);
+  assert.equal(result.duplicateCandidates.length, 0);
+  assert.deepEqual(statusFilter, ['status', 'in', '("รับของแล้ว","ยกเลิก")']);
 });
 
 test('confirmed intentional duplicates carry acknowledgement to the database', async () => {
